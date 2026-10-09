@@ -1,0 +1,30 @@
+﻿<ui:FluentWindow x:Class="Dnkhw.MainWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 xmlns:pages="clr-namespace:Dnkhw.Pages"
+                 Title="电脑开荒"
+                 Width="1200" Height="800"
+                 MinWidth="980" MinHeight="640"
+                 WindowStartupLocation="CenterScreen"
+                 ExtendsContentIntoTitleBar="True"
+                 WindowBackdropType="Mica"
+                 WindowCornerPreference="Round">
+    <ui:NavigationView x:Name="RootNavigation"
+                       IsBackButtonVisible="Collapsed"
+                       Loaded="RootNavigation_Loaded">
+        <ui:NavigationView.MenuItems>
+            <ui:NavigationViewItem Content="开荒检查" Icon="{ui:SymbolIcon DocumentBulletList24}" TargetPageType="{x:Type pages:CheckPage}" />
+            <ui:NavigationViewItem Content="壁纸开荒" Icon="{ui:SymbolIcon Image24}" TargetPageType="{x:Type pages:WallpaperPage}" />
+            <ui:NavigationViewItem Content="下载路径换盘" Icon="{ui:SymbolIcon ArrowDownload24}" TargetPageType="{x:Type pages:DownloadsPage}" />
+            <ui:NavigationViewItem Content="APP 推荐" Icon="{ui:SymbolIcon AppsList24}" TargetPageType="{x:Type pages:AppsPage}" />
+            <ui:NavigationViewItem Content="启动项管理" Icon="{ui:SymbolIcon Rocket24}" TargetPageType="{x:Type pages:StartupPage}" />
+            <ui:NavigationViewItem Content="Windows 优化" Icon="{ui:SymbolIcon Wrench24}" TargetPageType="{x:Type pages:OptimizePage}" />
+            <ui:NavigationViewItem Content="磁盘分析" Icon="{ui:SymbolIcon DataUsage24}" TargetPageType="{x:Type pages:DiskPage}" />
+        </ui:NavigationView.MenuItems>
+        <ui:NavigationView.FooterMenuItems>
+            <ui:NavigationViewItem x:Name="AdminBadge" Content="权限：检测中…" Icon="{ui:SymbolIcon Shield24}" IsEnabled="False" />
+            <ui:NavigationViewItem Content="关于" Icon="{ui:SymbolIcon Info24}" TargetPageType="{x:Type pages:AboutPage}" />
+        </ui:NavigationView.FooterMenuItems>
+    </ui:NavigationView>
+</ui:FluentWindow>
