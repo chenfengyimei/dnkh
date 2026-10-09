@@ -11,6 +11,15 @@
             <Setter Property="Padding" Value="0"/>
             <Setter Property="Margin" Value="0"/>
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <!-- 选中/焦点视觉交给 chip 自身样式，去掉默认的矩形选中框 -->
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <ContentPresenter />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
     </Page.Resources>
 
