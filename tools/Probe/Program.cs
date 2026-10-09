@@ -2,13 +2,14 @@ using System.Text;
 using Dnkhw.Core.AppCatalog;
 using Dnkhw.Core.Downloads;
 using Dnkhw.Core.Formatting;
+using Dnkhw.Core.Optimize;
 using Dnkhw.Core.Startup;
 using Dnkhw.Core.SystemCheck;
 using Dnkhw.Core.Wallpaper;
 using Microsoft.Win32;
 
 // 开发探针：真机调用 Dnkhw.Core 各服务，输出结果供人工核对。
-// 用法: dotnet run --project tools/Probe -- [all|overview|checks|wallpaper|downloads|apps|startup]
+// 用法: dotnet run --project tools/Probe -- [all|overview|checks|wallpaper|downloads|apps|startup|optimize]
 Console.OutputEncoding = Encoding.UTF8;
 
 var service = new SystemCheckService();
@@ -130,4 +131,32 @@ if (cmd is "all" or "startup")
         key.DeleteValue("dnkhw_probe_orphan");
     }
     Console.WriteLine("codec 孤儿条目已清理");
+}
+
+if (cmd is "all" or "optimize")
+{
+    Console.WriteLine("=== Windows 优化 ===");
+    var optimizer = new OptimizeService();
+    Console.WriteLine($"Win11: {optimizer.IsWindows11}");
+    foreach (var i in optimizer.GetItems())
+    {
+        Console.WriteLine($"[{(optimizer.IsApplied(i.Id) ? "已应用" : "未应用")}] {i.Title}{(i.NeedsAdmin ? "（需管理员）" : "")}");
+    }
+
+    // 安全往返验证：advertisingId 应用→检测→恢复初始状态（保证净变化为零）
+    var before = optimizer.IsApplied("advertisingId");
+    optimizer.Apply("advertisingId");
+    var appliedCheck = optimizer.IsApplied("advertisingId");
+    Console.WriteLine($"advertisingId 应用后检测: {appliedCheck}（应为 True）");
+    if (before)
+    {
+        optimizer.Apply("advertisingId");
+    }
+    else
+    {
+        optimizer.Revert("advertisingId");
+    }
+    var restored = optimizer.IsApplied("advertisingId");
+    Console.WriteLine($"advertisingId 还原初始态: {restored}（应为 {before}）");
+    Console.WriteLine(restored == before ? "往返验证通过：系统状态与初始一致" : "警告：往返后状态与初始不一致");
 }
