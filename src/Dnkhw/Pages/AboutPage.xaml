@@ -42,6 +42,15 @@
 
             <ui:Card Margin="0,12,0,0" Padding="18">
                 <StackPanel>
+                    <TextBlock Text="官网" FontWeight="SemiBold" FontSize="15" Margin="0,0,0,8"/>
+                    <TextBlock TextWrapping="Wrap" LineHeight="22" Opacity="0.85"
+                               Text="电脑开荒网：www.cyhaoka.vip —— 软件下载、使用帮助与最新版本"/>
+                    <ui:Button Content="打开官网" Margin="0,10,0,0" HorizontalAlignment="Left" Click="OnOpenSiteClick"/>
+                </StackPanel>
+            </ui:Card>
+
+            <ui:Card Margin="0,12,0,0" Padding="18">
+                <StackPanel>
                     <TextBlock Text="技术栈" FontWeight="SemiBold" FontSize="15" Margin="0,0,0,8"/>
                     <TextBlock Text=".NET 9 · WPF · WPF-UI (Fluent) · CommunityToolkit.Mvvm · WMI · winget" Opacity="0.65" FontSize="12" TextWrapping="Wrap"/>
                 </StackPanel>

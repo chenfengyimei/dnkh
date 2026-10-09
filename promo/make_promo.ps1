@@ -48,6 +48,9 @@ foreach ($k in @($frames.Keys)) {
 }
 
 $drawCaptionFmt = "drawtext=fontfile='{0}':text='{1}':fontcolor=white:fontsize=52:box=1:boxcolor=0x000000@0.45:boxborderw=18:x=(w-text_w)/2:y=h-text_h-84"
+# official site watermark (bottom-right, on every scene)
+$wmLight = "drawtext=fontfile='$font':text='www.cyhaoka.vip':fontcolor=0x37474F@0.75:fontsize=30:x=w-text_w-44:y=h-80"
+$wmDark = "drawtext=fontfile='$font':text='www.cyhaoka.vip':fontcolor=0xBFD4EE@0.9:fontsize=30:x=w-text_w-44:y=h-80"
 
 function Make-FramesClip([string]$page, [double]$dur, [string]$caption) {
     $rate = [Math]::Round($frames[$page] / $dur, 4)
@@ -55,7 +58,7 @@ function Make-FramesClip([string]$page, [double]$dur, [string]$caption) {
     $inPat = (Join-Path (Join-Path $ShotsDir $page) "%03d.png")
     $out = Join-Path $WorkDir "scene_$page.mp4"
     $fadeStart = [Math]::Round($dur - 0.35, 2)
-    $vf = "fps=25,scale=1920:1080,setsar=1," + ($drawCaptionFmt -f $font, $caption) + ",fade=t=in:st=0:d=0.35,fade=t=out:st=$fadeStart`:d=0.35"
+    $vf = "fps=25,scale=1920:1080,setsar=1," + ($drawCaptionFmt -f $font, $caption) + ",$wmLight,fade=t=in:st=0:d=0.35,fade=t=out:st=$fadeStart`:d=0.35"
     & $ffmpeg -y -loglevel error -framerate $rate -start_number 0 -i $inPat -vf $vf -t $dur -r 25 -c:v libx264 -preset medium -crf 18 -pix_fmt yuv420p $out
     if ($LASTEXITCODE -ne 0) { throw "frames clip failed: $page" }
     return $out
@@ -66,7 +69,7 @@ function Make-StillClip([string]$page, [double]$dur, [string]$caption) {
     $out = Join-Path $WorkDir "scene_$page.mp4"
     $fadeStart = [Math]::Round($dur - 0.35, 2)
     # standard Ken Burns: upscale 2x, zoompan d=1 accumulates zoom across looped frames
-    $vf = "scale=3840:2160,zoompan=z='min(zoom+0.0004,1.06)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=1920x1080:fps=25,setsar=1," + ($drawCaptionFmt -f $font, $caption) + ",fade=t=in:st=0:d=0.35,fade=t=out:st=$fadeStart`:d=0.35"
+    $vf = "scale=3840:2160,zoompan=z='min(zoom+0.0004,1.06)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=1920x1080:fps=25,setsar=1," + ($drawCaptionFmt -f $font, $caption) + ",$wmLight,fade=t=in:st=0:d=0.35,fade=t=out:st=$fadeStart`:d=0.35"
     & $ffmpeg -y -loglevel error -loop 1 -framerate 25 -i $inFile -vf $vf -t $dur -r 25 -c:v libx264 -preset medium -crf 18 -pix_fmt yuv420p $out
     if ($LASTEXITCODE -ne 0) { throw "still clip failed: $page" }
     return $out
@@ -80,7 +83,7 @@ function Make-CardClip([string]$key, [string]$subKey, [double]$dur) {
     $vf = "drawbox=x=860:y=520:w=200:h=6:color=0x4FA3FF@1:t=fill," +
         "drawtext=fontfile='$font':text='$title':fontcolor=white:fontsize=112:x=(w-text_w)/2:y=420," +
         "drawtext=fontfile='$font':text='$sub':fontcolor=0xBFD4EE:fontsize=44:x=(w-text_w)/2:y=590," +
-        "fade=t=in:st=0:d=0.5,fade=t=out:st=$fadeStart`:d=0.5"
+        "fade=t=in:st=0:d=0.5,fade=t=out:st=$fadeStart`:d=0.5,$wmDark"
     & $ffmpeg -y -loglevel error -f lavfi -i "gradients=s=1920x1080:c0=0x0B1020:c1=0x16305F:speed=0.025:d=$dur" -vf $vf -t $dur -r 25 -c:v libx264 -preset medium -crf 18 -pix_fmt yuv420p $out
     if ($LASTEXITCODE -ne 0) { throw "card clip failed: $key" }
     return $out

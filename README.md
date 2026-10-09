@@ -12,6 +12,8 @@
 ![.NET](https://img.shields.io/badge/.NET-9.0-purple)
 ![Size](https://img.shields.io/badge/%E5%8D%95%E6%96%87%E4%BB%B6-%E5%85%8D%E5%AE%89%E8%A3%85-59MB-orange)
 
+🌐 **官网：[www.cyhaoka.vip](https://www.cyhaoka.vip)** —— 软件下载、使用帮助与最新版本
+
 </div>
 
 ---
@@ -71,6 +73,7 @@ Bing 搜索（Win10）、诊断遥测（需管理员）、高性能电源计划�
 
 ## 下载与安装
 
+- **官网下载**：[www.cyhaoka.vip](https://www.cyhaoka.vip)（最新版本与使用帮助）
 - **系统要求**：Windows 10（1709+）/ Windows 11，64 位；**无需安装 .NET 运行时**
 - **安装方式**：绿色单文件——下载 `Dnkhw.exe` 放到任意目录（建议非系统盘）双击即用
 - **校验**：发布说明提供 SHA256，可用 `certutil -hashfile Dnkhw.exe SHA256` 核对
