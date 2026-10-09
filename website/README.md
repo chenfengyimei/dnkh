@@ -8,9 +8,11 @@
 ```
 website/
 ├── index.html                    # 单页站点（功能/截图/视频/下载/FAQ）
+├── feedback.html                 # 反馈页：Bug 反馈 / 申请收录（静态表单）
 ├── assets/
-│   ├── css/style.css             # Fluent 风格，明暗主题跟随系统
+│   ├── css/style.css             # Fluent 风格，明暗主题跟随系统（含反馈页表单样式）
 │   ├── js/main.js                # 截图 Tab / 大图查看 / 复制 SHA256（无依赖）
+│   ├── js/feedback.js            # 反馈页：类型切换 / 实时生成 / 必填校验 / mailto
 │   └── img/
 │       ├── favicon.svg          # 站点图标（软件同款蓝绿渐变显示器）
 │       ├── promo_poster.jpg     # 视频封面（从宣传视频 3s 提取）
@@ -19,6 +21,16 @@ website/
 ├── download/Dnkhw.exe            # ← 发版时手动放入最新安装包（已 gitignore）
 └── README.md
 ```
+
+## 反馈页（feedback.html）
+
+静态表单，无后端：填写 → 实时生成格式化反馈文本 → 两种送达方式：
+
+1. **发送邮件**：mailto 拉起邮件客户端，收件人 `2079937150@qq.com`（git 提交邮箱），
+   主题 / 正文自动填好
+2. **复制文本**：复制按钮兜底，用户自行粘贴到任意渠道
+
+必填校验（Bug = 问题描述；收录 = 软件名称 + 官网地址）红框提示，纯前端。
 
 ## 本地预览
 
@@ -29,7 +41,7 @@ website/
 
 每次发布新版本，改 `index.html` 中 4 处数据（全文搜索即可定位）：
 
-1. **版本号** `v0.1.0`（Hero 徽章 + 下载卡 2 处）
+1. **版本号** `v0.1.0`（Hero 徽章 + 下载卡 2 处 + feedback.html Bug 表单预填 1 处）
 2. **大小** `58.97 MB` / `61,834,356 字节`
 3. **SHA256** `51D4A39A...74AC35`（下载卡与 data-copy 各 1 处，共 2 个字符串）
 4. 复制最新产物：`Copy-Item publish\Dnkhw.exe website\download\Dnkhw.exe`

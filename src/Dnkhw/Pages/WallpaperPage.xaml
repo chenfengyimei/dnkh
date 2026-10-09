@@ -15,7 +15,7 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel>
                     <TextBlock Text="壁纸开荒" FontSize="26" FontWeight="Bold"/>
-                    <TextBlock Text="Bing 中国区每日壁纸（近一周），一键下载并设为桌面" Opacity="0.7" Margin="0,6,0,0" TextWrapping="Wrap"/>
+                    <TextBlock Text="五步桌面美化：壁纸 → 隐藏图标 → 任务栏自动隐藏 → 透明化 → Dock 栏" Opacity="0.7" Margin="0,6,0,0" TextWrapping="Wrap"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                     <ui:Button Content="刷新列表" Command="{Binding LoadCommand}"/>
@@ -31,38 +31,113 @@
             <ui:InfoBar Margin="0,14,0,0" IsOpen="{Binding NoticeOpen, Mode=TwoWay}"
                         Title="{Binding NoticeText}" Severity="Informational" IsClosable="True"/>
 
-            <ItemsControl ItemsSource="{Binding Items}" Margin="0,16,0,0">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <WrapPanel/>
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <ui:Card Width="300" Margin="0,0,12,12" Padding="8">
-                            <StackPanel>
-                                <Image Source="{Binding ThumbPath, Converter={StaticResource ImagePathConverter}}"
-                                       Width="284" Height="170" Stretch="UniformToFill"/>
-                                <Grid Margin="0,8,0,0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
+            <ui:Card Margin="0,16,0,12" Padding="16">
+                <StackPanel>
+                    <TextBlock Text="步骤 1 · 设置壁纸" FontWeight="SemiBold" FontSize="15" Margin="0,0,0,4"/>
+                    <TextBlock Text="选择 Bing 每日壁纸或本地图片，一键设为桌面" Opacity="0.6" FontSize="12" Margin="0,0,0,10"/>
+                    <ItemsControl ItemsSource="{Binding Items}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <ui:Card Width="300" Margin="0,0,12,12" Padding="8">
                                     <StackPanel>
-                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13"
-                                                   TextTrimming="CharacterEllipsis"/>
-                                        <TextBlock Text="{Binding DateText}" Opacity="0.55" FontSize="12" Margin="0,2,0,0"/>
+                                        <Image Source="{Binding ThumbPath, Converter={StaticResource ImagePathConverter}}"
+                                               Width="284" Height="170" Stretch="UniformToFill"/>
+                                        <Grid Margin="0,8,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13"
+                                                           TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Text="{Binding DateText}" Opacity="0.55" FontSize="12" Margin="0,2,0,0"/>
+                                            </StackPanel>
+                                            <ui:Button Grid.Column="1" Content="设为壁纸" Appearance="Secondary"
+                                                       VerticalAlignment="Center"
+                                                       Command="{Binding DataContext.SetWallpaperCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                       CommandParameter="{Binding}"/>
+                                        </Grid>
                                     </StackPanel>
-                                    <ui:Button Grid.Column="1" Content="设为壁纸" Appearance="Secondary"
-                                               VerticalAlignment="Center"
-                                               Command="{Binding DataContext.SetWallpaperCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                               CommandParameter="{Binding}"/>
-                                </Grid>
-                            </StackPanel>
-                        </ui:Card>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+                                </ui:Card>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </ui:Card>
+
+            <ui:Card Margin="0,0,0,12" Padding="16">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="步骤 2 · 隐藏桌面图标" FontWeight="SemiBold" FontSize="15"/>
+                        <TextBlock Text="纯享壁纸更清爽；桌面右键「查看 → 显示桌面图标」可随时恢复" Opacity="0.6" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <ui:ToggleSwitch Grid.Column="1" VerticalAlignment="Center" Margin="12,0,0,0"
+                                     IsChecked="{Binding DesktopIconsHidden, Mode=TwoWay}"
+                                     Click="OnIconsToggleClick"/>
+                </Grid>
+            </ui:Card>
+
+            <ui:Card Margin="0,0,0,12" Padding="16">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="步骤 3 · 任务栏自动隐藏" FontWeight="SemiBold" FontSize="15"/>
+                        <TextBlock Text="鼠标移到屏幕底部才显示任务栏，最大化欣赏壁纸；随时可关" Opacity="0.6" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <ui:ToggleSwitch Grid.Column="1" VerticalAlignment="Center" Margin="12,0,0,0"
+                                     IsChecked="{Binding TaskbarAutoHide, Mode=TwoWay}"
+                                     Click="OnTaskbarToggleClick"/>
+                </Grid>
+            </ui:Card>
+
+            <ui:Card Margin="0,0,0,12" Padding="16">
+                <StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="步骤 4 · 任务栏透明化（TranslucentTB）" FontWeight="SemiBold" FontSize="15"/>
+                            <TextBlock Text="开源小工具（微软商店同款），让任务栏融入壁纸" Opacity="0.6" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <ui:Button Grid.Column="1" Content="一键安装" VerticalAlignment="Center"
+                                   Command="{Binding InstallTranslucentCommand}"
+                                   Visibility="{Binding TranslucentInstalled, Converter={StaticResource InverseBoolToVisibilityConverter}}"/>
+                        <Border Grid.Column="1" Background="#DFF0E8" CornerRadius="3" Padding="10,4"
+                                VerticalAlignment="Center"
+                                Visibility="{Binding TranslucentInstalled, Converter={StaticResource BoolToVisibilityConverter}}">
+                            <TextBlock Text="已安装" FontSize="12" Foreground="#0F7B0F"/>
+                        </Border>
+                    </Grid>
+                    <TextBlock TextWrapping="Wrap" Opacity="0.6" FontSize="12" Margin="0,10,0,0" LineHeight="20"
+                               Text="配置方法：安装后系统托盘（右下角箭头里）会出现 TranslucentTB 图标 → 右键 → Open TranslucentTB → 「Taskbar」样式选 Clear 即全透明，也可选 Blur / Acrylic 毛玻璃效果。开机自启在软件内 Taskbar → Open at boot 勾选。"/>
+                </StackPanel>
+            </ui:Card>
+
+            <ui:Card Margin="0,0,0,12" Padding="16">
+                <StackPanel>
+                    <TextBlock Text="步骤 5 · Dock 栏（可选）" FontWeight="SemiBold" FontSize="15"/>
+                    <TextBlock Text="macOS 风格启动栏，配合步骤 2 / 3 隐藏图标与任务栏，桌面效果最佳。二选一即可，安装后把常用软件拖入 Dock。" Opacity="0.6" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                        <ui:Button Content="RocketDock（免费经典）" Command="{Binding OpenRocketDockSiteCommand}"/>
+                        <ui:Button Content="商店搜 MyDockFinder" Appearance="Secondary" Margin="10,0,0,0" Command="{Binding OpenStoreDockSearchCommand}"/>
+                    </StackPanel>
+                    <TextBlock Text="RocketDock 使用：安装后把快捷方式拖到 Dock 上即可；在 Dock 设置里可调图标大小、动画与自动隐藏（勾选 Auto-hide 与步骤 3 的任务栏隐藏配套）。" TextWrapping="Wrap" Opacity="0.6" FontSize="12" Margin="0,10,0,0" LineHeight="20"/>
+                </StackPanel>
+            </ui:Card>
         </StackPanel>
     </ui:DynamicScrollViewer>
 </Page>

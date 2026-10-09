@@ -1,9 +1,11 @@
+using System.Diagnostics;
 using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Dnkhw.Core.AppCatalog;
+using Dnkhw.Core.DesktopTweaks;
 using Dnkhw.Core.Wallpaper;
 using Microsoft.Win32;
-
 namespace Dnkhw.ViewModels;
 
 public sealed record FitOption(string Label, WallpaperFit Fit);
@@ -21,6 +23,9 @@ public sealed partial class WallpaperViewModel : ObservableObject
 {
     private readonly BingWallpaperService _bing = new();
     private readonly WallpaperStore _store = new();
+    private readonly WingetInstaller _winget = new();
+
+    private const string TranslucentTbWingetId = "CharlesMilette.TranslucentTB";
 
     public IReadOnlyList<FitOption> FitOptions { get; } =
     [
@@ -46,9 +51,146 @@ public sealed partial class WallpaperViewModel : ObservableObject
     [ObservableProperty]
     private string? _noticeText;
 
+    [ObservableProperty]
+    private bool _desktopIconsHidden;
+
+    [ObservableProperty]
+    private bool _taskbarAutoHide;
+
+    [ObservableProperty]
+    private bool _translucentInstalled;
+
     public WallpaperViewModel()
     {
         _selectedFit = FitOptions[0];
+        LoadTweakStates();
+    }
+
+    /// <summary>读取桌面美化开关的当前系统状态（图标隐藏 / 任务栏自动隐藏 / TranslucentTB 安装情况）。</summary>
+    private void LoadTweakStates()
+    {
+        try
+        {
+            DesktopIconsHidden = DesktopTweaksService.GetDesktopIconsHidden();
+        }
+        catch
+        {
+            // 读取失败保持默认 false
+        }
+
+        try
+        {
+            TaskbarAutoHide = DesktopTweaksService.GetTaskbarAutoHide();
+        }
+        catch
+        {
+            // 读取失败保持默认 false
+        }
+
+        try
+        {
+            TranslucentInstalled = InstallDetector.IsInstalled(
+                "TranslucentTB",
+                InstallDetector.GetInstalledDisplayNames());
+        }
+        catch
+        {
+            TranslucentInstalled = false;
+        }
+    }
+
+    /// <summary>隐藏/显示桌面图标（开关 Click 调用，此刻已是目标值，失败时回拨）。</summary>
+    public async Task ToggleIconsAsync()
+    {
+        var target = DesktopIconsHidden;
+        try
+        {
+            await Task.Run(() => DesktopTweaksService.SetDesktopIconsHidden(target));
+            NoticeText = target ? "桌面图标已隐藏（桌面右键「查看」可随时恢复）" : "桌面图标已恢复显示";
+            NoticeOpen = true;
+        }
+        catch (Exception ex)
+        {
+            DesktopIconsHidden = !target;
+            NoticeText = $"操作失败：{ex.Message}";
+            NoticeOpen = true;
+        }
+    }
+
+    /// <summary>任务栏自动隐藏开关（同上模式）。</summary>
+    public async Task ToggleTaskbarAsync()
+    {
+        var target = TaskbarAutoHide;
+        try
+        {
+            await Task.Run(() => DesktopTweaksService.SetTaskbarAutoHide(target));
+            NoticeText = target ? "任务栏已自动隐藏（鼠标移至屏幕底部显示）" : "任务栏已恢复常驻显示";
+            NoticeOpen = true;
+        }
+        catch (Exception ex)
+        {
+            TaskbarAutoHide = !target;
+            NoticeText = $"操作失败：{ex.Message}";
+            NoticeOpen = true;
+        }
+    }
+
+    /// <summary>一键安装 TranslucentTB（winget 静默安装）。</summary>
+    [RelayCommand]
+    private async Task InstallTranslucentAsync()
+    {
+        if (IsBusy || TranslucentInstalled)
+        {
+            return;
+        }
+
+        IsBusy = true;
+        NoticeOpen = false;
+        try
+        {
+            var result = await Task.Run(() => _winget.InstallAsync(TranslucentTbWingetId));
+            if (result.Success)
+            {
+                TranslucentInstalled = true;
+                NoticeText = "TranslucentTB 安装完成：托盘图标右键即可打开设置";
+                NoticeOpen = true;
+            }
+            else
+            {
+                NoticeText = $"安装失败：{FirstMeaningfulLine(result.Output)}（可改用教程手动安装）";
+                NoticeOpen = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            NoticeText = $"安装失败：{ex.Message}（可改用教程手动安装）";
+            NoticeOpen = true;
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private void OpenRocketDockSite()
+    {
+        Process.Start(new ProcessStartInfo("https://rocketdock.com/") { UseShellExecute = true });
+    }
+
+    [RelayCommand]
+    private void OpenStoreDockSearch()
+    {
+        Process.Start(new ProcessStartInfo("ms-windows-store://search/?query=MyDockFinder") { UseShellExecute = true });
+    }
+
+    private static string FirstMeaningfulLine(string output)
+    {
+        var line = output
+            .Split('\r', '\n')
+            .Select(l => l.Trim())
+            .FirstOrDefault(l => l.Length > 0 && !l.StartsWith('-'));
+        return line ?? "未知原因（可重试或改用教程手动安装）";
     }
 
     [RelayCommand]

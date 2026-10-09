@@ -316,7 +316,7 @@ code {
   font-weight: 600;
 }
 
-/* 应用窗口式截图框 */
+/* 应用窗口式截图框（显式 height:auto，防止 attribute 高度被误用导致拉伸变形） */
 .window {
   margin: 0;
   border-radius: var(--radius-lg);
@@ -325,7 +325,11 @@ code {
   box-shadow: var(--shadow-lg);
   background: var(--card);
 }
-.window img { width: 100%; }
+.window img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+}
 
 /* ---------- 区块通用 ---------- */
 .section { padding: 92px 0; }
@@ -454,6 +458,8 @@ code {
 }
 .gallery-figure img {
   width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
   border-radius: var(--radius-lg);
   border: 1px solid var(--stroke);
   box-shadow: var(--shadow-lg);
@@ -758,6 +764,239 @@ code {
   .hero-cta .btn { width: 100%; }
   .dl-card { padding: 24px; }
   .code { padding-right: 76px; }
+}
+
+/* ============================================================
+   反馈与收录页（feedback.html）
+   ============================================================ */
+
+.container-mid { width: min(940px, 92%); }
+
+.nav-links a.active {
+  color: var(--text);
+  background: var(--bg-soft);
+}
+
+.fb-hero {
+  background:
+    radial-gradient(640px 300px at 85% -70px, rgba(0, 120, 212, 0.13), transparent 62%),
+    linear-gradient(180deg, var(--hero-top) 0%, var(--bg) 100%);
+  padding: 56px 0 64px;
+}
+.fb-hero h1 {
+  font-size: clamp(30px, 4vw, 42px);
+  font-weight: 750;
+}
+.fb-hero .lead {
+  margin-top: 14px;
+  color: var(--text-2);
+  font-size: 16px;
+  max-width: 40em;
+}
+.fb-hero .lead strong { color: var(--text); }
+
+.fb-section { padding: 8px 0 96px; }
+
+/* ---- 类型选择卡 ---- */
+.fb-typecards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+  margin-bottom: 28px;
+}
+.fb-typecard {
+  position: relative;
+  display: block;
+  text-align: left;
+  padding: 24px 22px 20px;
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  border: 1px solid var(--stroke-strong);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  font: inherit;
+  color: var(--text);
+  transition: transform 0.16s ease, box-shadow 0.16s ease,
+              border-color 0.16s ease, background 0.16s ease;
+}
+.fb-typecard:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.fb-typecard.active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 6%, var(--card));
+}
+.fb-typecard-icon {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.fb-typecard h3 { font-size: 18px; margin-top: 16px; }
+.fb-typecard p { margin-top: 6px; color: var(--text-2); font-size: 14px; }
+.fb-typecard-check {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.fb-typecard.active .fb-typecard-check {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* ---- 表单 ---- */
+.fb-form {
+  display: none;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px 20px;
+}
+.fb-form.visible { display: grid; }
+
+.fb-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+.fb-field--full { grid-column: 1 / -1; }
+.fb-field label { font-size: 13.5px; font-weight: 600; color: var(--text); }
+.req { color: #c42b1c; font-weight: 700; }
+.fb-hint { font-size: 12.5px; color: var(--text-3); }
+.fb-hint code { font-size: 12px; }
+
+.fb-field input[type="text"],
+.fb-field select,
+.fb-field textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--stroke-strong);
+  background: var(--card);
+  color: var(--text);
+  font: 400 14.5px/1.6 var(--font);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.fb-field input:focus,
+.fb-field select:focus,
+.fb-field textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.fb-field textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+/* 「复现步骤」三行示例占位需要更高的默认高度 */
+#fSteps { min-height: 122px; }
+.fb-field select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 38px;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16' fill='none' stroke='%2376808c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+}
+
+.fb-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 22px;
+}
+.fb-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14.5px;
+  cursor: pointer;
+}
+.fb-check input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.fb-criteria {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 18px;
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--stroke));
+  background: color-mix(in srgb, var(--accent) 6%, var(--card));
+  font-size: 13.5px;
+}
+.fb-criteria strong { font-size: 14px; }
+.fb-criteria span { color: var(--text-2); }
+
+.fb-invalid input,
+.fb-invalid textarea {
+  border-color: #c42b1c;
+  box-shadow: 0 0 0 3px rgba(196, 43, 28, 0.14);
+}
+
+/* ---- 生成结果 ---- */
+.fb-result {
+  margin-top: 30px;
+  padding: 26px;
+}
+.fb-result h3 { font-size: 17px; }
+.fb-result .fb-hint { margin: 6px 0 14px; }
+
+#fbOutput {
+  width: 100%;
+  min-height: 180px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--stroke);
+  background: var(--code-bg);
+  color: var(--text);
+  font: 400 13px/1.75 var(--mono);
+  resize: vertical;
+}
+.fb-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+}
+.fb-msg {
+  margin-top: 12px;
+  min-height: 1.2em;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #c42b1c;
+}
+.fb-note {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.fb-note strong { color: var(--text); }
+
+@media (max-width: 760px) {
+  .fb-form.visible { grid-template-columns: 1fr; }
+  .fb-typecards { grid-template-columns: 1fr; }
+  .fb-result { padding: 20px; }
 }
 
 /* 尊重减少动态效果偏好 */

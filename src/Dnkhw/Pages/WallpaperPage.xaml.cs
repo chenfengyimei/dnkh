@@ -22,4 +22,14 @@ public partial class WallpaperPage : Page
             _ = _viewModel.LoadCommand.ExecuteAsync(null);
         }
     }
+
+    private void OnIconsToggleClick(object sender, RoutedEventArgs e)
+    {
+        _ = _viewModel.ToggleIconsAsync();
+    }
+
+    private void OnTaskbarToggleClick(object sender, RoutedEventArgs e)
+    {
+        _ = _viewModel.ToggleTaskbarAsync();
+    }
 }
