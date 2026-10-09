@@ -49,7 +49,8 @@
                 <StackPanel>
                     <TextBlock Text="选择磁盘（点击即扫描）" FontWeight="SemiBold" FontSize="15" Margin="0,0,0,10"/>
                     <ListBox ItemsSource="{Binding Drives}" SelectedItem="{Binding SelectedDrive}"
-                             Background="Transparent" BorderThickness="0">
+                             Background="Transparent" BorderThickness="0"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                         <ListBox.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <WrapPanel/>
@@ -57,21 +58,30 @@
                         </ListBox.ItemsPanel>
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <Border CornerRadius="8" Padding="16,10" Margin="0,0,10,8" MinWidth="220"
+                                <Border x:Name="ChipBorder" CornerRadius="8" Padding="16,10" Margin="0,0,10,8" MinWidth="220"
                                         Background="#F3F5F9" BorderBrush="#E0E4EB" BorderThickness="1"
                                         Cursor="Hand">
                                     <StackPanel>
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="{Binding Root}" FontSize="17" FontWeight="Bold"/>
-                                            <TextBlock Text="{Binding Label}" Margin="8,0,0,0" FontSize="13" Opacity="0.75" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock x:Name="ChipRoot" Text="{Binding Root}" FontSize="17" FontWeight="Bold"/>
+                                            <TextBlock x:Name="ChipLabel" Text="{Binding Label}" Margin="8,0,0,0" FontSize="13" Opacity="0.75" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
-                                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                        <StackPanel x:Name="ChipStats" Orientation="Horizontal" Margin="0,4,0,0">
                                             <TextBlock Text="{Binding TotalText}" Opacity="0.55" FontSize="12"/>
                                             <TextBlock Text="｜" Opacity="0.3" FontSize="12" Margin="6,0"/>
                                             <TextBlock Text="{Binding FreeText}" Foreground="#1967D2" FontSize="12" FontWeight="SemiBold"/>
                                         </StackPanel>
                                     </StackPanel>
                                 </Border>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
+                                        <Setter TargetName="ChipBorder" Property="Background" Value="#1967D2"/>
+                                        <Setter TargetName="ChipBorder" Property="BorderBrush" Value="#1967D2"/>
+                                        <Setter TargetName="ChipRoot" Property="Foreground" Value="White"/>
+                                        <Setter TargetName="ChipLabel" Property="Foreground" Value="#CFE3F8"/>
+                                        <Setter TargetName="ChipStats" Property="Opacity" Value="0.9"/>
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>

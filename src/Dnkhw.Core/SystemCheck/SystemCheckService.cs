@@ -42,6 +42,7 @@ public sealed class SystemCheckService
         var gpuNames = all[1]
             .Select(r => r.GetValueOrDefault("Name")?.ToString()?.Trim())
             .Where(n => !string.IsNullOrWhiteSpace(n))
+            .Select(n => n!)
             .Distinct()
             .ToList();
 

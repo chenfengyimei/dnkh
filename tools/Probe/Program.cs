@@ -73,19 +73,22 @@ if (cmd is "all" or "wallpaper")
 
 if (cmd is "all" or "downloads")
 {
-    Console.WriteLine("=== 下载路径 ===");
-    var migrator = new DownloadsMigrationService();
-    var s = migrator.GetStatus();
-    Console.WriteLine($"当前: {s.CurrentPath}（{(s.IsRedirected ? "已重定向" : "系统默认")}）");
-    Console.WriteLine($"内容: {s.SourceFileCount} 个文件，{SizeFormatter.Format(s.SourceTotalBytes)}");
-    foreach (var d in s.Drives)
+    Console.WriteLine("=== 默认路径（六文件夹） ===");
+    var migrator = new KnownFoldersMigrationService();
+    foreach (var def in KnownFoldersMigrationService.Folders)
     {
-        Console.WriteLine($"  盘 {d.Root} {d.Label}：剩 {SizeFormatter.Format(d.FreeBytes)}");
-    }
-
-    foreach (var b in s.Browsers)
-    {
-        Console.WriteLine($"  {b.Name}: 安装={b.IsInstalled}，跟随系统={b.UsesSystemDefault}" + (b.CustomDir is null ? string.Empty : $"，自定义={b.CustomDir}"));
+        try
+        {
+            var s = migrator.GetStatus(def);
+            Console.WriteLine(
+                $"[{def.Name}] {s.CurrentPath}（{(s.IsRedirected ? "已重定向" : "系统默认")}）"
+                + $" 内容 {s.FileCount:N0} 个文件 / {SizeFormatter.Format(s.TotalBytes)}"
+                + (s.IsManagedByOneDrive ? " [OneDrive 接管]" : string.Empty));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[{def.Name}] 读取失败: {ex.Message}");
+        }
     }
 }
 

@@ -109,7 +109,7 @@ public sealed partial class CheckViewModel : ObservableObject
         switch (fixPage)
         {
             case "downloads":
-                AppNavigation.Go<Pages.DownloadsPage>();
+                AppNavigation.Go<Pages.DefaultPathsPage>();
                 break;
             case "optimize":
                 AppNavigation.Go<Pages.OptimizePage>();

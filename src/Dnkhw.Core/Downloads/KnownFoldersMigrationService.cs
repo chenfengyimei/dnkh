@@ -5,10 +5,11 @@ using Microsoft.Win32;
 namespace Dnkhw.Core.Downloads;
 
 /// <summary>
-/// 下载路径换盘：状态采集、文件迁移与已知文件夹重定向。
-/// 顺序保证：先完成文件迁移，再写注册表并通知 Explorer——中断时不会出现「指针已改文件未动」的状态。
+/// 默认路径换盘：六个已知文件夹（桌面/文档/下载/图片/音乐/视频）的状态采集、
+/// 文件迁移与已知文件夹重定向。顺序保证：先完成文件迁移，再写注册表并通知 Explorer——
+/// 中断时不会出现「指针已改文件未动」的状态。
 /// </summary>
-public sealed class DownloadsMigrationService
+public sealed class KnownFoldersMigrationService
 {
     private const string UserShellFoldersKey = @"Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders";
 
@@ -19,52 +20,58 @@ public sealed class DownloadsMigrationService
 
     private static string StateDirectory => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "dnkhw");
 
-    private static string StateFile => Path.Combine(StateDirectory, "downloads-migration.json");
+    private static string StateFile => Path.Combine(StateDirectory, "known-folders-migration.json");
 
-    /// <summary>当前下载文件夹的默认位置（未被重定向时即等于它）。</summary>
-    public static string GetDefaultPath()
-        => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+    /// <summary>可迁移的六个已知文件夹。</summary>
+    public static IReadOnlyList<KnownFolderDef> Folders =
+    [
+        new KnownFolderDef("downloads", "下载", KnownFolders.DownloadsId, "Downloads"),
+        new KnownFolderDef("documents", "文档", KnownFolders.DocumentsId, "Documents"),
+        new KnownFolderDef("desktop", "桌面", KnownFolders.DesktopId, "Desktop"),
+        new KnownFolderDef("pictures", "图片", KnownFolders.PicturesId, "Pictures"),
+        new KnownFolderDef("music", "音乐", KnownFolders.MusicId, "Music"),
+        new KnownFolderDef("videos", "视频", KnownFolders.VideosId, "Videos"),
+    ];
 
-    public DownloadsStatus GetStatus()
+    public static KnownFolderDef FindDef(string key)
+        => Folders.FirstOrDefault(f => f.Key == key)
+            ?? throw new ArgumentOutOfRangeException(nameof(key), $"未知文件夹：{key}");
+
+    /// <summary>读取单个文件夹状态：当前路径、是否重定向、内容统计、OneDrive 接管检测、可还原记录。</summary>
+    public KnownFolderStatus GetStatus(KnownFolderDef def)
     {
-        var current = KnownFolders.GetDownloadsPath();
-        var defaultPath = GetDefaultPath();
+        var current = KnownFolders.GetKnownFolderPath(def.Id);
+        var defaultPath = def.DefaultPath;
         var isRedirected = !string.Equals(current, defaultPath, StringComparison.OrdinalIgnoreCase);
+        var (count, bytes) = CountFiles(current);
 
-        (long count, long bytes) = CountFiles(current);
-
-        var drives = DriveInfo.GetDrives()
-            .Where(d => d.DriveType == DriveType.Fixed && d.IsReady)
-            .Select(d => new DownloadDrive(
-                d.RootDirectory.FullName,
-                string.IsNullOrWhiteSpace(d.VolumeLabel) ? "本地磁盘" : d.VolumeLabel,
-                d.AvailableFreeSpace))
-            .ToList();
-
-        var browsers = new BrowserDownloadDetector().Detect();
-
-        return new DownloadsStatus(
+        return new KnownFolderStatus(
+            def,
             current,
             defaultPath,
             isRedirected,
             count,
             bytes,
-            drives,
-            browsers,
-            ReadState()?.PreviousPath);
+            ReadState(def.Key),
+            current.Contains("OneDrive", StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>
-    /// 迁移到目标盘的 Downloads 目录。仅当 moveFiles 为 true 时搬动文件；无论是否搬动文件都会重定向注册表。
+    /// 迁移到目标盘的对应目录（如 D:\Downloads）。仅当 moveFiles 为 true 时搬动文件；无论如何都会重定向注册表。
     /// </summary>
-    public async Task<MigrationResult> MigrateAsync(string targetRoot, bool moveFiles, IProgress<MigrationProgress>? progress, CancellationToken ct = default)
+    public async Task<MigrationResult> MigrateAsync(
+        KnownFolderDef def,
+        string targetRoot,
+        bool moveFiles,
+        IProgress<MigrationProgress>? progress,
+        CancellationToken ct = default)
     {
-        var current = KnownFolders.GetDownloadsPath();
-        var target = Path.Combine(targetRoot, "Downloads");
+        var current = KnownFolders.GetKnownFolderPath(def.Id);
+        var target = Path.Combine(targetRoot, def.DefaultSubFolder);
 
-        if (string.Equals(Path.GetPathRoot(current.TrimEnd(Path.DirectorySeparatorChar)), Path.GetPathRoot(targetRoot), StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(Path.GetPathRoot(current), Path.GetPathRoot(targetRoot), StringComparison.OrdinalIgnoreCase))
         {
-            throw new InvalidOperationException("目标盘与当前下载文件夹在同一个分区，无需迁移");
+            throw new InvalidOperationException("目标盘与当前文件夹在同一个分区，无需迁移");
         }
 
         var previousPath = current;
@@ -77,23 +84,23 @@ public sealed class DownloadsMigrationService
             (moved, failures) = await MigrateDirectoryContentsAsync(current, target, progress, ct).ConfigureAwait(false);
         }
 
-        // 文件步骤结束后再改注册表（见类型注释的顺序保证）
-        ApplyRegistryPath(target);
-        SaveState(previousPath);
+        // 文件步骤结束后再改注册表（见类注释的顺序保证）
+        ApplyRegistryPath(def.Id, target);
+        SaveState(def.Key, previousPath);
         KnownFolders.NotifyFolderChanged(previousPath, target);
 
         return new MigrationResult(previousPath, target, moved, moveFiles, failures);
     }
 
-    /// <summary>还原到迁移前的路径；无记录时还原系统默认（%USERPROFILE%\Downloads）。</summary>
-    public void Restore()
+    /// <summary>还原到迁移前的路径；无记录时还原系统默认位置。</summary>
+    public void Restore(KnownFolderDef def)
     {
-        var restoreTo = ReadState()?.PreviousPath ?? GetDefaultPath();
+        var restoreTo = ReadState(def.Key) ?? def.DefaultPath;
         Directory.CreateDirectory(restoreTo);
 
-        var current = KnownFolders.GetDownloadsPath();
-        ApplyRegistryPath(restoreTo);
-        ClearState();
+        var current = KnownFolders.GetKnownFolderPath(def.Id);
+        ApplyRegistryPath(def.Id, restoreTo);
+        ClearState(def.Key);
         KnownFolders.NotifyFolderChanged(current, restoreTo);
     }
 
@@ -240,52 +247,70 @@ public sealed class DownloadsMigrationService
         return (count, bytes);
     }
 
-    private static void ApplyRegistryPath(string path)
+    private static void ApplyRegistryPath(Guid knownFolderId, string path)
     {
         using var key = Registry.CurrentUser.OpenSubKey(UserShellFoldersKey, writable: true)
             ?? throw new InvalidOperationException("无法打开注册表 User Shell Folders");
-        key.SetValue($"{{{KnownFolders.DownloadsId}}}", path, RegistryValueKind.ExpandString);
+        key.SetValue($"{{{knownFolderId}}}", path, RegistryValueKind.ExpandString);
     }
 
-    private sealed class MigrationState
+    private sealed class MigrationStateMap
     {
-        [JsonPropertyName("previousPath")]
-        public string PreviousPath { get; set; } = string.Empty;
+        [JsonPropertyName("previousPaths")]
+        public Dictionary<string, string> PreviousPaths { get; set; } = [];
 
         [JsonPropertyName("migratedAtUtc")]
         public DateTime MigratedAtUtc { get; set; } = DateTime.UtcNow;
     }
 
-    private static MigrationState? ReadState()
+    private static Dictionary<string, string> ReadStateMap()
     {
         try
         {
             if (!File.Exists(StateFile))
             {
-                return null;
+                return [];
             }
 
-            return JsonSerializer.Deserialize<MigrationState>(File.ReadAllText(StateFile));
+            var map = JsonSerializer.Deserialize<MigrationStateMap>(File.ReadAllText(StateFile), StateJsonOptions);
+            return map?.PreviousPaths ?? [];
         }
         catch
         {
-            return null;
+            return [];
         }
     }
 
-    private static void SaveState(string previousPath)
+    private static string? ReadState(string key)
     {
-        Directory.CreateDirectory(StateDirectory);
-        File.WriteAllText(StateFile, JsonSerializer.Serialize(new MigrationState { PreviousPath = previousPath }, StateJsonOptions));
+        return ReadStateMap().TryGetValue(key, out var path) ? path : null;
     }
 
-    private static void ClearState()
+    private static void SaveState(string key, string previousPath)
+    {
+        Directory.CreateDirectory(StateDirectory);
+        var map = ReadStateMap();
+        map[key] = previousPath;
+        File.WriteAllText(StateFile, JsonSerializer.Serialize(new MigrationStateMap { PreviousPaths = map }, StateJsonOptions));
+    }
+
+    private static void ClearState(string key)
     {
         try
         {
-            if (File.Exists(StateFile))
+            var map = ReadStateMap();
+            if (!map.Remove(key))
+            {
+                return;
+            }
+
+            if (map.Count == 0)
             {
                 File.Delete(StateFile);
+            }
+            else
+            {
+                File.WriteAllText(StateFile, JsonSerializer.Serialize(new MigrationStateMap { PreviousPaths = map }, StateJsonOptions));
             }
         }
         catch

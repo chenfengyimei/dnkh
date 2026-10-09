@@ -4,11 +4,11 @@ using Dnkhw.ViewModels;
 
 namespace Dnkhw.Pages;
 
-public partial class DownloadsPage : Page
+public partial class DefaultPathsPage : Page
 {
-    private readonly DownloadsViewModel _viewModel = new();
+    private readonly DefaultPathsViewModel _viewModel = new();
 
-    public DownloadsPage()
+    public DefaultPathsPage()
     {
         InitializeComponent();
         DataContext = _viewModel;
@@ -17,7 +17,7 @@ public partial class DownloadsPage : Page
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
-        if (_viewModel.Status is null && !_viewModel.IsBusy)
+        if (_viewModel.Folders.Count == 0 && !_viewModel.IsBusy)
         {
             _ = _viewModel.LoadCommand.ExecuteAsync(null);
         }

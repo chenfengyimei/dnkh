@@ -39,7 +39,7 @@ public partial class MainWindow : FluentWindow
         {
             "check" => typeof(Pages.CheckPage),
             "wallpaper" => typeof(Pages.WallpaperPage),
-            "downloads" => typeof(Pages.DownloadsPage),
+            "downloads" => typeof(Pages.DefaultPathsPage),
             "apps" => typeof(Pages.AppsPage),
             "startup" => typeof(Pages.StartupPage),
             "optimize" => typeof(Pages.OptimizePage),

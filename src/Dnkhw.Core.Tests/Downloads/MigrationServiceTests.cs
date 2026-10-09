@@ -1,4 +1,4 @@
-using Dnkhw.Core.Downloads;
+﻿using Dnkhw.Core.Downloads;
 
 namespace Dnkhw.Core.Tests.Downloads;
 
@@ -35,7 +35,7 @@ public class MigrationServiceTests : IDisposable
         File.WriteAllText(Path.Combine(_source, "sub", "b.txt"), "b");
         File.WriteAllText(Path.Combine(_source, "c.bin"), "c");
 
-        var (moved, failures) = await DownloadsMigrationService.MigrateDirectoryContentsAsync(_source, _target, null, CancellationToken.None);
+        var (moved, failures) = await KnownFoldersMigrationService.MigrateDirectoryContentsAsync(_source, _target, null, CancellationToken.None);
 
         Assert.Equal(3, moved);
         Assert.Empty(failures);
@@ -53,7 +53,7 @@ public class MigrationServiceTests : IDisposable
         Directory.CreateDirectory(_target);
         File.WriteAllText(Path.Combine(_target, "dup.txt"), "existing");
 
-        var (moved, failures) = await DownloadsMigrationService.MigrateDirectoryContentsAsync(_source, _target, null, CancellationToken.None);
+        var (moved, failures) = await KnownFoldersMigrationService.MigrateDirectoryContentsAsync(_source, _target, null, CancellationToken.None);
 
         Assert.Equal(0, moved);
         var failure = Assert.Single(failures);
@@ -72,7 +72,7 @@ public class MigrationServiceTests : IDisposable
 
         using var _ = File.Open(lockedPath, FileMode.Open, FileAccess.Read, FileShare.None);
 
-        var (moved, failures) = await DownloadsMigrationService.MigrateDirectoryContentsAsync(_source, _target, null, CancellationToken.None);
+        var (moved, failures) = await KnownFoldersMigrationService.MigrateDirectoryContentsAsync(_source, _target, null, CancellationToken.None);
 
         Assert.Equal(1, moved);
         var failure = Assert.Single(failures);
@@ -88,12 +88,30 @@ public class MigrationServiceTests : IDisposable
         File.WriteAllText(Path.Combine(_source, "2.txt"), "2");
 
         var collector = new SyncProgress<MigrationProgress>();
-        await DownloadsMigrationService.MigrateDirectoryContentsAsync(_source, _target, collector, CancellationToken.None);
+        await KnownFoldersMigrationService.MigrateDirectoryContentsAsync(_source, _target, collector, CancellationToken.None);
 
         Assert.NotEmpty(collector.Values);
         var last = collector.Values[^1];
         Assert.Equal(2, last.Completed);
         Assert.Equal(2, last.Total);
+    }
+
+    [Fact]
+    public void Folders_SixDefinitionsAreIntact()
+    {
+        Assert.Equal(6, KnownFoldersMigrationService.Folders.Count);
+        var keys = new HashSet<string>();
+        var guids = new HashSet<Guid>();
+        foreach (var def in KnownFoldersMigrationService.Folders)
+        {
+            Assert.True(keys.Add(def.Key), $"文件夹 Key 重复：{def.Key}");
+            Assert.True(guids.Add(def.Id), $"文件夹 GUID 重复：{def.Id}");
+            Assert.False(string.IsNullOrWhiteSpace(def.Name));
+            Assert.False(string.IsNullOrWhiteSpace(def.DefaultSubFolder));
+        }
+
+        Assert.Contains(KnownFoldersMigrationService.Folders, f => f.Key == "downloads" && f.Name == "下载");
+        Assert.Contains(KnownFoldersMigrationService.Folders, f => f.Key == "desktop" && f.Name == "桌面");
     }
 
     /// <summary>同步 IProgress（Progress&lt;T&gt; 经同步上下文异步投递，单测中无法保证时序）。</summary>

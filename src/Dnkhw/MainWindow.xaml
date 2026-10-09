@@ -25,7 +25,7 @@
             <ui:NavigationView.MenuItems>
                 <ui:NavigationViewItem Content="开荒检查" Icon="{ui:SymbolIcon DocumentBulletList24}" TargetPageType="{x:Type pages:CheckPage}" />
                 <ui:NavigationViewItem Content="壁纸开荒" Icon="{ui:SymbolIcon Image24}" TargetPageType="{x:Type pages:WallpaperPage}" />
-                <ui:NavigationViewItem Content="下载路径换盘" Icon="{ui:SymbolIcon ArrowDownload24}" TargetPageType="{x:Type pages:DownloadsPage}" />
+                <ui:NavigationViewItem Content="默认路径换盘" Icon="{ui:SymbolIcon FolderSwap24}" TargetPageType="{x:Type pages:DefaultPathsPage}" />
                 <ui:NavigationViewItem Content="APP 推荐" Icon="{ui:SymbolIcon AppsList24}" TargetPageType="{x:Type pages:AppsPage}" />
                 <ui:NavigationViewItem Content="启动项管理" Icon="{ui:SymbolIcon Rocket24}" TargetPageType="{x:Type pages:StartupPage}" />
                 <ui:NavigationViewItem Content="Windows 优化" Icon="{ui:SymbolIcon Wrench24}" TargetPageType="{x:Type pages:OptimizePage}" />

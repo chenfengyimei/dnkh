@@ -7,8 +7,23 @@ namespace Dnkhw.Core.Downloads;
 /// </summary>
 public static class KnownFolders
 {
-    /// <summary>下载文件夹（Downloads）的 KNOWNFOLDERID。</summary>
+    /// <summary>桌面（Desktop）的 KNOWNFOLDERID。</summary>
+    public static readonly Guid DesktopId = new("B4BFCC3A-DB2C-424C-B029-7FE99A87C641");
+
+    /// <summary>文档（Documents）的 KNOWNFOLDERID。</summary>
+    public static readonly Guid DocumentsId = new("FDD39AD0-238F-46AF-ADB4-6C85480369C7");
+
+    /// <summary>下载（Downloads）的 KNOWNFOLDERID。</summary>
     public static readonly Guid DownloadsId = new("374DE290-123F-4565-9164-39C4925E467B");
+
+    /// <summary>音乐（Music）的 KNOWNFOLDERID。</summary>
+    public static readonly Guid MusicId = new("4BD8D571-6D19-48D3-BE97-422220050E73");
+
+    /// <summary>图片（Pictures）的 KNOWNFOLDERID。</summary>
+    public static readonly Guid PicturesId = new("33E28130-4E1E-4676-835A-98395C3BC3BB");
+
+    /// <summary>视频（Videos）的 KNOWNFOLDERID。</summary>
+    public static readonly Guid VideosId = new("18989B1D-99B5-455B-841C-AB7C74F423FC");
 
     private const uint ShcneUpdatedir = 0x00001000;
     private const uint ShcnfPathW = 0x0005;
@@ -25,27 +40,54 @@ public static class KnownFolders
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern IntPtr SendMessageTimeout(IntPtr hWnd, uint msg, UIntPtr wParam, string lParam, uint fuFlags, uint timeout, out UIntPtr result);
 
-    /// <summary>获取当前「下载」文件夹路径。</summary>
-    public static string GetDownloadsPath()
+    /// <summary>
+    /// 读取任意已知文件夹的当前路径（按 KNOWNFOLDERID；缺失时按 Windows 标准行为自动创建）。
+    /// 部分被重定向过的文件夹（如实测的音乐/视频）SHGetKnownFolderPath 可能返回 0x80070002，
+    /// 此时回退 Environment.SpecialFolder（.NET 托管实现可正常解析）。
+    /// </summary>
+    public static string GetKnownFolderPath(Guid knownFolderId)
     {
-        var guid = DownloadsId;
-        var hr = SHGetKnownFolderPath(ref guid, 0, IntPtr.Zero, out var ptr);
-        if (hr != 0)
+        var guid = knownFolderId;
+        const uint KfFlagCreate = 0x00008000; // 音乐/视频等文件夹可能被用户删除，缺失时创建
+        var hr = SHGetKnownFolderPath(ref guid, KfFlagCreate, IntPtr.Zero, out var ptr);
+        if (hr == 0)
         {
-            throw new InvalidOperationException($"SHGetKnownFolderPath 失败：0x{hr:X8}");
+            try
+            {
+                var path = Marshal.PtrToStringUni(ptr);
+                if (!string.IsNullOrEmpty(path))
+                {
+                    return path;
+                }
+            }
+            finally
+            {
+                Marshal.FreeCoTaskMem(ptr);
+            }
         }
 
-        try
+        // 回退：Environment.SpecialFolder 对被重定向的文件夹解析更稳
+        var fallback = knownFolderId == DesktopId ? Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
+            : knownFolderId == DocumentsId ? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
+            : knownFolderId == MusicId ? Environment.GetFolderPath(Environment.SpecialFolder.MyMusic)
+            : knownFolderId == PicturesId ? Environment.GetFolderPath(Environment.SpecialFolder.MyPictures)
+            : knownFolderId == VideosId ? Environment.GetFolderPath(Environment.SpecialFolder.MyVideos)
+            : knownFolderId == DownloadsId
+                ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads")
+                : string.Empty;
+
+        if (!string.IsNullOrEmpty(fallback))
         {
-            return Marshal.PtrToStringUni(ptr) ?? string.Empty;
+            return fallback;
         }
-        finally
-        {
-            Marshal.FreeCoTaskMem(ptr);
-        }
+
+        throw new InvalidOperationException($"SHGetKnownFolderPath 失败：0x{hr:X8}");
     }
 
-    /// <summary>通知 Explorer 目录结构已变化（迁移后刷新「下载」库指向）。</summary>
+    /// <summary>获取当前「下载」文件夹路径（兼容旧调用）。</summary>
+    public static string GetDownloadsPath() => GetKnownFolderPath(DownloadsId);
+
+    /// <summary>通知 Explorer 目录结构已变化（迁移后刷新文件夹库指向）。</summary>
     public static void NotifyFolderChanged(string oldPath, string newPath)
     {
         var oldPtr = Marshal.StringToHGlobalUni(oldPath);
