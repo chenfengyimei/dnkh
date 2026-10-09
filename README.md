@@ -2,6 +2,13 @@
 
 纯净无广告的 Windows 开荒助手——新机 / 重装后一站式搞定：体检、壁纸、下载路径换盘、纯净软件安装、启动项、优化与磁盘分析。
 
+## 下载与安装
+
+- **系统要求**：Windows 10（1709+）/ Windows 11，64 位；**无需安装 .NET 运行时**
+- **安装方式**：绿色单文件——下载 `Dnkhw.exe` 放到任意目录（建议非系统盘）双击即用
+- **校验**：发布说明提供 SHA256，可用 `certutil -hashfile Dnkhw.exe SHA256` 核对
+- 首次运行如遇 SmartScreen 提示：点「更多信息」→「仍要运行」（详见下方说明）
+
 ## 功能
 
 | 模块 | 说明 |
@@ -54,3 +61,9 @@ dnkhw/
 ## 技术栈
 
 .NET 9 · WPF · [WPF-UI 4.3](https://github.com/lepoco/wpfui)（MIT） · CommunityToolkit.Mvvm · System.Management (WMI) · P/Invoke（SystemParametersInfo / SHGetKnownFolderPath / SHChangeNotify） · winget
+
+## 免责声明
+
+- 本工具对系统设置的修改均通过官方公开机制（注册表 / StartupApproved / powercfg / winget），并在应用内提供一键恢复；磁盘分析为只读展示，**不删除任何文件**。
+- 请仅从作者发布的官方渠道获取安装包，并通过 SHA256 校验完整性；从其他来源获取的文件安全性与作者无关。
+- 本工具按「现状」提供（见 LICENSE），使用产生的一切后果由使用者自行承担。

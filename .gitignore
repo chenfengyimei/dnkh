@@ -5,5 +5,11 @@ publish/
 .idea/
 TestResults/
 artifacts/
+tools/ffmpeg/
+promo/shots/
+promo/audio/
+promo/out/
+promo/*.mp4
+promo/*.mp3
 *.user
 *.suo
