@@ -17,7 +17,7 @@ public partial class OptimizePage : Page
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
-        if (_viewModel.Items.Count == 0 && !_viewModel.IsBusy)
+        if (_viewModel.Groups.Count == 0 && !_viewModel.IsBusy)
         {
             _ = _viewModel.LoadCommand.ExecuteAsync(null);
         }

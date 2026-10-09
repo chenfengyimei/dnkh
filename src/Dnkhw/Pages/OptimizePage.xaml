@@ -4,8 +4,35 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      xmlns:vm="clr-namespace:Dnkhw.ViewModels"
       mc:Ignorable="d"
       Loaded="OnLoaded">
+    <Page.Resources>
+        <DataTemplate x:Key="OptimizeRowTemplate" DataType="{x:Type vm:OptimizeRowView}">
+            <Grid Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="14"/>
+                        <Border Background="#FFF4CE" CornerRadius="3" Padding="5,1" Margin="6,0,0,0"
+                                VerticalAlignment="Center"
+                                Visibility="{Binding NeedsAdmin, Converter={StaticResource BoolToVisibilityConverter}}">
+                            <TextBlock Text="需管理员" FontSize="10" Foreground="#6B5900"/>
+                        </Border>
+                    </StackPanel>
+                    <TextBlock Text="{Binding Description}" Opacity="0.6" FontSize="12" Margin="0,3,0,0" TextWrapping="Wrap"/>
+                </StackPanel>
+                <ui:ToggleSwitch Grid.Column="1" VerticalAlignment="Center" Margin="12,0,0,0"
+                                 IsChecked="{Binding IsApplied, Mode=TwoWay}"
+                                 IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"
+                                 Click="OnToggleClick"/>
+            </Grid>
+        </DataTemplate>
+    </Page.Resources>
+
     <ui:DynamicScrollViewer>
         <StackPanel MaxWidth="980" HorizontalAlignment="Center" Margin="32,28,32,28">
             <Grid>
@@ -15,7 +42,7 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel>
                     <TextBlock Text="Windows 优化" FontSize="26" FontWeight="Bold"/>
-                    <TextBlock Text="关闭推广与广告类功能；每项可独立恢复，不触碰系统核心安全设置" Opacity="0.7" Margin="0,6,0,0" TextWrapping="Wrap"/>
+                    <TextBlock Text="按类分组关闭推广与广告类功能；每项可独立恢复，不触碰系统核心安全设置" Opacity="0.7" Margin="0,6,0,0" TextWrapping="Wrap"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="{Binding SummaryText}" VerticalAlignment="Center" Margin="0,0,12,0" Opacity="0.7"/>
@@ -32,31 +59,26 @@
             <ui:InfoBar Margin="0,14,0,0" IsOpen="{Binding NoticeOpen, Mode=TwoWay}"
                         Title="{Binding NoticeText}" Severity="Informational" IsClosable="True"/>
 
-            <ItemsControl ItemsSource="{Binding Items}" Margin="0,16,0,0">
+            <ItemsControl ItemsSource="{Binding Groups}" Margin="0,16,0,0">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <ui:Card Margin="0,0,0,8" Padding="14">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <StackPanel>
+                        <ui:Card Margin="0,0,0,12" Padding="16">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="14"/>
-                                        <Border Background="#FFF4CE" CornerRadius="3" Padding="5,1" Margin="6,0,0,0"
-                                                VerticalAlignment="Center"
-                                                Visibility="{Binding NeedsAdmin, Converter={StaticResource BoolToVisibilityConverter}}">
-                                            <TextBlock Text="需管理员" FontSize="10" Foreground="#6B5900"/>
-                                        </Border>
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="15"/>
+                                        <TextBlock Text="{Binding ProgressText}" VerticalAlignment="Center" Margin="10,0,0,0" Opacity="0.55" FontSize="12"/>
                                     </StackPanel>
-                                    <TextBlock Text="{Binding Description}" Opacity="0.6" FontSize="12" Margin="0,3,0,0" TextWrapping="Wrap"/>
-                                </StackPanel>
-                                <ui:ToggleSwitch Grid.Column="1" VerticalAlignment="Center" Margin="12,0,0,0"
-                                                 IsChecked="{Binding IsApplied, Mode=TwoWay}"
-                                                 IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"
-                                                 Click="OnToggleClick"/>
-                            </Grid>
+                                    <ui:Button Grid.Column="1" Content="全部应用" Appearance="Secondary"
+                                               Command="{Binding DataContext.ApplyGroupCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                               CommandParameter="{Binding}"/>
+                                </Grid>
+                                <ItemsControl ItemsSource="{Binding Rows}" ItemTemplate="{StaticResource OptimizeRowTemplate}"/>
+                            </StackPanel>
                         </ui:Card>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>

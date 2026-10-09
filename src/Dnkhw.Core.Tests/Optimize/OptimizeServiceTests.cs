@@ -55,4 +55,40 @@ public class OptimizeServiceTests
         var service = new OptimizeService();
         Assert.Throws<ArgumentOutOfRangeException>(() => service.Apply("no-such-id"));
     }
+
+    [Fact]
+    public void GetGroups_GroupsItemsConsistently()
+    {
+        var service = new OptimizeService();
+        var groups = service.GetGroups();
+
+        // 五个分组，与平铺列表数量一致，组内 GroupId/GroupName 一致
+        Assert.Equal(5, groups.Count);
+        var allItems = groups.SelectMany(g => g.Items).ToList();
+        Assert.Equal(service.GetItems().Count, allItems.Count);
+
+        foreach (var group in groups)
+        {
+            Assert.NotEmpty(group.Items);
+            Assert.All(group.Items, i => Assert.Equal(group.Id, i.GroupId));
+            Assert.All(group.Items, i => Assert.Equal(group.Name, i.GroupName));
+        }
+    }
+
+    [Fact]
+    public void GetGroups_EveryGroupHasItems()
+    {
+        var service = new OptimizeService();
+        var groups = service.GetGroups();
+
+        // 本机（Win11）应包含全部五组
+        if (service.IsWindows11)
+        {
+            Assert.Contains(groups, g => g.Id == "promo" && g.Items.Count >= 5);
+            Assert.Contains(groups, g => g.Id == "search" && g.Items.Count >= 2);
+            Assert.Contains(groups, g => g.Id == "notifications" && g.Items.Count >= 2);
+            Assert.Contains(groups, g => g.Id == "privacy" && g.Items.Count >= 2);
+            Assert.Contains(groups, g => g.Id == "performance" && g.Items.Count >= 2);
+        }
+    }
 }

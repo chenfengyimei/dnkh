@@ -28,12 +28,37 @@ public sealed partial class OptimizeRowView : ObservableObject
     private bool _isBusy;
 }
 
+public sealed partial class OptimizeGroupView : ObservableObject
+{
+    public OptimizeGroupView(string id, string name, IReadOnlyList<OptimizeRowView> rows)
+    {
+        Id = id;
+        Name = name;
+        Rows = rows;
+    }
+
+    public string Id { get; }
+
+    public string Name { get; }
+
+    public IReadOnlyList<OptimizeRowView> Rows { get; }
+
+    [ObservableProperty]
+    private string _progressText = string.Empty;
+
+    public void RefreshProgress()
+    {
+        var applied = Rows.Count(r => r.IsApplied);
+        ProgressText = $"已应用 {applied}/{Rows.Count}";
+    }
+}
+
 public sealed partial class OptimizeViewModel : ObservableObject
 {
     private readonly OptimizeService _service = new();
 
     [ObservableProperty]
-    private IReadOnlyList<OptimizeRowView> _items = [];
+    private IReadOnlyList<OptimizeGroupView> _groups = [];
 
     [ObservableProperty]
     private bool _isAdmin = AdminRelauncher.IsAdmin();
@@ -62,10 +87,18 @@ public sealed partial class OptimizeViewModel : ObservableObject
         NoticeOpen = false;
         try
         {
-            var rows = await Task.Run(() => _service.GetItems()
-                .Select(i => new OptimizeRowView(i, _service.IsApplied(i.Id)))
+            var groups = await Task.Run(() => _service.GetGroups()
+                .Select(g => new OptimizeGroupView(
+                    g.Id,
+                    g.Name,
+                    g.Items.Select(i => new OptimizeRowView(i, _service.IsApplied(i.Id))).ToList()))
                 .ToList());
-            Items = rows;
+            foreach (var g in groups)
+            {
+                g.RefreshProgress();
+            }
+
+            Groups = groups;
             UpdateSummary();
         }
         catch (Exception ex)
@@ -123,6 +156,52 @@ public sealed partial class OptimizeViewModel : ObservableObject
         }
     }
 
+    /// <summary>组内一键应用：该组未应用的项目全部应用。</summary>
+    [RelayCommand]
+    private async Task ApplyGroupAsync(OptimizeGroupView? group)
+    {
+        if (group is null || IsBusy)
+        {
+            return;
+        }
+
+        IsBusy = true;
+        NoticeOpen = false;
+        var applied = 0;
+        var failed = new List<string>();
+        try
+        {
+            foreach (var row in group.Rows.Where(r => !r.IsApplied))
+            {
+                row.IsBusy = true;
+                try
+                {
+                    await Task.Run(() => _service.Apply(row.Item.Id));
+                    row.IsApplied = true;
+                    applied++;
+                }
+                catch (Exception ex)
+                {
+                    failed.Add($"{row.Title}：{ex.Message}");
+                }
+                finally
+                {
+                    row.IsBusy = false;
+                }
+            }
+
+            NoticeText = failed.Count == 0
+                ? $"「{group.Name}」已应用 {applied} 项"
+                : $"应用 {applied} 项，失败 {failed.Count} 项：{string.Join("；", failed.Take(3))}";
+            NoticeOpen = true;
+            UpdateSummary();
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
     [RelayCommand]
     private async Task ApplyAllAsync()
     {
@@ -131,7 +210,7 @@ public sealed partial class OptimizeViewModel : ObservableObject
             return;
         }
 
-        var targets = Items.Where(r => !r.IsApplied && (IsAdmin || !r.NeedsAdmin)).ToList();
+        var targets = Groups.SelectMany(g => g.Rows).Where(r => !r.IsApplied && (IsAdmin || !r.NeedsAdmin)).ToList();
         if (targets.Count == 0)
         {
             NoticeText = "没有可优化的项目（已全部应用或需提权的未勾选）";
@@ -181,7 +260,12 @@ public sealed partial class OptimizeViewModel : ObservableObject
 
     private void UpdateSummary()
     {
-        var applied = Items.Count(i => i.IsApplied);
-        SummaryText = $"可优化 {Items.Count} 项，已应用 {applied} 项";
+        var rows = Groups.SelectMany(g => g.Rows).ToList();
+        var applied = rows.Count(i => i.IsApplied);
+        SummaryText = $"可优化 {rows.Count} 项，已应用 {applied} 项";
+        foreach (var group in Groups)
+        {
+            group.RefreshProgress();
+        }
     }
 }
