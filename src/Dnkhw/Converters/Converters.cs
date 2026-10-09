@@ -24,3 +24,19 @@ public sealed class BoolToVisibilityConverter : IValueConverter
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => value is Visibility.Visible;
 }
+
+/// <summary>数值为 null、0 或空集合时折叠（用于进度条等仅在有数据时显示的元素）。</summary>
+public sealed class ZeroToCollapsedConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value switch
+        {
+            int i when i > 0 => Visibility.Visible,
+            long l when l > 0 => Visibility.Visible,
+            double d when d > 0 => Visibility.Visible,
+            _ => Visibility.Collapsed,
+        };
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => Binding.DoNothing;
+}

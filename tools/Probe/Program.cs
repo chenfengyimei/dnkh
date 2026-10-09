@@ -1,10 +1,11 @@
 using System.Text;
+using Dnkhw.Core.Downloads;
 using Dnkhw.Core.Formatting;
 using Dnkhw.Core.SystemCheck;
 using Dnkhw.Core.Wallpaper;
 
 // 开发探针：真机调用 Dnkhw.Core 各服务，输出结果供人工核对。
-// 用法: dotnet run --project tools/Probe -- [all|overview|checks|wallpaper]
+// 用法: dotnet run --project tools/Probe -- [all|overview|checks|wallpaper|downloads]
 Console.OutputEncoding = Encoding.UTF8;
 
 var service = new SystemCheckService();
@@ -59,5 +60,23 @@ if (cmd is "all" or "wallpaper")
         // 安全验证：用同一张图重走 SPI 设置流程（视觉上无变化）
         WallpaperService.Set(current, WallpaperFit.Fill);
         Console.WriteLine("SPI_SETDESKWALLPAPER 重应用当前壁纸成功");
+    }
+}
+
+if (cmd is "all" or "downloads")
+{
+    Console.WriteLine("=== 下载路径 ===");
+    var migrator = new DownloadsMigrationService();
+    var s = migrator.GetStatus();
+    Console.WriteLine($"当前: {s.CurrentPath}（{(s.IsRedirected ? "已重定向" : "系统默认")}）");
+    Console.WriteLine($"内容: {s.SourceFileCount} 个文件，{SizeFormatter.Format(s.SourceTotalBytes)}");
+    foreach (var d in s.Drives)
+    {
+        Console.WriteLine($"  盘 {d.Root} {d.Label}：剩 {SizeFormatter.Format(d.FreeBytes)}");
+    }
+
+    foreach (var b in s.Browsers)
+    {
+        Console.WriteLine($"  {b.Name}: 安装={b.IsInstalled}，跟随系统={b.UsesSystemDefault}" + (b.CustomDir is null ? string.Empty : $"，自定义={b.CustomDir}"));
     }
 }
