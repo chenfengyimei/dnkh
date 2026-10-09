@@ -51,7 +51,7 @@ public sealed partial class DiskViewModel : ObservableObject
     private string? _noticeText;
 
     [RelayCommand]
-    private async Task LoadAsync()
+    private void Load()
     {
         if (IsScanning)
         {

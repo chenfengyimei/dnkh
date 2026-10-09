@@ -3,9 +3,49 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       mc:Ignorable="d">
-    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-        <TextBlock Text="电脑开荒" FontSize="26" FontWeight="SemiBold" HorizontalAlignment="Center" />
-        <TextBlock Text="纯净无广告的 Windows 开荒助手" Opacity="0.6" HorizontalAlignment="Center" Margin="0,6,0,0" />
-    </StackPanel>
+    <ui:DynamicScrollViewer>
+        <StackPanel Margin="24,16,24,24" MaxWidth="760" HorizontalAlignment="Left">
+            <TextBlock Text="电脑开荒" FontSize="28" FontWeight="Bold"/>
+            <TextBlock x:Name="VersionText" Opacity="0.7" Margin="0,4,0,0" Text="版本 0.1.0"/>
+
+            <ui:Card Margin="0,16,0,0" Padding="18">
+                <StackPanel>
+                    <TextBlock Text="关于本工具" FontWeight="SemiBold" FontSize="15" Margin="0,0,0,8"/>
+                    <TextBlock TextWrapping="Wrap" LineHeight="22" Opacity="0.85" Text="Windows 新机 / 重装后的一站式开荒助手：系统体检、壁纸、下载路径换盘、纯净软件推荐、启动项管理、Windows 优化与磁盘分析，全部功能集中在一个轻量本地工具里。"/>
+                </StackPanel>
+            </ui:Card>
+
+            <ui:Card Margin="0,12,0,0" Padding="18">
+                <StackPanel>
+                    <TextBlock Text="纯净承诺" FontWeight="SemiBold" FontSize="15" Margin="0,0,0,8"/>
+                    <TextBlock Text="✓ 无广告、无弹窗、无捆绑软件" TextWrapping="Wrap" LineHeight="22" Opacity="0.85"/>
+                    <TextBlock Text="✓ 不上传任何数据：仅联网访问 Bing 壁纸接口与 winget 官方源" TextWrapping="Wrap" LineHeight="22" Opacity="0.85"/>
+                    <TextBlock Text="✓ APP 推荐仅收录官方渠道、无捆绑安装器、无弹窗广告的软件" TextWrapping="Wrap" LineHeight="22" Opacity="0.85"/>
+                    <TextBlock Text="✓ 所有系统修改（启动项禁用 / 优化项）均可一键恢复" TextWrapping="Wrap" LineHeight="22" Opacity="0.85"/>
+                    <TextBlock Text="✓ 磁盘分析只读展示，本工具绝不自动删除文件" TextWrapping="Wrap" LineHeight="22" Opacity="0.85"/>
+                </StackPanel>
+            </ui:Card>
+
+            <ui:Card Margin="0,12,0,0" Padding="18">
+                <StackPanel>
+                    <TextBlock Text="使用提示" FontWeight="SemiBold" FontSize="15" Margin="0,0,0,8"/>
+                    <TextBlock TextWrapping="Wrap" LineHeight="22" Opacity="0.85"
+                               Text="· 首次运行可能弹出 SmartScreen 提示：点「更多信息」→「仍要运行」即可（自用未签名程序的正常现象）"/>
+                    <TextBlock TextWrapping="Wrap" LineHeight="22" Opacity="0.85"
+                               Text="· 部分功能（系统级启动项、遥测关闭等）需要管理员权限，页面内提供「以管理员身份重启」按钮"/>
+                    <TextBlock TextWrapping="Wrap" LineHeight="22" Opacity="0.85"
+                               Text="· 下载路径换盘会先迁移文件、最后才修改系统指向，中断不会造成状态不一致"/>
+                </StackPanel>
+            </ui:Card>
+
+            <ui:Card Margin="0,12,0,0" Padding="18">
+                <StackPanel>
+                    <TextBlock Text="技术栈" FontWeight="SemiBold" FontSize="15" Margin="0,0,0,8"/>
+                    <TextBlock Text=".NET 9 · WPF · WPF-UI (Fluent) · CommunityToolkit.Mvvm · WMI · winget" Opacity="0.65" FontSize="12" TextWrapping="Wrap"/>
+                </StackPanel>
+            </ui:Card>
+        </StackPanel>
+    </ui:DynamicScrollViewer>
 </Page>
