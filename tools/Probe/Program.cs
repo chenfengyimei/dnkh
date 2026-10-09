@@ -2,11 +2,13 @@ using System.Text;
 using Dnkhw.Core.AppCatalog;
 using Dnkhw.Core.Downloads;
 using Dnkhw.Core.Formatting;
+using Dnkhw.Core.Startup;
 using Dnkhw.Core.SystemCheck;
 using Dnkhw.Core.Wallpaper;
+using Microsoft.Win32;
 
 // 开发探针：真机调用 Dnkhw.Core 各服务，输出结果供人工核对。
-// 用法: dotnet run --project tools/Probe -- [all|overview|checks|wallpaper|downloads|apps]
+// 用法: dotnet run --project tools/Probe -- [all|overview|checks|wallpaper|downloads|apps|startup]
 Console.OutputEncoding = Encoding.UTF8;
 
 var service = new SystemCheckService();
@@ -105,4 +107,27 @@ if (cmd is "all" or "apps")
     var fail = await winget.RunAsync("install --id DNKHW.DoesNotExist -e --silent --accept-package-agreements --accept-source-agreements");
     Console.WriteLine($"winget 失败路径: exit={fail.ExitCode}");
     Console.WriteLine("  " + fail.Output.Split('\r', '\n').FirstOrDefault(l => l.Trim().Length > 0));
+}
+
+if (cmd is "all" or "startup")
+{
+    Console.WriteLine("=== 启动项 ===");
+    var startup = new StartupService();
+    foreach (var i in startup.GetItems())
+    {
+        Console.WriteLine($"[{(i.IsEnabled ? "启用" : "禁用")}] {i.LocationText} | {i.Name} | {i.Command}{(i.Publisher is null ? " | 无签名" : $" | {i.Publisher}")}");
+    }
+
+    // codec 真实读写验证：孤儿 StartupApproved 条目（无对应 Run 项，系统忽略），写→读→还原→清理
+    using (var key = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run"))
+    {
+        key.SetValue("dnkhw_probe_orphan", StartupApprovedCodec.Encode(false), RegistryValueKind.Binary);
+        var raw = (byte[]?)key.GetValue("dnkhw_probe_orphan");
+        Console.WriteLine($"codec 禁用写入: {Convert.ToHexString(raw!)} → 解码启用={StartupApprovedCodec.Decode(raw)}（应为 False）");
+        key.SetValue("dnkhw_probe_orphan", StartupApprovedCodec.Encode(true), RegistryValueKind.Binary);
+        raw = (byte[]?)key.GetValue("dnkhw_probe_orphan");
+        Console.WriteLine($"codec 启用写入: {Convert.ToHexString(raw!)} → 解码启用={StartupApprovedCodec.Decode(raw)}（应为 True）");
+        key.DeleteValue("dnkhw_probe_orphan");
+    }
+    Console.WriteLine("codec 孤儿条目已清理");
 }

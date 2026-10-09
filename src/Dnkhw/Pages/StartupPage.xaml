@@ -3,9 +3,68 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-      mc:Ignorable="d">
-    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-        <TextBlock Text="启动项管理" FontSize="26" FontWeight="SemiBold" HorizontalAlignment="Center" />
-        <TextBlock Text="本模块将在 M5 实现" Opacity="0.6" HorizontalAlignment="Center" Margin="0,6,0,0" />
-    </StackPanel>
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      mc:Ignorable="d"
+      Loaded="OnLoaded">
+    <ui:DynamicScrollViewer>
+        <StackPanel Margin="24,16,24,24" MaxWidth="900" HorizontalAlignment="Left">
+            <Grid>
+                <StackPanel>
+                    <TextBlock Text="启动项管理" FontSize="28" FontWeight="Bold"/>
+                    <TextBlock Text="查看并禁用开机自启动；与任务管理器同机制，不删除原始条目，随时可恢复" Opacity="0.7" Margin="0,4,0,0"/>
+                </StackPanel>
+                <ui:ProgressRing Width="26" Height="26" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                IsIndeterminate="True" Margin="0,6,0,0"
+                                Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibilityConverter}}"/>
+            </Grid>
+
+            <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+                <ui:Button Content="重新加载" Command="{Binding LoadCommand}"/>
+                <TextBlock Text="{Binding SummaryText}" VerticalAlignment="Center" Margin="12,0,0,0" Opacity="0.7"/>
+                <ui:Button Content="以管理员身份重启" Appearance="Secondary" Margin="12,0,0,0"
+                           Command="{Binding RelaunchAdminCommand}"
+                           Visibility="{Binding IsAdmin, Converter={StaticResource InverseBoolToVisibilityConverter}}"/>
+            </StackPanel>
+
+            <ui:InfoBar Margin="0,10,0,0" IsOpen="{Binding NoticeOpen, Mode=TwoWay}"
+                        Title="{Binding NoticeText}" Severity="Informational" IsClosable="True"/>
+
+            <ItemsControl ItemsSource="{Binding Items}" Margin="0,12,0,0">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <ui:Card Margin="0,0,0,8" Padding="14">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14"/>
+                                        <Border Background="#FFF4CE" CornerRadius="3" Padding="5,1" Margin="6,0,0,0"
+                                                VerticalAlignment="Center"
+                                                Visibility="{Binding NeedsAdmin, Converter={StaticResource BoolToVisibilityConverter}}">
+                                            <TextBlock Text="需管理员" FontSize="10" Foreground="#6B5900"/>
+                                        </Border>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding Command}" Opacity="0.6" FontSize="12" Margin="0,3,0,0"
+                                               TextTrimming="CharacterEllipsis" ToolTip="{Binding Command}"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
+                                        <TextBlock Text="{Binding LocationText}" Opacity="0.55" FontSize="12"/>
+                                        <TextBlock Text="｜" Opacity="0.3" FontSize="12" Margin="6,0"/>
+                                        <TextBlock Text="发布者：" Opacity="0.55" FontSize="12"/>
+                                        <TextBlock Text="{Binding PublisherText}" Opacity="0.55" FontSize="12"/>
+                                    </StackPanel>
+                                </StackPanel>
+                                <ui:ToggleSwitch Grid.Column="1" VerticalAlignment="Center" Margin="12,0,0,0"
+                                                 IsChecked="{Binding IsEnabled, Mode=TwoWay}"
+                                                 IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"
+                                                 Click="OnToggleClick"/>
+                            </Grid>
+                        </ui:Card>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </ui:DynamicScrollViewer>
 </Page>
