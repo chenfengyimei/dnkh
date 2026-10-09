@@ -11,5 +11,7 @@ promo/audio/
 promo/out/
 promo/*.mp4
 promo/*.mp3
+CODELY.md
+.codely-cli/
 *.user
 *.suo
