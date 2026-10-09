@@ -15,3 +15,6 @@ CODELY.md
 .codely-cli/
 *.user
 *.suo
+
+# 官网部署用安装包不入库（发版时手动复制到 website/download/）
+website/download/

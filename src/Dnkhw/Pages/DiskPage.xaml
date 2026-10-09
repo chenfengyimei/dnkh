@@ -7,34 +7,34 @@
       mc:Ignorable="d"
       Loaded="OnLoaded">
     <ui:DynamicScrollViewer>
-        <StackPanel Margin="24,16,24,24" MaxWidth="900" HorizontalAlignment="Left">
+        <StackPanel MaxWidth="980" HorizontalAlignment="Center" Margin="32,28,32,28">
             <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
                 <StackPanel>
-                    <TextBlock Text="磁盘分析" FontSize="28" FontWeight="Bold"/>
-                    <TextBlock Text="扫描各盘的空间占用排行，定位大文件；垃圾位置只展示不删除" Opacity="0.7" Margin="0,4,0,0"/>
+                    <TextBlock Text="磁盘分析" FontSize="26" FontWeight="Bold"/>
+                    <TextBlock Text="扫描各盘的空间占用排行，定位大文件；垃圾位置只展示不删除" Opacity="0.7" Margin="0,6,0,0" TextWrapping="Wrap"/>
                 </StackPanel>
-                <ui:ProgressRing Width="26" Height="26" HorizontalAlignment="Right" VerticalAlignment="Top"
-                                IsIndeterminate="True" Margin="0,6,0,0"
-                                Visibility="{Binding IsScanning, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <ComboBox Width="360" ItemsSource="{Binding Drives}" DisplayMemberPath="DisplayText"
+                              SelectedItem="{Binding SelectedDrive}"/>
+                    <ui:Button Content="开始扫描" Margin="10,0,0,0" Command="{Binding ScanCommand}"
+                               IsEnabled="{Binding IsScanning, Converter={StaticResource InverseBoolConverter}}"/>
+                    <ui:Button Content="取消" Appearance="Secondary" Margin="10,0,0,0" Command="{Binding CancelScanCommand}"
+                               Visibility="{Binding IsScanning, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                </StackPanel>
             </Grid>
-
-            <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
-                <ComboBox Width="360" ItemsSource="{Binding Drives}" DisplayMemberPath="DisplayText"
-                          SelectedItem="{Binding SelectedDrive}"/>
-                <ui:Button Content="开始扫描" Margin="10,0,0,0" Command="{Binding ScanCommand}"
-                           IsEnabled="{Binding IsScanning, Converter={StaticResource InverseBoolConverter}}"/>
-                <ui:Button Content="取消" Appearance="Secondary" Margin="10,0,0,0" Command="{Binding CancelScanCommand}"
-                           Visibility="{Binding IsScanning, Converter={StaticResource BoolToVisibilityConverter}}"/>
-                <TextBlock Text="{Binding ProgressText}" VerticalAlignment="Center" Margin="12,0,0,0" Opacity="0.6" FontSize="12"/>
-            </StackPanel>
+            <TextBlock Text="{Binding ProgressText}" Margin="0,10,0,0" Opacity="0.6" FontSize="12"/>
 
             <ui:InfoBar Margin="0,10,0,0" IsOpen="{Binding NoticeOpen, Mode=TwoWay}"
                         Title="{Binding NoticeText}" Severity="Informational" IsClosable="True"/>
 
-            <ui:Card Margin="0,12,0,0" Padding="16" Visibility="{Binding TopFolders, Converter={StaticResource NullToVisibilityConverter}}">
+            <ui:Card Margin="0,16,0,0" Padding="16" Visibility="{Binding TopFolders, Converter={StaticResource NullToVisibilityConverter}}">
                 <StackPanel>
-                    <TextBlock Text="{Binding SummaryText}" FontWeight="SemiBold" FontSize="14" Margin="0,0,0,10"/>
-                    <TextBlock Text="目录占用排行（一级目录，含全部子级）" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,6" Opacity="0.8"/>
+                    <TextBlock Text="{Binding SummaryText}" FontWeight="SemiBold" FontSize="14" Margin="0,0,0,12"/>
+                    <TextBlock Text="目录占用排行（一级目录，含全部子级）" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8" Opacity="0.8"/>
                     <ItemsControl ItemsSource="{Binding TopFolders}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
@@ -67,11 +67,11 @@
 
             <ui:Card Margin="0,12,0,0" Padding="16" Visibility="{Binding TopFiles, Converter={StaticResource NullToVisibilityConverter}}">
                 <StackPanel>
-                    <TextBlock Text="最大文件 Top 30" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,6"/>
+                    <TextBlock Text="最大文件 Top 30" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8"/>
                     <ItemsControl ItemsSource="{Binding TopFiles}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Grid Margin="0,0,0,4">
+                                <Grid Margin="0,0,0,6">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
@@ -94,11 +94,11 @@
 
             <ui:Card Margin="0,12,0,0" Padding="16" Visibility="{Binding JunkLocations, Converter={StaticResource NullToVisibilityConverter}}">
                 <StackPanel>
-                    <TextBlock Text="常见可清理位置（仅展示，本工具不自动删除）" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,6"/>
+                    <TextBlock Text="常见可清理位置（仅展示，本工具不自动删除）" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8"/>
                     <ItemsControl ItemsSource="{Binding JunkLocations}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Grid Margin="0,0,0,4">
+                                <Grid Margin="0,0,0,6">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>

@@ -7,29 +7,31 @@
       mc:Ignorable="d"
       Loaded="OnLoaded">
     <ui:DynamicScrollViewer>
-        <StackPanel Margin="24,16,24,24" MaxWidth="900" HorizontalAlignment="Left">
+        <StackPanel MaxWidth="980" HorizontalAlignment="Center" Margin="32,28,32,28">
             <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
                 <StackPanel>
-                    <TextBlock Text="启动项管理" FontSize="28" FontWeight="Bold"/>
-                    <TextBlock Text="查看并禁用开机自启动；与任务管理器同机制，不删除原始条目，随时可恢复" Opacity="0.7" Margin="0,4,0,0"/>
+                    <TextBlock Text="启动项管理" FontSize="26" FontWeight="Bold"/>
+                    <TextBlock Text="查看并禁用开机自启动；与任务管理器同机制，不删除原始条目，随时可恢复" Opacity="0.7" Margin="0,6,0,0" TextWrapping="Wrap"/>
                 </StackPanel>
-                <ui:ProgressRing Width="26" Height="26" HorizontalAlignment="Right" VerticalAlignment="Top"
-                                IsIndeterminate="True" Margin="0,6,0,0"
-                                Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding SummaryText}" VerticalAlignment="Center" Margin="0,0,12,0" Opacity="0.7"/>
+                    <ui:Button Content="重新加载" Command="{Binding LoadCommand}"/>
+                    <ui:Button Content="以管理员身份重启" Appearance="Secondary" Margin="10,0,0,0"
+                               Command="{Binding RelaunchAdminCommand}"
+                               Visibility="{Binding IsAdmin, Converter={StaticResource InverseBoolToVisibilityConverter}}"/>
+                    <ui:ProgressRing Width="22" Height="22" IsIndeterminate="True" Margin="12,0,0,0"
+                                     Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                </StackPanel>
             </Grid>
 
-            <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
-                <ui:Button Content="重新加载" Command="{Binding LoadCommand}"/>
-                <TextBlock Text="{Binding SummaryText}" VerticalAlignment="Center" Margin="12,0,0,0" Opacity="0.7"/>
-                <ui:Button Content="以管理员身份重启" Appearance="Secondary" Margin="12,0,0,0"
-                           Command="{Binding RelaunchAdminCommand}"
-                           Visibility="{Binding IsAdmin, Converter={StaticResource InverseBoolToVisibilityConverter}}"/>
-            </StackPanel>
-
-            <ui:InfoBar Margin="0,10,0,0" IsOpen="{Binding NoticeOpen, Mode=TwoWay}"
+            <ui:InfoBar Margin="0,14,0,0" IsOpen="{Binding NoticeOpen, Mode=TwoWay}"
                         Title="{Binding NoticeText}" Severity="Informational" IsClosable="True"/>
 
-            <ItemsControl ItemsSource="{Binding Items}" Margin="0,12,0,0">
+            <ItemsControl ItemsSource="{Binding Items}" Margin="0,16,0,0">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <ui:Card Margin="0,0,0,8" Padding="14">

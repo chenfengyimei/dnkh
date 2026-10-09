@@ -7,45 +7,51 @@
       mc:Ignorable="d"
       Loaded="OnLoaded">
     <ui:DynamicScrollViewer>
-        <StackPanel Margin="24,16,24,24" MaxWidth="860" HorizontalAlignment="Left">
+        <StackPanel MaxWidth="980" HorizontalAlignment="Center" Margin="32,28,32,28">
             <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
                 <StackPanel>
-                    <TextBlock Text="下载路径换盘" FontSize="28" FontWeight="Bold"/>
-                    <TextBlock Text="把「下载」文件夹从系统盘迁到其他盘，浏览器与资源管理器自动跟随" Opacity="0.7" Margin="0,4,0,0"/>
+                    <TextBlock Text="下载路径换盘" FontSize="26" FontWeight="Bold"/>
+                    <TextBlock Text="把「下载」文件夹从系统盘迁到其他盘，浏览器与资源管理器自动跟随" Opacity="0.7" Margin="0,6,0,0" TextWrapping="Wrap"/>
                 </StackPanel>
-                <ui:ProgressRing Width="26" Height="26" HorizontalAlignment="Right" VerticalAlignment="Top"
-                                IsIndeterminate="True" Margin="0,6,0,0"
-                                Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                <ui:ProgressRing Grid.Column="1" Width="22" Height="22" IsIndeterminate="True" VerticalAlignment="Center"
+                                 Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibilityConverter}}"/>
             </Grid>
+
+            <ui:InfoBar Margin="0,14,0,0" IsOpen="{Binding NoticeOpen, Mode=TwoWay}"
+                        Title="{Binding NoticeText}" Severity="Informational" IsClosable="True"/>
 
             <ui:Card Margin="0,16,0,0" Padding="18" Visibility="{Binding Status, Converter={StaticResource NullToVisibilityConverter}}">
                 <StackPanel>
-                    <TextBlock Text="当前状态" FontWeight="SemiBold" FontSize="15" Margin="0,0,0,8"/>
+                    <TextBlock Text="当前状态" FontWeight="SemiBold" FontSize="15" Margin="0,0,0,10"/>
                     <TextBlock>
                         <Run Text="下载文件夹："/><Run Text="{Binding Status.CurrentPath}" FontWeight="SemiBold"/>
                     </TextBlock>
-                    <TextBlock Margin="0,4,0,0" Opacity="0.7" Text="{Binding RedirectStatusText}"/>
+                    <TextBlock Margin="0,6,0,0" Opacity="0.7" Text="{Binding RedirectStatusText}"/>
                     <TextBlock Margin="0,4,0,0" Opacity="0.7" Text="{Binding SourceFileSummary}"/>
                 </StackPanel>
             </ui:Card>
 
             <ui:Card Margin="0,12,0,0" Padding="18">
                 <StackPanel>
-                    <TextBlock Text="选择目标盘" FontWeight="SemiBold" FontSize="15" Margin="0,0,0,8"/>
-                    <TextBlock Text="将创建  〈盘〉:\Downloads  并把下载文件夹指向它" Opacity="0.6" FontSize="12" Margin="0,0,0,8"/>
+                    <TextBlock Text="选择目标盘" FontWeight="SemiBold" FontSize="15" Margin="0,0,0,10"/>
+                    <TextBlock Text="将创建 〈盘〉:\Downloads 并把下载文件夹指向它" Opacity="0.6" FontSize="12" Margin="0,0,0,10"/>
                     <ComboBox ItemsSource="{Binding Drives}" DisplayMemberPath="DisplayText"
-                              SelectedItem="{Binding SelectedDrive}" MinWidth="320" HorizontalAlignment="Left"/>
+                              SelectedItem="{Binding SelectedDrive}" MinWidth="340" HorizontalAlignment="Left"/>
 
-                    <ui:ToggleSwitch Margin="0,12,0,0" IsChecked="{Binding MoveFiles}"
+                    <ui:ToggleSwitch Margin="0,14,0,0" IsChecked="{Binding MoveFiles}"
                                      Content="迁移现有文件（推荐；被占用的文件会跳过并列出清单）"/>
 
-                    <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                    <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
                         <ui:Button Content="开始迁移" Command="{Binding MigrateCommand}"/>
                         <ui:Button Content="还原默认位置" Appearance="Secondary" Margin="10,0,0,0" Command="{Binding RestoreCommand}"
                                    Visibility="{Binding Status.IsRedirected, Converter={StaticResource BoolToVisibilityConverter}}"/>
                     </StackPanel>
 
-                    <ProgressBar Margin="0,14,0,4" Minimum="0" Maximum="{Binding ProgressTotal, FallbackValue=1}"
+                    <ProgressBar Margin="0,16,0,4" Minimum="0" Maximum="{Binding ProgressTotal, FallbackValue=1}"
                                  Value="{Binding ProgressCompleted, Mode=OneWay}"
                                  Visibility="{Binding ProgressTotal, Converter={StaticResource ZeroToCollapsedConverter}}"/>
                     <TextBlock Text="{Binding ProgressFile}" Opacity="0.55" FontSize="12" TextTrimming="CharacterEllipsis"/>
@@ -55,11 +61,11 @@
             <ui:Card Margin="0,12,0,0" Padding="18" Visibility="{Binding Browsers, Converter={StaticResource NullToVisibilityConverter}}">
                 <StackPanel>
                     <TextBlock Text="浏览器下载设置" FontWeight="SemiBold" FontSize="15" Margin="0,0,0,4"/>
-                    <TextBlock Text="跟随系统设置的浏览器迁移后自动生效；已自定义目录的需手动修改" Opacity="0.6" FontSize="12" Margin="0,0,0,8"/>
+                    <TextBlock Text="跟随系统设置的浏览器迁移后自动生效；已自定义目录的需手动修改" Opacity="0.6" FontSize="12" Margin="0,0,0,10"/>
                     <ItemsControl ItemsSource="{Binding Browsers}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Grid Margin="0,0,0,6">
+                                <Grid Margin="0,0,0,8">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="90"/>
                                         <ColumnDefinition Width="*"/>
@@ -78,10 +84,7 @@
                 </StackPanel>
             </ui:Card>
 
-            <ui:InfoBar Margin="0,12,0,0" IsOpen="{Binding NoticeOpen, Mode=TwoWay}"
-                        Title="{Binding NoticeText}" Severity="Informational" IsClosable="True"/>
-
-            <ItemsControl ItemsSource="{Binding LastFailures}" Margin="0,8,0,0">
+            <ItemsControl ItemsSource="{Binding LastFailures}" Margin="0,12,0,0">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding}" Opacity="0.6" FontSize="12" TextWrapping="Wrap"/>

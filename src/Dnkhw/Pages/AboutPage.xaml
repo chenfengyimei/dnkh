@@ -6,9 +6,18 @@
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       mc:Ignorable="d">
     <ui:DynamicScrollViewer>
-        <StackPanel Margin="24,16,24,24" MaxWidth="760" HorizontalAlignment="Left">
-            <TextBlock Text="电脑开荒" FontSize="28" FontWeight="Bold"/>
-            <TextBlock x:Name="VersionText" Opacity="0.7" Margin="0,4,0,0" Text="版本 0.1.0"/>
+        <StackPanel MaxWidth="820" HorizontalAlignment="Center" Margin="32,28,32,28">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="电脑开荒" FontSize="26" FontWeight="Bold"/>
+                    <TextBlock x:Name="VersionText" Opacity="0.7" Margin="0,6,0,0" Text="版本 0.1.0"/>
+                </StackPanel>
+                <ui:Button Grid.Column="1" Content="打开官网" VerticalAlignment="Center" Click="OnOpenSiteClick"/>
+            </Grid>
 
             <ui:Card Margin="0,16,0,0" Padding="18">
                 <StackPanel>
@@ -30,6 +39,14 @@
 
             <ui:Card Margin="0,12,0,0" Padding="18">
                 <StackPanel>
+                    <TextBlock Text="官网" FontWeight="SemiBold" FontSize="15" Margin="0,0,0,8"/>
+                    <TextBlock TextWrapping="Wrap" LineHeight="22" Opacity="0.85"
+                               Text="电脑开荒网：www.cyhaoka.vip —— 软件下载、使用帮助与最新版本"/>
+                </StackPanel>
+            </ui:Card>
+
+            <ui:Card Margin="0,12,0,0" Padding="18">
+                <StackPanel>
                     <TextBlock Text="使用提示" FontWeight="SemiBold" FontSize="15" Margin="0,0,0,8"/>
                     <TextBlock TextWrapping="Wrap" LineHeight="22" Opacity="0.85"
                                Text="· 首次运行可能弹出 SmartScreen 提示：点「更多信息」→「仍要运行」即可（自用未签名程序的正常现象）"/>
@@ -37,15 +54,6 @@
                                Text="· 部分功能（系统级启动项、遥测关闭等）需要管理员权限，页面内提供「以管理员身份重启」按钮"/>
                     <TextBlock TextWrapping="Wrap" LineHeight="22" Opacity="0.85"
                                Text="· 下载路径换盘会先迁移文件、最后才修改系统指向，中断不会造成状态不一致"/>
-                </StackPanel>
-            </ui:Card>
-
-            <ui:Card Margin="0,12,0,0" Padding="18">
-                <StackPanel>
-                    <TextBlock Text="官网" FontWeight="SemiBold" FontSize="15" Margin="0,0,0,8"/>
-                    <TextBlock TextWrapping="Wrap" LineHeight="22" Opacity="0.85"
-                               Text="电脑开荒网：www.cyhaoka.vip —— 软件下载、使用帮助与最新版本"/>
-                    <ui:Button Content="打开官网" Margin="0,10,0,0" HorizontalAlignment="Left" Click="OnOpenSiteClick"/>
                 </StackPanel>
             </ui:Card>
 
