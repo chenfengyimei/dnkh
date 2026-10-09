@@ -1,5 +1,6 @@
 using System.Text;
 using Dnkhw.Core.AppCatalog;
+using Dnkhw.Core.DiskScan;
 using Dnkhw.Core.Downloads;
 using Dnkhw.Core.Formatting;
 using Dnkhw.Core.Optimize;
@@ -9,7 +10,7 @@ using Dnkhw.Core.Wallpaper;
 using Microsoft.Win32;
 
 // 开发探针：真机调用 Dnkhw.Core 各服务，输出结果供人工核对。
-// 用法: dotnet run --project tools/Probe -- [all|overview|checks|wallpaper|downloads|apps|startup|optimize]
+// 用法: dotnet run --project tools/Probe -- [all|overview|checks|wallpaper|downloads|apps|startup|optimize|disk [路径]]
 Console.OutputEncoding = Encoding.UTF8;
 
 var service = new SystemCheckService();
@@ -159,4 +160,28 @@ if (cmd is "all" or "optimize")
     var restored = optimizer.IsApplied("advertisingId");
     Console.WriteLine($"advertisingId 还原初始态: {restored}（应为 {before}）");
     Console.WriteLine(restored == before ? "往返验证通过：系统状态与初始一致" : "警告：往返后状态与初始不一致");
+}
+
+if (cmd is "all" or "disk")
+{
+    Console.WriteLine("=== 磁盘分析 ===");
+    var root = args.Length > 1 ? args[1] : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Web");
+    Console.WriteLine($"扫描: {root}");
+    var scanner = new DiskScanner();
+    var result = await scanner.ScanAsync(root, new Progress<long>(_ => { }));
+    Console.WriteLine($"共 {result.ScannedFiles:N0} 个文件，{SizeFormatter.Format(result.ScannedBytes)}，跳过 {result.SkippedEntries:N0} 项，根目录散文件 {SizeFormatter.Format(result.RootLooseBytes)}");
+    foreach (var f in result.TopFolders.Take(5))
+    {
+        Console.WriteLine($"  目录 {f.Path}  {SizeFormatter.Format(f.Bytes)}  {f.Percent}%  {f.FileCount} 文件");
+    }
+
+    foreach (var f in result.TopFiles.Take(3))
+    {
+        Console.WriteLine($"  文件 {f.Path}  {SizeFormatter.Format(f.Bytes)}");
+    }
+
+    foreach (var j in await scanner.GetJunkLocationsAsync())
+    {
+        Console.WriteLine($"  垃圾位 {j.Name}  {(j.Bytes > 0 ? SizeFormatter.Format(j.Bytes) : "—")}");
+    }
 }
