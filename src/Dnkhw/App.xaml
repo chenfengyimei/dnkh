@@ -12,6 +12,8 @@
             </ResourceDictionary.MergedDictionaries>
             <conv:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
             <conv:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+            <conv:InverseBoolConverter x:Key="InverseBoolConverter"/>
+            <conv:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter"/>
             <conv:ZeroToCollapsedConverter x:Key="ZeroToCollapsedConverter"/>
             <conv:ImagePathConverter x:Key="ImagePathConverter"/>
         </ResourceDictionary>

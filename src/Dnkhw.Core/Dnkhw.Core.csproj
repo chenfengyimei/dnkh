@@ -12,7 +12,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="AppCatalog\apps.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="Dnkhw.Core.Tests" />
+    <InternalsVisibleTo Include="Probe" />
   </ItemGroup>
 
 </Project>

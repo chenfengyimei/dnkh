@@ -1,0 +1,77 @@
+{
+  "categories": [
+    {
+      "id": "browsers",
+      "name": "浏览器",
+      "apps": [
+        { "name": "Microsoft Edge", "description": "系统自带，推荐直接使用", "homepage": "https://www.microsoft.com/edge", "wingetId": null, "recommend": true },
+        { "name": "Google Chrome", "description": "全球主流浏览器", "homepage": "https://www.google.cn/chrome/", "wingetId": "Google.Chrome", "recommend": true },
+        { "name": "Firefox", "description": "火狐浏览器，开源纯净", "homepage": "https://www.firefox.com.cn/", "wingetId": "Mozilla.Firefox" }
+      ]
+    },
+    {
+      "id": "compress",
+      "name": "压缩解压",
+      "apps": [
+        { "name": "7-Zip", "description": "开源老牌压缩工具，纯净无广告", "homepage": "https://www.7-zip.org/", "wingetId": "7zip.7zip", "recommend": true },
+        { "name": "NanaZip", "description": "Win11 风格的 7-Zip 分支，开源", "homepage": "https://github.com/M2Team/NanaZip", "wingetId": "M2Team.NanaZip" }
+      ]
+    },
+    {
+      "id": "media",
+      "name": "影音播放",
+      "apps": [
+        { "name": "VLC", "description": "开源全能播放器，无广告", "homepage": "https://www.videolan.org/", "wingetId": "VideoLAN.VLC", "recommend": true },
+        { "name": "foobar2000", "description": "轻量高音质音乐播放器", "homepage": "https://www.foobar2000.org/", "wingetId": "Peter.Pawlowsky.foobar2000" }
+      ]
+    },
+    {
+      "id": "office",
+      "name": "办公通讯",
+      "apps": [
+        { "name": "LibreOffice", "description": "开源办公套件，无广告的 Office 替代", "homepage": "https://zh-cn.libreoffice.org/", "wingetId": "TheDocumentFoundation.LibreOffice" },
+        { "name": "微信", "description": "官网安装包无捆绑", "homepage": "https://pc.weixin.qq.com/", "wingetId": "Tencent.WeChat", "recommend": true },
+        { "name": "QQ", "description": "官网 NT 版安装包", "homepage": "https://im.qq.com/pcqq/index.shtml", "wingetId": "Tencent.QQ.NT" },
+        { "name": "腾讯会议", "description": "远程会议", "homepage": "https://meeting.tencent.com/", "wingetId": "Tencent.TencentMeeting" },
+        { "name": "钉钉", "description": "企业办公通讯", "homepage": "https://www.dingtalk.com/", "wingetId": "Alibaba.DingTalk" }
+      ]
+    },
+    {
+      "id": "download",
+      "name": "下载传输",
+      "apps": [
+        { "name": "LocalSend", "description": "开源局域网互传，替代微信传文件", "homepage": "https://localsend.org/", "wingetId": "LocalSend.LocalSend", "recommend": true },
+        { "name": "Motrix", "description": "开源全能下载器，界面简洁", "homepage": "https://motrix.app/", "wingetId": "agalwood.Motrix" },
+        { "name": "qBittorrent", "description": "开源 BT/磁力下载", "homepage": "https://www.qbittorrent.org/", "wingetId": "qBittorrent.qBittorrent" }
+      ]
+    },
+    {
+      "id": "tools",
+      "name": "系统工具",
+      "apps": [
+        { "name": "Everything", "description": "极速文件搜索，极简纯净", "homepage": "https://www.voidtools.com/zh-cn/", "wingetId": "voidtools.Everything", "recommend": true },
+        { "name": "PowerToys", "description": "微软官方效率工具包（窗口管理/取色器等）", "homepage": "https://learn.microsoft.com/windows/powertoys/", "wingetId": "Microsoft.PowerToys", "recommend": true },
+        { "name": "Snipaste", "description": "截图 + 贴图利器", "homepage": "https://zh.snipaste.com/", "wingetId": "Snipaste.Snipaste" },
+        { "name": "Geek Uninstaller", "description": "轻量级卸载工具，可清残留", "homepage": "https://geekuninstaller.com/", "wingetId": "GeekUninstaller.GeekUninstaller" }
+      ]
+    },
+    {
+      "id": "dev",
+      "name": "开发工具",
+      "apps": [
+        { "name": "VS Code", "description": "微软开源代码编辑器", "homepage": "https://code.visualstudio.com/", "wingetId": "Microsoft.VisualStudioCode", "recommend": true },
+        { "name": "Git", "description": "版本控制系统", "homepage": "https://git-scm.com/", "wingetId": "Git.Git" },
+        { "name": "Windows Terminal", "description": "微软官方终端，Win11 自带", "homepage": "https://aka.ms/terminal", "wingetId": "Microsoft.WindowsTerminal" },
+        { "name": "PowerShell 7", "description": "微软官方跨平台 Shell", "homepage": "https://aka.ms/powershell", "wingetId": "Microsoft.PowerShell" }
+      ]
+    },
+    {
+      "id": "game",
+      "name": "游戏平台",
+      "apps": [
+        { "name": "Steam", "description": "全球最大 PC 游戏平台", "homepage": "https://store.steampowered.com/", "wingetId": "Valve.Steam" },
+        { "name": "Watt Toolkit", "description": "原 Steam++，开源加速/管理工具", "homepage": "https://steampp.net/", "wingetId": null }
+      ]
+    }
+  ]
+}

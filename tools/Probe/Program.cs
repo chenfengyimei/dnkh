@@ -1,11 +1,12 @@
 using System.Text;
+using Dnkhw.Core.AppCatalog;
 using Dnkhw.Core.Downloads;
 using Dnkhw.Core.Formatting;
 using Dnkhw.Core.SystemCheck;
 using Dnkhw.Core.Wallpaper;
 
 // 开发探针：真机调用 Dnkhw.Core 各服务，输出结果供人工核对。
-// 用法: dotnet run --project tools/Probe -- [all|overview|checks|wallpaper|downloads]
+// 用法: dotnet run --project tools/Probe -- [all|overview|checks|wallpaper|downloads|apps]
 Console.OutputEncoding = Encoding.UTF8;
 
 var service = new SystemCheckService();
@@ -79,4 +80,29 @@ if (cmd is "all" or "downloads")
     {
         Console.WriteLine($"  {b.Name}: 安装={b.IsInstalled}，跟随系统={b.UsesSystemDefault}" + (b.CustomDir is null ? string.Empty : $"，自定义={b.CustomDir}"));
     }
+}
+
+if (cmd is "all" or "apps")
+{
+    Console.WriteLine("=== APP 推荐 ===");
+    var winget = new WingetInstaller();
+    Console.WriteLine($"winget 可用: {winget.IsWingetAvailable()}");
+    var data = AppCatalogLoader.LoadDefault();
+    var installed = InstallDetector.GetInstalledDisplayNames();
+    foreach (var c in data.Categories)
+    {
+        foreach (var a in c.Apps)
+        {
+            Console.WriteLine($"[{(InstallDetector.IsInstalled(a.Name, installed) ? "已装" : "  ")}] {a.Name,-18} ({a.WingetId ?? "官网直链"})");
+        }
+    }
+
+    // 无副作用验证包解析：winget show 只查询不安装
+    var show = await winget.RunAsync("show --id 7zip.7zip -e");
+    Console.WriteLine($"winget show 7-Zip: exit={show.ExitCode}，首行={show.Output.Split('\r', '\n').FirstOrDefault(l => l.Trim().Length > 0)}");
+
+    // 失败路径验证：不存在的包应返回非零退出码与可读错误
+    var fail = await winget.RunAsync("install --id DNKHW.DoesNotExist -e --silent --accept-package-agreements --accept-source-agreements");
+    Console.WriteLine($"winget 失败路径: exit={fail.ExitCode}");
+    Console.WriteLine("  " + fail.Output.Split('\r', '\n').FirstOrDefault(l => l.Trim().Length > 0));
 }

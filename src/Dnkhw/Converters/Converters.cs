@@ -25,6 +25,26 @@ public sealed class BoolToVisibilityConverter : IValueConverter
         => value is Visibility.Visible;
 }
 
+/// <summary>布尔取反（bool→bool）。</summary>
+public sealed class InverseBoolConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is not true;
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is not true;
+}
+
+/// <summary>false 显示、true 折叠（用于「仅在功能缺失时出现」的元素）。</summary>
+public sealed class InverseBoolToVisibilityConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is true ? Visibility.Collapsed : Visibility.Visible;
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => Binding.DoNothing;
+}
+
 /// <summary>数值为 null、0 或空集合时折叠（用于进度条等仅在有数据时显示的元素）。</summary>
 public sealed class ZeroToCollapsedConverter : IValueConverter
 {
