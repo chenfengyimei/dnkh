@@ -3,9 +3,111 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-      mc:Ignorable="d">
-    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-        <TextBlock Text="开荒检查" FontSize="26" FontWeight="SemiBold" HorizontalAlignment="Center" />
-        <TextBlock Text="本模块将在 M1 实现" Opacity="0.6" HorizontalAlignment="Center" Margin="0,6,0,0" />
-    </StackPanel>
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      xmlns:core="clr-namespace:Dnkhw.Core.SystemCheck;assembly=Dnkhw.Core"
+      mc:Ignorable="d"
+      Loaded="OnLoaded">
+    <Page.Resources>
+        <DataTemplate x:Key="CheckItemTemplate" DataType="{x:Type core:CheckItem}">
+            <ui:Card Margin="0,0,0,8">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <ui:SymbolIcon x:Name="StatusIcon" FontSize="22" VerticalAlignment="Top" Margin="0,2,0,0"/>
+                    <StackPanel Grid.Column="1" Margin="14,0,0,0">
+                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="14"/>
+                        <TextBlock Text="{Binding Detail}" TextWrapping="Wrap" Opacity="0.75" Margin="0,2,0,0"/>
+                        <TextBlock Text="{Binding Suggestion}" TextWrapping="Wrap" Opacity="0.55" Margin="0,2,0,0"
+                                   Visibility="{Binding Suggestion, Converter={StaticResource NullToVisibilityConverter}}"/>
+                    </StackPanel>
+                    <ui:Button Grid.Column="2" Content="去处理" Appearance="Secondary" VerticalAlignment="Center"
+                               Command="{Binding DataContext.GoFixCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                               CommandParameter="{Binding FixPage}"
+                               Visibility="{Binding FixPage, Converter={StaticResource NullToVisibilityConverter}}"/>
+                </Grid>
+            </ui:Card>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding Status}" Value="Ok">
+                    <Setter TargetName="StatusIcon" Property="Symbol" Value="CheckmarkCircle24"/>
+                    <Setter TargetName="StatusIcon" Property="Foreground" Value="#0F7B0F"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Status}" Value="Warn">
+                    <Setter TargetName="StatusIcon" Property="Symbol" Value="Warning24"/>
+                    <Setter TargetName="StatusIcon" Property="Foreground" Value="#9D5C00"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Status}" Value="Info">
+                    <Setter TargetName="StatusIcon" Property="Symbol" Value="Info24"/>
+                    <Setter TargetName="StatusIcon" Property="Foreground" Value="#616161"/>
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+    </Page.Resources>
+
+    <ui:DynamicScrollViewer>
+        <StackPanel Margin="24,16,24,24" MaxWidth="860" HorizontalAlignment="Left">
+            <Grid>
+                <StackPanel>
+                    <TextBlock Text="开荒检查" FontSize="28" FontWeight="Bold"/>
+                    <TextBlock Text="一键体检：系统信息、激活、安全防护、驱动、更新与磁盘空间" Opacity="0.7" Margin="0,4,0,0"/>
+                </StackPanel>
+                <ui:ProgressRing Width="26" Height="26" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                IsIndeterminate="True" Margin="0,6,0,0"
+                                Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibilityConverter}}"/>
+            </Grid>
+
+            <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+                <ui:Button Content="开始检查" Command="{Binding CheckCommand}"/>
+                <ui:Button Content="导出报告" Margin="10,0,0,0" Appearance="Secondary" Command="{Binding ExportCommand}"/>
+            </StackPanel>
+
+            <ui:InfoBar Margin="0,10,0,0" IsOpen="{Binding NoticeOpen, Mode=TwoWay}"
+                        Title="{Binding NoticeText}" Severity="Informational" IsClosable="True"/>
+
+            <ui:Card Margin="0,12,0,0" Padding="18" Visibility="{Binding Fields, Converter={StaticResource NullToVisibilityConverter}}">
+                <StackPanel>
+                    <TextBlock Text="系统概览" FontWeight="SemiBold" FontSize="15" Margin="0,0,0,10"/>
+                    <ItemsControl ItemsSource="{Binding Fields}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="2"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="0,0,16,8">
+                                    <TextBlock Text="{Binding Label}" Opacity="0.55" FontSize="12"/>
+                                    <TextBlock Text="{Binding Value}" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <WrapPanel Margin="0,6,0,0">
+                        <ItemsControl ItemsSource="{Binding Disks}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <ui:Card Padding="12,6" Margin="0,0,8,6">
+                                        <TextBlock VerticalAlignment="Center" FontSize="12">
+                                            <Run Text="{Binding Root}" FontWeight="SemiBold"/><Run Text=" "/><Run Text="{Binding Label}"/><Run Text="　共 "/><Run Text="{Binding Total}"/><Run Text="，剩余 "/><Run Text="{Binding Free}"/>
+                                        </TextBlock>
+                                    </ui:Card>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </WrapPanel>
+                </StackPanel>
+            </ui:Card>
+
+            <TextBlock Text="检查结果" FontWeight="SemiBold" FontSize="15" Margin="0,20,0,8"/>
+            <ItemsControl ItemsSource="{Binding Results}" ItemTemplate="{StaticResource CheckItemTemplate}"/>
+        </StackPanel>
+    </ui:DynamicScrollViewer>
 </Page>

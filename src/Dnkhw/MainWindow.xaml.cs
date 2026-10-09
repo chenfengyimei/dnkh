@@ -17,6 +17,7 @@ public partial class MainWindow : FluentWindow
 
     private void RootNavigation_Loaded(object sender, RoutedEventArgs e)
     {
+        AppNavigation.Initialize(RootNavigation);
         RootNavigation.SetPageProviderService(new PageProviderService());
         RootNavigation.Navigate(typeof(Pages.CheckPage));
     }
