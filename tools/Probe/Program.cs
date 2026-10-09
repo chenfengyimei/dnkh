@@ -1,9 +1,10 @@
 using System.Text;
 using Dnkhw.Core.Formatting;
 using Dnkhw.Core.SystemCheck;
+using Dnkhw.Core.Wallpaper;
 
 // 开发探针：真机调用 Dnkhw.Core 各服务，输出结果供人工核对。
-// 用法: dotnet run --project tools/Probe -- [all|overview|checks]
+// 用法: dotnet run --project tools/Probe -- [all|overview|checks|wallpaper]
 Console.OutputEncoding = Encoding.UTF8;
 
 var service = new SystemCheckService();
@@ -32,5 +33,31 @@ if (cmd is "all" or "checks")
     {
         var suffix = item.Suggestion is null ? string.Empty : $"　→ {item.Suggestion}";
         Console.WriteLine($"[{item.Status,4}] {item.Title}: {item.Detail}{suffix}");
+    }
+}
+
+if (cmd is "all" or "wallpaper")
+{
+    Console.WriteLine("=== 壁纸 ===");
+    var bing = new BingWallpaperService();
+    try
+    {
+        foreach (var w in await bing.GetRecentAsync(8))
+        {
+            Console.WriteLine($"{w.EndDate} {w.Title}  文件={w.FullFileName}");
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Bing 接口失败: {ex.Message}");
+    }
+
+    var current = WallpaperService.GetCurrent();
+    Console.WriteLine($"当前壁纸: {current}");
+    if (File.Exists(current))
+    {
+        // 安全验证：用同一张图重走 SPI 设置流程（视觉上无变化）
+        WallpaperService.Set(current, WallpaperFit.Fill);
+        Console.WriteLine("SPI_SETDESKWALLPAPER 重应用当前壁纸成功");
     }
 }
