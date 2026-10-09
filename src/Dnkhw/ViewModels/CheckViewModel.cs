@@ -59,10 +59,15 @@ public sealed partial class CheckViewModel : ObservableObject
             Fields =
             [
                 new OverviewField("系统", $"{overview.OsName} {overview.Edition} {overview.DisplayVersion}（{overview.Build}）"),
+                new OverviewField("电脑类型", overview.ComputerType),
+                new OverviewField("设备型号", overview.SystemModel),
+                new OverviewField("主板", overview.BaseBoard),
+                new OverviewField("BIOS", overview.BiosInfo),
                 new OverviewField("CPU", overview.Cpu),
                 new OverviewField("内存", SizeFormatter.Format(overview.RamBytes)),
                 new OverviewField("显卡", overview.Gpu),
                 new OverviewField("分辨率", overview.Resolution),
+                new OverviewField("系统安装日期", overview.InstallDate),
                 new OverviewField("主机名", overview.HostName),
                 new OverviewField("开机时长", overview.Uptime),
             ];

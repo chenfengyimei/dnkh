@@ -21,6 +21,9 @@ if (cmd is "all" or "overview")
     Console.WriteLine("=== 系统概览 ===");
     var o = await service.GetOverviewAsync();
     Console.WriteLine($"系统: {o.OsName} {o.Edition} {o.DisplayVersion}（构建 {o.Build}）");
+    Console.WriteLine($"类型: {o.ComputerType}，型号: {o.SystemModel}");
+    Console.WriteLine($"主板: {o.BaseBoard}，BIOS: {o.BiosInfo}");
+    Console.WriteLine($"安装日期: {o.InstallDate}");
     Console.WriteLine($"CPU: {o.Cpu}");
     Console.WriteLine($"内存: {SizeFormatter.Format(o.RamBytes)}");
     Console.WriteLine($"显卡: {o.Gpu}");

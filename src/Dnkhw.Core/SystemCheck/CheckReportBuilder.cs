@@ -15,6 +15,8 @@ public static class CheckReportBuilder
         sb.AppendLine();
         sb.AppendLine($"- 生成时间：{DateTime.Now:yyyy-MM-dd HH:mm:ss}");
         sb.AppendLine($"- 系统：{overview.OsName} {overview.Edition} {overview.DisplayVersion}（构建 {overview.Build}）");
+        sb.AppendLine($"- 设备：{overview.SystemModel}（{overview.ComputerType}）");
+        sb.AppendLine($"- 主板 / BIOS：{overview.BaseBoard} / {overview.BiosInfo}");
         sb.AppendLine($"- CPU：{overview.Cpu}");
         sb.AppendLine($"- 内存：{SizeFormatter.Format(overview.RamBytes)}");
         sb.AppendLine($"- 显卡：{overview.Gpu}");

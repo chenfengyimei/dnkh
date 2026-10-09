@@ -24,6 +24,13 @@
             <ui:InfoBar Margin="0,14,0,0" IsOpen="{Binding NoticeOpen, Mode=TwoWay}"
                         Title="{Binding NoticeText}" Severity="Informational" IsClosable="True"/>
 
+            <StackPanel Orientation="Horizontal" Margin="0,16,0,0"
+                        Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibilityConverter}}">
+                <ui:ProgressRing Width="20" Height="20" IsIndeterminate="True"/>
+                <TextBlock Text="正在读取下载文件夹与系统信息…（文件较多时可能需要数十秒）" Margin="10,0,0,0"
+                           Opacity="0.7" VerticalAlignment="Center"/>
+            </StackPanel>
+
             <ui:Card Margin="0,16,0,0" Padding="18" Visibility="{Binding Status, Converter={StaticResource NullToVisibilityConverter}}">
                 <StackPanel>
                     <TextBlock Text="当前状态" FontWeight="SemiBold" FontSize="15" Margin="0,0,0,10"/>

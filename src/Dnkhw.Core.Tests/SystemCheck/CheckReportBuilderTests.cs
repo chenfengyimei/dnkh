@@ -6,8 +6,9 @@ public class CheckReportBuilderTests
 {
     private static readonly SystemOverview Overview = new(
         "Windows 11", "专业版", "24H2", "26100.1742",
+        "笔记本", "ASUS Test Model", "Test Board", "Test BIOS 1.0",
         "Test CPU（8 核 16 线程）", "Test GPU", 34359738368, "1920 × 1080",
-        "TEST-PC", "2 天 3 小时",
+        "TEST-PC", "2 天 3 小时", "2024-05-01",
         [new DiskInfo(@"C:\", "系统盘", 512000000000, 234000000000)]);
 
     [Fact]

@@ -23,9 +23,12 @@ public sealed class SystemCheckService
     {
         var cpuTask = TryWmiAsync("SELECT Name, NumberOfCores, NumberOfLogicalProcessors FROM Win32_Processor");
         var gpuTask = TryWmiAsync("SELECT Name, CurrentHorizontalResolution, CurrentVerticalResolution FROM Win32_VideoController");
-        var osTask = TryWmiAsync("SELECT TotalVisibleMemorySize, LastBootUpTime FROM Win32_OperatingSystem");
+        var osTask = TryWmiAsync("SELECT TotalVisibleMemorySize, LastBootUpTime, InstallDate FROM Win32_OperatingSystem");
+        var boardTask = TryWmiAsync("SELECT Manufacturer, Product FROM Win32_BaseBoard");
+        var biosTask = TryWmiAsync("SELECT Manufacturer, SMBIOSBIOSVersion FROM Win32_BIOS");
+        var csTask = TryWmiAsync("SELECT Manufacturer, Model, PCSystemType FROM Win32_ComputerSystem");
 
-        var all = await Task.WhenAll(cpuTask, gpuTask, osTask).ConfigureAwait(false);
+        var all = await Task.WhenAll(cpuTask, gpuTask, osTask, boardTask, biosTask, csTask).ConfigureAwait(false);
         var (osName, edition, displayVersion, build) = GetOsInfo();
 
         var cpuRow = all[0].FirstOrDefault();
@@ -41,7 +44,14 @@ public sealed class SystemCheckService
             .Where(n => !string.IsNullOrWhiteSpace(n))
             .Distinct()
             .ToList();
-        var gpu = gpuNames.Count > 0 ? string.Join(" + ", gpuNames) : "未知";
+
+        // 过滤远程办公 / 模拟器 / 串流等虚拟显卡，只保留物理 GPU；全部被过滤时回退原列表
+        var virtualMarkers = new[] { "Virtual", "IddDriver", "Idd", "MuMu", "GameViewer", "Oray" };
+        var physicalGpus = gpuNames
+            .Where(n => !virtualMarkers.Any(m => n.Contains(m, StringComparison.OrdinalIgnoreCase)))
+            .ToList();
+        var displayGpus = physicalGpus.Count > 0 ? physicalGpus : gpuNames;
+        var gpu = displayGpus.Count > 0 ? string.Join(" + ", displayGpus) : "未知";
 
         var resRow = all[1].FirstOrDefault(r => r.GetValueOrDefault("CurrentHorizontalResolution") is not null);
         var resolution = resRow is not null
@@ -66,6 +76,38 @@ public sealed class SystemCheckService
             // 忽略开机时长解析失败
         }
 
+        var installDate = "未知";
+        try
+        {
+            if (osRow?.GetValueOrDefault("InstallDate")?.ToString() is { Length: > 0 } install)
+            {
+                installDate = ManagementDateTimeConverter.ToDateTime(install).ToString("yyyy-MM-dd");
+            }
+        }
+        catch
+        {
+            // 忽略安装日期解析失败
+        }
+
+        // 电脑类型：Win32_ComputerSystem.PCSystemType 1=台式机 2=笔记本
+        var csRow = all[5].FirstOrDefault();
+        var computerType = "未知";
+        if (csRow?.GetValueOrDefault("PCSystemType") is not null)
+        {
+            computerType = Convert.ToInt32(csRow.GetValueOrDefault("PCSystemType")) switch
+            {
+                2 => "笔记本",
+                1 => "台式机",
+                _ => "未知",
+            };
+        }
+
+        var systemModel = JoinParts(csRow?.GetValueOrDefault("Manufacturer")?.ToString(), csRow?.GetValueOrDefault("Model")?.ToString());
+        var baseBoardRow = all[3].FirstOrDefault();
+        var baseBoard = JoinParts(baseBoardRow?.GetValueOrDefault("Manufacturer")?.ToString(), baseBoardRow?.GetValueOrDefault("Product")?.ToString());
+        var biosRow = all[4].FirstOrDefault();
+        var biosInfo = biosRow is null ? "未知" : JoinParts(biosRow.GetValueOrDefault("Manufacturer")?.ToString(), biosRow.GetValueOrDefault("SMBIOSBIOSVersion")?.ToString());
+
         var disks = new List<DiskInfo>();
         try
         {
@@ -88,13 +130,26 @@ public sealed class SystemCheckService
             Edition: edition,
             DisplayVersion: displayVersion,
             Build: build,
+            ComputerType: computerType,
+            SystemModel: systemModel,
+            BaseBoard: baseBoard,
+            BiosInfo: biosInfo,
             Cpu: cpu,
             Gpu: gpu,
             RamBytes: ramBytes,
             Resolution: resolution,
             HostName: Environment.MachineName,
             Uptime: uptime,
+            InstallDate: installDate,
             Disks: disks);
+    }
+
+    private static string JoinParts(string? a, string? b)
+    {
+        var parts = new[] { a?.Trim(), b?.Trim() }
+            .Where(p => !string.IsNullOrWhiteSpace(p))
+            .ToList();
+        return parts.Count > 0 ? string.Join(" ", parts) : "未知";
     }
 
     private static (string Name, string Edition, string DisplayVersion, string Build) GetOsInfo()
