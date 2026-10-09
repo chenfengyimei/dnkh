@@ -25,22 +25,62 @@ public sealed class KnownFoldersMigrationService
     /// <summary>可迁移的六个已知文件夹。</summary>
     public static IReadOnlyList<KnownFolderDef> Folders =
     [
-        new KnownFolderDef("downloads", "下载", KnownFolders.DownloadsId, "Downloads"),
-        new KnownFolderDef("documents", "文档", KnownFolders.DocumentsId, "Documents"),
-        new KnownFolderDef("desktop", "桌面", KnownFolders.DesktopId, "Desktop"),
-        new KnownFolderDef("pictures", "图片", KnownFolders.PicturesId, "Pictures"),
-        new KnownFolderDef("music", "音乐", KnownFolders.MusicId, "Music"),
-        new KnownFolderDef("videos", "视频", KnownFolders.VideosId, "Videos"),
+        new KnownFolderDef("downloads", "下载", KnownFolders.DownloadsId, "Downloads",
+            "{374DE290-123F-4565-9164-39C4925E467B}", null),
+        new KnownFolderDef("documents", "文档", KnownFolders.DocumentsId, "Documents",
+            "{F42EE2D3-909F-4907-8871-4C22FC0BF756}", "Personal"),
+        new KnownFolderDef("desktop", "桌面", KnownFolders.DesktopId, "Desktop",
+            "Desktop", null),
+        new KnownFolderDef("pictures", "图片", KnownFolders.PicturesId, "Pictures",
+            "{0DDD015D-B06C-45D5-8C4C-F59713854639}", "My Pictures"),
+        new KnownFolderDef("music", "音乐", KnownFolders.MusicId, "Music",
+            "{A0C69A99-21C8-4671-8703-7934162FCF1D}", "My Music"),
+        new KnownFolderDef("videos", "视频", KnownFolders.VideosId, "Videos",
+            "{35286A68-3C57-41A1-BBB1-0EAE73D76C95}", "My Video"),
     ];
 
     public static KnownFolderDef FindDef(string key)
         => Folders.FirstOrDefault(f => f.Key == key)
             ?? throw new ArgumentOutOfRangeException(nameof(key), $"未知文件夹：{key}");
 
+    /// <summary>
+    /// 读取 User Shell Folders 中 Explorer 实际使用的指向（真相源）：
+    /// GUID 值名优先（现代重定向，含 OneDrive 接管），旧版名称值兜底；均无值返回空串。
+    /// </summary>
+    private static string ReadRegistryValue(KnownFolderDef def)
+    {
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(UserShellFoldersKey);
+            foreach (var name in new[] { def.PrimaryValueName, def.FallbackValueName })
+            {
+                if (name is null)
+                {
+                    continue;
+                }
+
+                if (key?.GetValue(name) is string value && !string.IsNullOrWhiteSpace(value))
+                {
+                    return value;
+                }
+            }
+        }
+        catch
+        {
+            // 读取失败回退 SHGetKnownFolderPath
+        }
+
+        return string.Empty;
+    }
+
     /// <summary>读取单个文件夹状态：当前路径、是否重定向、内容统计、OneDrive 接管检测、可还原记录。</summary>
     public KnownFolderStatus GetStatus(KnownFolderDef def)
     {
-        var current = KnownFolders.GetKnownFolderPath(def.Id);
+        // 真相源优先：User Shell Folders 的 GUID/旧名值（Explorer 实际行为）；
+        // 无注册表值时用 SHGetKnownFolderPath 标准解析（含缺失文件夹创建）
+        var registryValue = ReadRegistryValue(def);
+        var shellPath = KnownFolders.GetKnownFolderPath(def.Id);
+        var current = !string.IsNullOrWhiteSpace(registryValue) ? registryValue : shellPath;
         var defaultPath = def.DefaultPath;
         var isRedirected = !string.Equals(current, defaultPath, StringComparison.OrdinalIgnoreCase);
         var (count, bytes) = CountFiles(current);
@@ -66,7 +106,8 @@ public sealed class KnownFoldersMigrationService
         IProgress<MigrationProgress>? progress,
         CancellationToken ct = default)
     {
-        var current = KnownFolders.GetKnownFolderPath(def.Id);
+        var registryValue = ReadRegistryValue(def);
+        var current = !string.IsNullOrWhiteSpace(registryValue) ? registryValue : KnownFolders.GetKnownFolderPath(def.Id);
         var target = Path.Combine(targetRoot, def.DefaultSubFolder);
 
         if (string.Equals(Path.GetPathRoot(current), Path.GetPathRoot(targetRoot), StringComparison.OrdinalIgnoreCase))
@@ -85,21 +126,21 @@ public sealed class KnownFoldersMigrationService
         }
 
         // 文件步骤结束后再改注册表（见类注释的顺序保证）
-        ApplyRegistryPath(def.Id, target);
+        ApplyRegistryPath(def, target);
         SaveState(def.Key, previousPath);
         KnownFolders.NotifyFolderChanged(previousPath, target);
 
         return new MigrationResult(previousPath, target, moved, moveFiles, failures);
     }
 
-    /// <summary>还原到迁移前的路径；无记录时还原系统默认位置。</summary>
+    /// <summary>还原到迁移前的路径；无记录时还原系统默认位置（写 %USERPROFILE% 形式的标准默认值）。</summary>
     public void Restore(KnownFolderDef def)
     {
         var restoreTo = ReadState(def.Key) ?? def.DefaultPath;
         Directory.CreateDirectory(restoreTo);
 
         var current = KnownFolders.GetKnownFolderPath(def.Id);
-        ApplyRegistryPath(def.Id, restoreTo);
+        ApplyRegistryPath(def, restoreTo);
         ClearState(def.Key);
         KnownFolders.NotifyFolderChanged(current, restoreTo);
     }
@@ -247,11 +288,12 @@ public sealed class KnownFoldersMigrationService
         return (count, bytes);
     }
 
-    private static void ApplyRegistryPath(Guid knownFolderId, string path)
+    /// <summary>写入 Explorer 实际使用的值名（现代 GUID 优先；桌面为旧名 Desktop）。</summary>
+    private static void ApplyRegistryPath(KnownFolderDef def, string path)
     {
         using var key = Registry.CurrentUser.OpenSubKey(UserShellFoldersKey, writable: true)
             ?? throw new InvalidOperationException("无法打开注册表 User Shell Folders");
-        key.SetValue($"{{{knownFolderId}}}", path, RegistryValueKind.ExpandString);
+        key.SetValue(def.PrimaryValueName, path, RegistryValueKind.ExpandString);
     }
 
     private sealed class MigrationStateMap
