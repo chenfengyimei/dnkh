@@ -1,0 +1,66 @@
+<Window x:Class="Dnkhw.SplashWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        Title="电脑开荒" Width="640" Height="440"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        WindowStartupLocation="CenterScreen" ResizeMode="NoResize"
+        ShowInTaskbar="True"
+        Loaded="Window_Loaded">
+    <Border Margin="24">
+        <Border x:Name="RootBorder" CornerRadius="18">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="#0B1020" Offset="0"/>
+                    <GradientStop Color="#16305F" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.Background>
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="24" ShadowDepth="0" Color="#000000" Opacity="0.55"/>
+            </Border.Effect>
+            <Grid>
+                <!-- 阶段一：初始化加载 -->
+                <StackPanel x:Name="LoadingPanel" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <ui:SymbolIcon Symbol="Rocket24" FontSize="46" Foreground="#4FA3FF" HorizontalAlignment="Center"/>
+                    <TextBlock Text="电脑开荒 · 首次初始化" Foreground="#E8EFFA" FontSize="18" FontWeight="SemiBold"
+                               HorizontalAlignment="Center" Margin="0,18,0,0"/>
+                    <ProgressBar x:Name="InitProgress" Width="320" Height="6" Minimum="0" Maximum="100"
+                                 Margin="0,28,0,0" Foreground="#4FA3FF"/>
+                    <TextBlock x:Name="StatusText" Text="正在启动…" Foreground="#9FB6D4" FontSize="13"
+                               HorizontalAlignment="Center" Margin="0,10,0,0"/>
+                </StackPanel>
+
+                <!-- 阶段二：标题弹出 -->
+                <StackPanel x:Name="LogoPanel" HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Visibility="Collapsed" Opacity="0">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBlock x:Name="Char1" Text="电" FontSize="92" FontWeight="Bold" Foreground="White" Opacity="0" Margin="0,0,12,0">
+                            <TextBlock.RenderTransform>
+                                <ScaleTransform x:Name="Char1Scale" ScaleX="0.2" ScaleY="0.2"/>
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+                        <TextBlock x:Name="Char2" Text="脑" FontSize="92" FontWeight="Bold" Foreground="White" Opacity="0" Margin="0,0,12,0">
+                            <TextBlock.RenderTransform>
+                                <ScaleTransform x:Name="Char2Scale" ScaleX="0.2" ScaleY="0.2"/>
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+                        <TextBlock x:Name="Char3" Text="开" FontSize="92" FontWeight="Bold" Foreground="White" Opacity="0" Margin="0,0,12,0">
+                            <TextBlock.RenderTransform>
+                                <ScaleTransform x:Name="Char3Scale" ScaleX="0.2" ScaleY="0.2"/>
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+                        <TextBlock x:Name="Char4" Text="荒" FontSize="92" FontWeight="Bold" Foreground="White" Opacity="0">
+                            <TextBlock.RenderTransform>
+                                <ScaleTransform x:Name="Char4Scale" ScaleX="0.2" ScaleY="0.2"/>
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+                    </StackPanel>
+                    <Border x:Name="AccentBar" Background="#4FA3FF" CornerRadius="3" Width="224" Height="6"
+                            HorizontalAlignment="Center" Margin="0,22,0,0" Opacity="0"/>
+                    <TextBlock x:Name="SubtitleText" Text="纯净无广告的 Windows 开荒助手"
+                               Foreground="#BFD4EE" FontSize="20" HorizontalAlignment="Center" Margin="0,16,0,0" Opacity="0"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Border>
+</Window>
