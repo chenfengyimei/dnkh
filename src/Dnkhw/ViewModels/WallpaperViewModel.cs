@@ -26,6 +26,11 @@ public sealed partial class WallpaperViewModel : ObservableObject
     private readonly WingetInstaller _winget = new();
 
     private const string TranslucentTbWingetId = "CharlesMilette.TranslucentTB";
+    private const string SteamWingetId = "Valve.Steam";
+
+    /// <summary>Wallpaper Engine（壁纸引擎）的 Steam 商店页，steam: 协议缺失时回退 Web 地址。</summary>
+    private const string WallpaperEngineStoreUrl = "steam://store/431960";
+    private const string WallpaperEngineWebUrl = "https://store.steampowered.com/app/431960/Wallpaper_Engine/";
 
     public IReadOnlyList<FitOption> FitOptions { get; } =
     [
@@ -60,13 +65,16 @@ public sealed partial class WallpaperViewModel : ObservableObject
     [ObservableProperty]
     private bool _translucentInstalled;
 
+    [ObservableProperty]
+    private bool _steamInstalled;
+
     public WallpaperViewModel()
     {
         _selectedFit = FitOptions[0];
         LoadTweakStates();
     }
 
-    /// <summary>读取桌面美化开关的当前系统状态（图标隐藏 / 任务栏自动隐藏 / TranslucentTB 安装情况）。</summary>
+    /// <summary>读取桌面美化的当前系统状态（图标隐藏 / 任务栏自动隐藏 / TranslucentTB、Steam 安装情况）。</summary>
     private void LoadTweakStates()
     {
         try
@@ -96,6 +104,17 @@ public sealed partial class WallpaperViewModel : ObservableObject
         catch
         {
             TranslucentInstalled = false;
+        }
+
+        try
+        {
+            SteamInstalled = InstallDetector.IsInstalled(
+                "Steam",
+                InstallDetector.GetInstalledDisplayNames());
+        }
+        catch
+        {
+            SteamInstalled = false;
         }
     }
 
@@ -172,16 +191,83 @@ public sealed partial class WallpaperViewModel : ObservableObject
         }
     }
 
+    /// <summary>打开 Wallpaper Engine（壁纸引擎）商店页：本机有 Steam 则直开客户端，否则回退浏览器 Web 页。</summary>
+    [RelayCommand]
+    private void OpenWallpaperEngineStore()
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(WallpaperEngineStoreUrl) { UseShellExecute = true });
+            NoticeText = "已打开 Steam 商店页，购买安装壁纸引擎后即可使用动态壁纸";
+            NoticeOpen = true;
+        }
+        catch
+        {
+            // 未装 Steam（无 steam: 协议处理器）等场景回退浏览器打开
+            OpenExternal(WallpaperEngineWebUrl, "Steam 商店页");
+        }
+    }
+
+    /// <summary>一键安装 Steam（winget 静默安装，供未装 Steam 的用户直达壁纸引擎）。</summary>
+    [RelayCommand]
+    private async Task InstallSteamAsync()
+    {
+        if (IsBusy || SteamInstalled)
+        {
+            return;
+        }
+
+        IsBusy = true;
+        NoticeOpen = false;
+        try
+        {
+            var result = await Task.Run(() => _winget.InstallAsync(SteamWingetId));
+            if (result.Success)
+            {
+                SteamInstalled = true;
+                NoticeText = "Steam 安装完成：登录账号后到商店页购买壁纸引擎即可";
+                NoticeOpen = true;
+            }
+            else
+            {
+                NoticeText = $"Steam 安装失败：{FirstMeaningfulLine(result.Output)}（可点「打开 Steam 商店页」用浏览器下载安装器）";
+                NoticeOpen = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            NoticeText = $"Steam 安装失败：{ex.Message}（可点「打开 Steam 商店页」用浏览器下载安装器）";
+            NoticeOpen = true;
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
     [RelayCommand]
     private void OpenRocketDockSite()
     {
-        Process.Start(new ProcessStartInfo("https://rocketdock.com/") { UseShellExecute = true });
+        OpenExternal("https://rocketdock.com/", "RocketDock 官网");
     }
 
     [RelayCommand]
     private void OpenStoreDockSearch()
     {
-        Process.Start(new ProcessStartInfo("ms-windows-store://search/?query=MyDockFinder") { UseShellExecute = true });
+        OpenExternal("ms-windows-store://search/?query=MyDockFinder", "Microsoft Store");
+    }
+
+    private void OpenExternal(string target, string displayName)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(target) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            NoticeText = $"无法打开 {displayName}：{ex.Message}";
+            NoticeOpen = true;
+        }
     }
 
     private static string FirstMeaningfulLine(string output)
@@ -261,6 +347,11 @@ public sealed partial class WallpaperViewModel : ObservableObject
             }
 
             Items = items;
+        }
+        catch (Exception ex)
+        {
+            NoticeText = $"加载壁纸失败：{ex.Message}";
+            NoticeOpen = true;
         }
         finally
         {
