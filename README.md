@@ -4,13 +4,13 @@
 
 **纯净无广告的 Windows 开荒助手**
 
-新机到手 / 重装系统后，体检、壁纸、下载路径换盘、纯净软件安装、启动项管理、
-系统优化、磁盘分析——**一个绿色单文件全搞定**。
+新机到手 / 重装系统后，体检、壁纸、默认路径换盘、纯净软件安装、启动项管理、
+系统优化、磁盘分析、应用内官网——**一个绿色单文件全搞定**。
 
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-blue)
 ![.NET](https://img.shields.io/badge/.NET-9.0-purple)
-![Size](https://img.shields.io/badge/%E5%8D%95%E6%96%87%E4%BB%B6-%E5%85%8D%E5%AE%89%E8%A3%85-59MB-orange)
+![Size](https://img.shields.io/badge/%E5%8D%95%E6%96%87%E4%BB%B6-%E5%85%8D%E5%AE%89%E8%A3%85-67MB-orange)
 
 🌐 **官网：[www.cyhaoka.vip](https://www.cyhaoka.vip)** —— 软件下载、使用帮助与最新版本
 
@@ -26,7 +26,7 @@
 **电脑开荒把这些事做成了一站式流程**，而且坚持三条底线：
 
 - 🚫 **无广告、无弹窗、无捆绑**——软件本身不盈利，也不接任何推广
-- 🔒 **不上传任何数据**——仅联网访问 Bing 壁纸接口与 winget 官方源，别无任何遥测
+- 🔒 **不上传任何数据**——仅联网访问 Bing 壁纸接口、winget 官方源与官网（内嵌浏览），别无任何遥测
 - ↩️ **一切皆可逆**——启动项禁用、优化项全部可一键恢复；磁盘分析只读，**绝不自动删文件**
 
 ## 界面预览
@@ -34,12 +34,12 @@
 | 开荒检查 | 壁纸开荒 |
 |:---:|:---:|
 | ![开荒检查](docs/screenshots/check.png) | ![壁纸开荒](docs/screenshots/wallpaper.png) |
-| **下载路径换盘** | **APP 推荐** |
-| ![下载路径换盘](docs/screenshots/downloads.png) | ![APP 推荐](docs/screenshots/apps.png) |
+| **默认路径换盘** | **APP 推荐** |
+| ![默认路径换盘](docs/screenshots/downloads.png) | ![APP 推荐](docs/screenshots/apps.png) |
 | **启动项管理** | **Windows 优化** |
 | ![启动项管理](docs/screenshots/startup.png) | ![Windows 优化](docs/screenshots/optimize.png) |
-| **磁盘分析** | |
-| ![磁盘分析](docs/screenshots/disk.png) | |
+| **磁盘分析** | **电脑开荒网** |
+| ![磁盘分析](docs/screenshots/disk.png) | ![电脑开荒网](docs/screenshots/website.png) |
 
 ## 功能特性
 
@@ -51,8 +51,8 @@
 Bing 中国区每日壁纸（近一周）网格预览，一键下载并设为桌面；
 支持填充/适应/拉伸/平铺/居中五种模式、本地图片、离线缓存。
 
-### 📁 下载路径换盘
-把「下载」文件夹从系统盘一键迁到其他盘：**先迁移文件、最后才改系统指向**（中断不产生不一致），
+### 📁 默认路径换盘
+把桌面、文档、下载、图片、音乐、视频从系统盘一键迁到其他盘：**先迁移文件、最后才改系统指向**（中断不产生不一致），
 被占用文件跳过并列出清单；Chrome / Edge / Firefox 下载设置只读检测，跟随系统的自动生效。
 
 ### 📦 APP 推荐
@@ -64,17 +64,22 @@ Run 键 + 启动文件夹全枚举，数字签名发布者解析；
 禁用走任务管理器同款 StartupApproved 机制——**不删原始条目，随时可恢复**。
 
 ### ⚡ Windows 优化
-9 项可逆优化：开始菜单推荐、任务栏小组件、广告 ID、使用建议、锁屏资讯、设置页推广、
-Bing 搜索（Win10）、诊断遥测（需管理员）、高性能电源计划；按 Win10/11 自动显隐，一键优化。
+15 项可逆优化：开始菜单推荐、任务栏小组件、广告 ID、通知建议、联网搜索、Game DVR、
+诊断遥测（需管理员）、高性能电源计划等；按 Win10/11 自动显隐，应用前备份原设置并可精确恢复。
 
 ### 💾 磁盘分析
 一级目录占用排行 + 最大文件 Top 30，进度可取消；
 回收站/Temp/Windows.old/更新缓存/休眠文件等常见可清理位置**只展示、不删除**，一键在资源管理器定位。
 
+### 🌐 电脑开荒网
+应用内直接访问官网 [www.cyhaoka.vip](https://www.cyhaoka.vip)：WebView2 内嵌渲染（与 Edge 同内核），
+无需打开浏览器；提供后退/前进/主页/刷新工具栏与实时状态；
+**站外链接自动交给系统默认浏览器**，内嵌仅显示本站内容；无 WebView2 运行时的精简系统会给出安装指引与浏览器兜底。
+
 ## 下载与安装
 
 - **官网下载**：[www.cyhaoka.vip](https://www.cyhaoka.vip)（最新版本与使用帮助）
-- **系统要求**：Windows 10（1709+）/ Windows 11，64 位；**无需安装 .NET 运行时**
+- **系统要求**：Windows 10（1709+）/ Windows 11，64 位；**无需安装 .NET 运行时**（内嵌官网页依赖系统 WebView2 运行时，Win10/11 一般随系统自带；缺失时应用会给出安装指引或改用浏览器打开）
 - **安装方式**：绿色单文件——下载 `Dnkhw.exe` 放到任意目录（建议非系统盘）双击即用
 - **校验**：发布说明提供 SHA256，可用 `certutil -hashfile Dnkhw.exe SHA256` 核对
 
@@ -84,8 +89,9 @@ Bing 搜索（Win10）、诊断遥测（需管理员）、高性能电源计划�
 
 ## 技术栈
 
-.NET 9 · WPF · [WPF-UI 4.3](https://github.com/lepoco/wpfui)（Fluent 风格，MIT） ·
+.NET 10 LTS · WPF · [WPF-UI 4.3](https://github.com/lepoco/wpfui)（Fluent 风格，MIT） ·
 [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/WindowsCommunityToolkit) ·
+[WebView2](https://developer.microsoft.com/microsoft-edge/webview2/)（内嵌官网） ·
 System.Management (WMI) · P/Invoke（SystemParametersInfo / SHGetKnownFolderPath / SHChangeNotify） ·
 [winget](https://learn.microsoft.com/windows/package-manager/)
 
@@ -93,7 +99,7 @@ System.Management (WMI) · P/Invoke（SystemParametersInfo / SHGetKnownFolderPat
 
 ## 从源码构建
 
-前置：Windows + [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
+前置：Windows + [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
 
 ```powershell
 git clone <本仓库地址>
@@ -103,12 +109,12 @@ dotnet build                     # 构建
 dotnet test                      # 运行全部单元测试
 dotnet run --project src/Dnkhw   # 启动应用
 
-.\publish.ps1                    # 产出自包含单文件 publish\Dnkhw.exe（约 59MB）
+.\publish.ps1                    # 产出自包含单文件 publish\Dnkhw.exe（约 67MB）
 ```
 
 测试覆盖 Core 业务库的纯逻辑：StartupApproved 编解码（含任务管理器真机样本）、
 winget 输出解析、注册表路径构造、下载迁移（临时目录/锁定文件/进度）、
-磁盘扫描聚合、清单完整性校验等，72 项全部通过。
+磁盘扫描聚合、路径/参数边界、清单完整性校验等，85 项全部通过。
 
 ## 项目结构
 
@@ -118,7 +124,7 @@ dnkhw/
 ├── src/Dnkhw.Core/         # 业务库（UI 无关，可独立复用）
 │   ├── SystemCheck/        #   开荒检查（WMI 并行体检）
 │   ├── Wallpaper/          #   壁纸（Bing 接口 + SPI 设置）
-│   ├── Downloads/          #   下载路径换盘（已知文件夹迁移）
+│   ├── Downloads/          #   默认路径换盘（六个已知文件夹迁移）
 │   ├── AppCatalog/         #   APP 推荐（清单 + winget 封装）
 │   ├── Startup/            #   启动项（StartupApproved 编解码）
 │   ├── Optimize/           #   Windows 优化（注册表/服务/电源）

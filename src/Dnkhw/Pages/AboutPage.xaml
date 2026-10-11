@@ -4,65 +4,169 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-      mc:Ignorable="d">
-    <ui:DynamicScrollViewer>
-        <StackPanel MaxWidth="820" HorizontalAlignment="Center" Margin="32,28,32,28">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <StackPanel>
-                    <TextBlock Text="电脑开荒" FontSize="26" FontWeight="Bold"/>
-                    <TextBlock x:Name="VersionText" Opacity="0.7" Margin="0,6,0,0" Text="版本 0.1.0"/>
-                </StackPanel>
-                <ui:Button Grid.Column="1" Content="打开官网" VerticalAlignment="Center" Click="OnOpenSiteClick"/>
-            </Grid>
+      mc:Ignorable="d"
+      UseLayoutRounding="True"
+      Background="Transparent">
+    <Page.Resources>
+        <Style x:Key="SectionTitleStyle" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+        <Style x:Key="BodyTextStyle" TargetType="TextBlock">
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="LineHeight" Value="22"/>
+            <Setter Property="Opacity" Value="0.82"/>
+        </Style>
+    </Page.Resources>
 
-            <ui:Card Margin="0,16,0,0" Padding="18">
-                <StackPanel>
-                    <TextBlock Text="关于本工具" FontWeight="SemiBold" FontSize="15" Margin="0,0,0,8"/>
-                    <TextBlock TextWrapping="Wrap" LineHeight="22" Opacity="0.85" Text="Windows 新机 / 重装后的一站式开荒助手：系统体检、壁纸、下载路径换盘、纯净软件推荐、启动项管理、Windows 优化与磁盘分析，全部功能集中在一个轻量本地工具里。"/>
-                </StackPanel>
-            </ui:Card>
+    <Grid>
+        <Ellipse Width="420" Height="420"
+                 HorizontalAlignment="Right" VerticalAlignment="Top"
+                 Margin="0,-190,-170,0" Fill="#0FE83258"
+                 IsHitTestVisible="False"/>
 
-            <ui:Card Margin="0,12,0,0" Padding="18">
-                <StackPanel>
-                    <TextBlock Text="纯净承诺" FontWeight="SemiBold" FontSize="15" Margin="0,0,0,8"/>
-                    <TextBlock Text="✓ 无广告、无弹窗、无捆绑软件" TextWrapping="Wrap" LineHeight="22" Opacity="0.85"/>
-                    <TextBlock Text="✓ 不上传任何数据：仅联网访问 Bing 壁纸接口与 winget 官方源" TextWrapping="Wrap" LineHeight="22" Opacity="0.85"/>
-                    <TextBlock Text="✓ APP 推荐仅收录官方渠道、无捆绑安装器、无弹窗广告的软件" TextWrapping="Wrap" LineHeight="22" Opacity="0.85"/>
-                    <TextBlock Text="✓ 所有系统修改（启动项禁用 / 优化项）均可一键恢复" TextWrapping="Wrap" LineHeight="22" Opacity="0.85"/>
-                    <TextBlock Text="✓ 磁盘分析只读展示，本工具绝不自动删除文件" TextWrapping="Wrap" LineHeight="22" Opacity="0.85"/>
-                </StackPanel>
-            </ui:Card>
+        <ui:DynamicScrollViewer Background="Transparent">
+            <StackPanel MaxWidth="880" HorizontalAlignment="Center" Margin="32,28,32,32">
+                <Border Height="318" CornerRadius="26" ClipToBounds="True">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                            <GradientStop Color="#FF111722" Offset="0"/>
+                            <GradientStop Color="#FF182333" Offset="0.58"/>
+                            <GradientStop Color="#FF351524" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Border.Background>
 
-            <ui:Card Margin="0,12,0,0" Padding="18">
-                <StackPanel>
-                    <TextBlock Text="官网" FontWeight="SemiBold" FontSize="15" Margin="0,0,0,8"/>
-                    <TextBlock TextWrapping="Wrap" LineHeight="22" Opacity="0.85"
-                               Text="电脑开荒网：www.cyhaoka.vip —— 软件下载、使用帮助与最新版本"/>
-                </StackPanel>
-            </ui:Card>
+                    <Grid>
+                        <Ellipse Width="330" Height="330"
+                                 HorizontalAlignment="Right" VerticalAlignment="Center"
+                                 Margin="0,0,-44,0" Fill="#35E83258"/>
+                        <Ellipse Width="190" Height="190"
+                                 HorizontalAlignment="Right" VerticalAlignment="Top"
+                                 Margin="0,-78,186,0" Fill="#142E9BA4"/>
 
-            <ui:Card Margin="0,12,0,0" Padding="18">
-                <StackPanel>
-                    <TextBlock Text="使用提示" FontWeight="SemiBold" FontSize="15" Margin="0,0,0,8"/>
-                    <TextBlock TextWrapping="Wrap" LineHeight="22" Opacity="0.85"
-                               Text="· 首次运行可能弹出 SmartScreen 提示：点「更多信息」→「仍要运行」即可（自用未签名程序的正常现象）"/>
-                    <TextBlock TextWrapping="Wrap" LineHeight="22" Opacity="0.85"
-                               Text="· 部分功能（系统级启动项、遥测关闭等）需要管理员权限，页面内提供「以管理员身份重启」按钮"/>
-                    <TextBlock TextWrapping="Wrap" LineHeight="22" Opacity="0.85"
-                               Text="· 下载路径换盘会先迁移文件、最后才修改系统指向，中断不会造成状态不一致"/>
-                </StackPanel>
-            </ui:Card>
+                        <!-- 角色形象及相关图片版权归哔哩哔哩“尘风一枚”所有。 -->
+                        <Image Source="/Dnkhw;component/Assets/Images/about-oc.png"
+                               Height="374" Margin="0,0,-16,-48"
+                               HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                               Stretch="Uniform" SnapsToDevicePixels="True"
+                               IsHitTestVisible="False"/>
 
-            <ui:Card Margin="0,12,0,0" Padding="18">
-                <StackPanel>
-                    <TextBlock Text="技术栈" FontWeight="SemiBold" FontSize="15" Margin="0,0,0,8"/>
-                    <TextBlock Text=".NET 9 · WPF · WPF-UI (Fluent) · CommunityToolkit.Mvvm · WMI · winget" Opacity="0.65" FontSize="12" TextWrapping="Wrap"/>
-                </StackPanel>
-            </ui:Card>
-        </StackPanel>
-    </ui:DynamicScrollViewer>
+                        <Rectangle IsHitTestVisible="False">
+                            <Rectangle.Fill>
+                                <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+                                    <GradientStop Color="#F2111722" Offset="0"/>
+                                    <GradientStop Color="#E8111722" Offset="0.47"/>
+                                    <GradientStop Color="#00111722" Offset="0.76"/>
+                                </LinearGradientBrush>
+                            </Rectangle.Fill>
+                        </Rectangle>
+
+                        <StackPanel Width="470" Margin="34,30,0,28"
+                                    HorizontalAlignment="Left" VerticalAlignment="Center">
+                            <Border HorizontalAlignment="Left" CornerRadius="10"
+                                    Background="#24FFFFFF" Padding="10,4" Margin="0,0,0,15">
+                                <TextBlock Text="ABOUT · 关于" Foreground="#D9FFFFFF"
+                                           FontSize="11" FontWeight="SemiBold"/>
+                            </Border>
+                            <TextBlock Text="电脑开荒" Foreground="White"
+                                       FontSize="34" FontWeight="Bold"/>
+                            <TextBlock x:Name="VersionText" Text="版本 0.1.0"
+                                       Foreground="#BFFFFFFF" FontSize="13" Margin="1,6,0,0"/>
+                            <TextBlock Text="让新装 Windows 更快变成顺手的工作空间。"
+                                       Foreground="#EBFFFFFF" FontSize="17" FontWeight="SemiBold"
+                                       TextWrapping="Wrap" Margin="0,19,0,0"/>
+                            <TextBlock Text="轻量、本地、可恢复，把常用的开荒步骤收进一个清爽工具。"
+                                       Foreground="#BFFFFFFF" FontSize="13" LineHeight="21"
+                                       TextWrapping="Wrap" Margin="0,7,0,0"/>
+                            <ui:Button Content="打开官网  ↗" HorizontalAlignment="Left"
+                                       Margin="0,20,0,0" Padding="16,7"
+                                       Click="OnOpenSiteClick"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <ui:Card Margin="0,16,0,0" Padding="20">
+                    <StackPanel>
+                        <TextBlock Text="关于本工具" Style="{StaticResource SectionTitleStyle}"/>
+                        <TextBlock Style="{StaticResource BodyTextStyle}"
+                                   Text="Windows 新机 / 重装后的一站式开荒助手：系统体检、壁纸、默认路径换盘、纯净软件推荐、启动项管理、Windows 优化与磁盘分析，全部功能集中在一个轻量本地工具里。"/>
+                    </StackPanel>
+                </ui:Card>
+
+                <ui:Card Margin="0,12,0,0" Padding="20">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="作者" Style="{StaticResource SectionTitleStyle}"/>
+                            <TextBlock Text="尘风一枚" FontSize="16" FontWeight="SemiBold"/>
+                            <TextBlock Text="哔哩哔哩 UID：508302628"
+                                       Opacity="0.6" FontSize="12" Margin="0,5,0,0"/>
+                        </StackPanel>
+                        <ui:Button Grid.Column="1" Content="访问哔哩哔哩主页  ↗"
+                                   VerticalAlignment="Center" Margin="20,0,0,0" Padding="16,7"
+                                   Click="OnOpenBilibiliClick"/>
+                    </Grid>
+                </ui:Card>
+
+                <Grid Margin="0,12,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.35*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <ui:Card Grid.Column="0" Padding="20">
+                        <StackPanel>
+                            <TextBlock Text="纯净承诺" Style="{StaticResource SectionTitleStyle}"/>
+                            <TextBlock Text="✓ 无广告、无弹窗、无捆绑软件" Style="{StaticResource BodyTextStyle}"/>
+                            <TextBlock Text="✓ 不上传任何数据：仅联网访问 Bing 壁纸接口、winget 官方源与官网（内嵌浏览）" Style="{StaticResource BodyTextStyle}"/>
+                            <TextBlock Text="✓ APP 推荐仅收录官方渠道、无捆绑安装器、无弹窗广告的软件" Style="{StaticResource BodyTextStyle}"/>
+                            <TextBlock Text="✓ 所有系统修改（启动项禁用 / 优化项）均可一键恢复" Style="{StaticResource BodyTextStyle}"/>
+                            <TextBlock Text="✓ 磁盘分析只读展示，本工具绝不自动删除文件" Style="{StaticResource BodyTextStyle}"/>
+                        </StackPanel>
+                    </ui:Card>
+
+                    <StackPanel Grid.Column="2">
+                        <ui:Card Padding="20">
+                            <StackPanel>
+                                <TextBlock Text="官网" Style="{StaticResource SectionTitleStyle}"/>
+                                <TextBlock Style="{StaticResource BodyTextStyle}"
+                                           Text="电脑开荒网&#x0a;www.cyhaoka.vip"/>
+                                <TextBlock Text="软件下载、使用帮助与最新版本"
+                                           Opacity="0.6" FontSize="12" TextWrapping="Wrap"
+                                           Margin="0,7,0,0"/>
+                                <ui:Button Content="在本应用中打开 →" HorizontalAlignment="Left"
+                                           Margin="0,10,0,0" Padding="12,5" FontSize="12"
+                                           Click="OnOpenSiteInAppClick"/>
+                            </StackPanel>
+                        </ui:Card>
+
+                        <ui:Card Margin="0,12,0,0" Padding="20">
+                            <StackPanel>
+                                <TextBlock Text="技术栈" Style="{StaticResource SectionTitleStyle}"/>
+                                <TextBlock Text=".NET 10 LTS · WPF · WPF-UI (Fluent) · CommunityToolkit.Mvvm · WMI · winget"
+                                           Opacity="0.65" FontSize="12" TextWrapping="Wrap" LineHeight="19"/>
+                            </StackPanel>
+                        </ui:Card>
+                    </StackPanel>
+                </Grid>
+
+                <ui:Card Margin="0,12,0,0" Padding="20">
+                    <StackPanel>
+                        <TextBlock Text="使用提示" Style="{StaticResource SectionTitleStyle}"/>
+                        <TextBlock Style="{StaticResource BodyTextStyle}"
+                                   Text="· 首次运行可能弹出 SmartScreen 提示：点「更多信息」→「仍要运行」即可（自用未签名程序的正常现象）"/>
+                        <TextBlock Style="{StaticResource BodyTextStyle}"
+                                   Text="· 部分功能（系统级启动项、遥测关闭等）需要管理员权限，页面内提供「以管理员身份重启」按钮"/>
+                        <TextBlock Style="{StaticResource BodyTextStyle}"
+                                   Text="· 默认路径换盘会先迁移文件、最后才修改系统指向，中断不会造成状态不一致"/>
+                    </StackPanel>
+                </ui:Card>
+            </StackPanel>
+        </ui:DynamicScrollViewer>
+    </Grid>
 </Page>

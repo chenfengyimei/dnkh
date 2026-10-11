@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net9.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
@@ -10,15 +10,27 @@
     <AssemblyTitle>电脑开荒</AssemblyTitle>
     <Product>电脑开荒（dnkhw）</Product>
     <Description>纯净无广告的 Windows 开荒助手</Description>
+    <!-- 发布产物保持单文件：WebView2 等包自带的 XML 文档不随 publish 复制 -->
+    <PublishDocumentationFiles>false</PublishDocumentationFiles>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4258.31" />
     <PackageReference Include="WPF-UI" Version="4.3.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Dnkhw.Core\Dnkhw.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Assets\Images\about-oc.png" />
+    <None Remove="Assets\Images\about-oc.COPYRIGHT.txt" />
+    <Resource Include="Assets\Images\about-oc.png">
+      <Copyright>角色形象及相关图片版权归哔哩哔哩“尘风一枚”所有。</Copyright>
+    </Resource>
+    <Resource Include="Assets\Images\about-oc.COPYRIGHT.txt" />
   </ItemGroup>
 
 </Project>

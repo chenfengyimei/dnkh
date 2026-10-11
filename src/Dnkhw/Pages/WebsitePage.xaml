@@ -1,0 +1,70 @@
+<Page x:Class="Dnkhw.Pages.WebsitePage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+      mc:Ignorable="d"
+      Background="Transparent">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- 页头：标题左 / 操作按钮右，与其他模块一致 -->
+        <Grid Grid.Row="0" Margin="32,28,32,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Text="电脑开荒网" FontSize="26" FontWeight="Bold"/>
+                <TextBlock Text="软件内直接访问官网 www.cyhaoka.vip —— 软件下载、使用帮助与最新版本，无需打开浏览器" Opacity="0.7" Margin="0,6,0,0" TextWrapping="Wrap"/>
+            </StackPanel>
+            <ui:Button Grid.Column="1" Content="在浏览器打开 ↗" VerticalAlignment="Center"
+                       Margin="20,0,0,0" Padding="16,7" Click="OnOpenExternalClick"/>
+        </Grid>
+
+        <!-- 工具栏：站内导航 + 状态 + 加载指示 -->
+        <ui:Card Grid.Row="1" Margin="32,14,32,0" Padding="12,8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal">
+                    <ui:Button x:Name="BackButton" Appearance="Transparent" Content="后退" FontSize="12" Padding="12,5" IsEnabled="False" Click="OnBackClick"/>
+                    <ui:Button x:Name="ForwardButton" Appearance="Transparent" Content="前进" FontSize="12" Padding="12,5" Margin="6,0,0,0" IsEnabled="False" Click="OnForwardClick"/>
+                    <ui:Button x:Name="HomeButton" Appearance="Transparent" Content="主页" FontSize="12" Padding="12,5" Margin="6,0,0,0" Click="OnHomeClick"/>
+                    <ui:Button x:Name="ReloadButton" Appearance="Transparent" Content="刷新" FontSize="12" Padding="12,5" Margin="6,0,0,0" Click="OnReloadClick"/>
+                </StackPanel>
+                <TextBlock x:Name="StatusText" Grid.Column="1" Text="正在连接 www.cyhaoka.vip …"
+                           Opacity="0.65" FontSize="12" HorizontalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" Margin="16,0,8,0"/>
+                <ui:ProgressRing x:Name="LoadRing" Grid.Column="2" Width="18" Height="18" IsIndeterminate="True"/>
+            </Grid>
+        </ui:Card>
+
+        <!-- 网页区：可内嵌时显示 WebView2；缺 WebView2 运行时时显示回退卡 -->
+        <Grid Grid.Row="2" Margin="32,12,32,28">
+            <wv2:WebView2 x:Name="Web" Visibility="Collapsed"/>
+            <ui:Card x:Name="FallbackCard" Visibility="Collapsed"
+                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                     MaxWidth="640" Padding="24">
+                <StackPanel>
+                    <TextBlock Text="暂无法在软件内显示网页" FontWeight="SemiBold" FontSize="16"/>
+                    <TextBlock Text="未检测到 WebView2 运行时（Windows 10 / 11 一般随系统自带；极少精简系统会缺失）。可先在浏览器打开官网，或安装运行时后重启本软件再试。"
+                               Opacity="0.7" FontSize="13" TextWrapping="Wrap" LineHeight="21" Margin="0,8,0,0"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+                        <ui:Button Content="在浏览器打开官网 ↗" Padding="16,7" Click="OnOpenExternalClick"/>
+                        <ui:Button Content="获取 WebView2 运行时 ↗" Appearance="Secondary" Margin="10,0,0,0" Padding="16,7" Click="OnGetRuntimeClick"/>
+                    </StackPanel>
+                </StackPanel>
+            </ui:Card>
+        </Grid>
+    </Grid>
+</Page>

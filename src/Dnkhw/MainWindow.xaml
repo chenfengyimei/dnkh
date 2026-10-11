@@ -30,6 +30,7 @@
                 <ui:NavigationViewItem Content="启动项管理" Icon="{ui:SymbolIcon Rocket24}" TargetPageType="{x:Type pages:StartupPage}" />
                 <ui:NavigationViewItem Content="Windows 优化" Icon="{ui:SymbolIcon Wrench24}" TargetPageType="{x:Type pages:OptimizePage}" />
                 <ui:NavigationViewItem Content="磁盘分析" Icon="{ui:SymbolIcon DataUsage24}" TargetPageType="{x:Type pages:DiskPage}" />
+                <ui:NavigationViewItem Content="电脑开荒网" Icon="{ui:SymbolIcon Globe24}" TargetPageType="{x:Type pages:WebsitePage}" />
             </ui:NavigationView.MenuItems>
             <ui:NavigationView.FooterMenuItems>
                 <ui:NavigationViewItem x:Name="AdminBadge" Content="权限：检测中…" Icon="{ui:SymbolIcon Shield24}" IsEnabled="False" />

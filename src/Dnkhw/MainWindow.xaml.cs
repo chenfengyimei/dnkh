@@ -23,7 +23,7 @@ public partial class MainWindow : FluentWindow
     }
 
     /// <summary>
-    /// 解析 --page 启动参数（check/wallpaper/downloads/apps/startup/optimize/disk/about），
+    /// 解析 --page 启动参数（check/wallpaper/downloads/apps/startup/optimize/disk/website/about），
     /// 用于采集与调试直跳指定页面；未指定时进入开荒检查。
     /// </summary>
     private static Type ResolveInitialPage()
@@ -44,6 +44,7 @@ public partial class MainWindow : FluentWindow
             "startup" => typeof(Pages.StartupPage),
             "optimize" => typeof(Pages.OptimizePage),
             "disk" => typeof(Pages.DiskPage),
+            "website" => typeof(Pages.WebsitePage),
             "about" => typeof(Pages.AboutPage),
             _ => typeof(Pages.CheckPage),
         };

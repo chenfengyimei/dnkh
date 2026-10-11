@@ -2,12 +2,14 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using Dnkhw.Services;
 
 namespace Dnkhw.Pages;
 
 public partial class AboutPage : Page
 {
     private const string OfficialSite = "https://www.cyhaoka.vip";
+    private const string BilibiliProfile = "https://space.bilibili.com/508302628";
 
     public AboutPage()
     {
@@ -18,9 +20,24 @@ public partial class AboutPage : Page
 
     private void OnOpenSiteClick(object sender, RoutedEventArgs e)
     {
+        OpenExternalLink(OfficialSite);
+    }
+
+    private void OnOpenSiteInAppClick(object sender, RoutedEventArgs e)
+    {
+        AppNavigation.Go<WebsitePage>();
+    }
+
+    private void OnOpenBilibiliClick(object sender, RoutedEventArgs e)
+    {
+        OpenExternalLink(BilibiliProfile);
+    }
+
+    private static void OpenExternalLink(string url)
+    {
         try
         {
-            Process.Start(new ProcessStartInfo(OfficialSite) { UseShellExecute = true });
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
         }
         catch
         {
