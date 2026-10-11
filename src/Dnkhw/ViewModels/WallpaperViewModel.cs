@@ -45,10 +45,19 @@ public sealed partial class WallpaperViewModel : ObservableObject
     private FitOption? _selectedFit;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ListButtonLabel))]
     private bool _isBusy;
 
     [ObservableProperty]
     private IReadOnlyList<WallpaperView> _items = [];
+
+    /// <summary>壁纸列表是否已加载过（按需加载：首次点「加载壁纸列表」后才显示网格）。</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ListButtonLabel))]
+    private bool _hasLoaded;
+
+    /// <summary>选择二加载按钮文字：未加载「加载壁纸列表」/ 加载中「正在加载…」/ 已加载「刷新列表」。</summary>
+    public string ListButtonLabel => IsBusy ? "正在加载…" : HasLoaded ? "刷新列表" : "加载壁纸列表";
 
     [ObservableProperty]
     private bool _noticeOpen;
@@ -347,6 +356,7 @@ public sealed partial class WallpaperViewModel : ObservableObject
             }
 
             Items = items;
+            HasLoaded = true;
         }
         catch (Exception ex)
         {

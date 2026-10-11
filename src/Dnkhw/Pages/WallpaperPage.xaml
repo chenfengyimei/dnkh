@@ -4,8 +4,7 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-      mc:Ignorable="d"
-      Loaded="OnLoaded">
+      mc:Ignorable="d">
     <ui:DynamicScrollViewer>
         <StackPanel MaxWidth="980" HorizontalAlignment="Center" Margin="32,28,32,28">
             <Grid>
@@ -98,15 +97,38 @@
                     <TextBlock Text="步骤 5 · 设置壁纸" FontWeight="SemiBold" FontSize="15"/>
                     <TextBlock Text="前四步就绪后，二选一收尾：想要省心静态壁纸选本地图片或 Bing 精选；想要动态桌面用 Steam 壁纸引擎" Opacity="0.6" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
 
-                    <TextBlock Text="选择一 · 静态壁纸（本地图片 / Bing 精选）" FontWeight="SemiBold" FontSize="13" Margin="0,14,0,0"/>
+                    <TextBlock Text="选择一 · 动态壁纸（Steam 壁纸引擎 Wallpaper Engine）" FontWeight="SemiBold" FontSize="13" Margin="0,14,0,0"/>
+                    <TextBlock TextWrapping="Wrap" Opacity="0.6" FontSize="12" Margin="0,4,0,0" LineHeight="20"
+                               Text="Steam 上最热门的动态壁纸软件（付费，国区约 ¥19 一次买断）：视频、场景、交互式壁纸应有尽有，创意工坊海量壁纸免费订阅，配合前四步的纯享桌面效果最佳。"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                        <ui:Button Content="打开 Steam 商店页" Command="{Binding OpenWallpaperEngineStoreCommand}"/>
+                        <ui:Button Content="一键安装 Steam" Appearance="Secondary" Margin="10,0,0,0"
+                                   Command="{Binding InstallSteamCommand}"
+                                   Visibility="{Binding SteamInstalled, Converter={StaticResource InverseBoolToVisibilityConverter}}"/>
+                        <Border Background="#DFF0E8" CornerRadius="3" Padding="10,4" VerticalAlignment="Center" Margin="10,0,0,0"
+                                Visibility="{Binding SteamInstalled, Converter={StaticResource BoolToVisibilityConverter}}">
+                            <TextBlock Text="Steam 已安装" FontSize="12" Foreground="#0F7B0F"/>
+                        </Border>
+                    </StackPanel>
+                    <TextBlock TextWrapping="Wrap" Opacity="0.6" FontSize="12" Margin="0,10,0,0" LineHeight="20"
+                               Text="使用方法：在商店页购买并安装壁纸引擎 → 打开后从「已安装」标签挑选壁纸，或到创意工坊订阅喜欢的动态壁纸（自动下载并应用）→ 建议在软件设置中开启开机自启，开机即享动态桌面。"/>
+
+                    <Separator Margin="0,16,0,12"/>
+
+                    <TextBlock Text="选择二 · 静态壁纸（本地图片 / Bing 精选）" FontWeight="SemiBold" FontSize="13"/>
                     <StackPanel Orientation="Horizontal" Margin="0,10,0,12">
-                        <ui:Button Content="刷新列表" Command="{Binding LoadCommand}"/>
+                        <ui:Button Content="本地图片" Command="{Binding SetLocalCommand}"/>
                         <TextBlock Text="填充模式" VerticalAlignment="Center" Margin="12,0,6,0" Opacity="0.7"/>
                         <ComboBox Width="110" ItemsSource="{Binding FitOptions}" DisplayMemberPath="Label"
                                   SelectedItem="{Binding SelectedFit}"/>
-                        <ui:Button Content="本地图片" Appearance="Secondary" Margin="12,0,0,0" Command="{Binding SetLocalCommand}"/>
+                        <ui:Button Content="{Binding ListButtonLabel}" Appearance="Secondary" Margin="12,0,0,0"
+                                   Command="{Binding LoadCommand}"/>
                     </StackPanel>
-                    <ItemsControl ItemsSource="{Binding Items}">
+                    <TextBlock TextWrapping="Wrap" Opacity="0.6" FontSize="12" Margin="0,0,0,12" LineHeight="20"
+                               Visibility="{Binding HasLoaded, Converter={StaticResource InverseBoolToVisibilityConverter}}"
+                               Text="Bing 精选壁纸需联网下载，点上方「加载壁纸列表」按钮显示近一周每日壁纸（本地缓存离线可用）；赶时间可直接用「本地图片」。"/>
+                    <ItemsControl ItemsSource="{Binding Items}"
+                                  Visibility="{Binding HasLoaded, Converter={StaticResource BoolToVisibilityConverter}}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <WrapPanel/>
@@ -138,24 +160,6 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-
-                    <Separator Margin="0,16,0,12"/>
-
-                    <TextBlock Text="选择二 · 动态壁纸（Steam 壁纸引擎 Wallpaper Engine）" FontWeight="SemiBold" FontSize="13"/>
-                    <TextBlock TextWrapping="Wrap" Opacity="0.6" FontSize="12" Margin="0,4,0,0" LineHeight="20"
-                               Text="Steam 上最热门的动态壁纸软件（付费，国区约 ¥19 一次买断）：视频、场景、交互式壁纸应有尽有，创意工坊海量壁纸免费订阅，配合前四步的纯享桌面效果最佳。"/>
-                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                        <ui:Button Content="打开 Steam 商店页" Command="{Binding OpenWallpaperEngineStoreCommand}"/>
-                        <ui:Button Content="一键安装 Steam" Appearance="Secondary" Margin="10,0,0,0"
-                                   Command="{Binding InstallSteamCommand}"
-                                   Visibility="{Binding SteamInstalled, Converter={StaticResource InverseBoolToVisibilityConverter}}"/>
-                        <Border Background="#DFF0E8" CornerRadius="3" Padding="10,4" VerticalAlignment="Center" Margin="10,0,0,0"
-                                Visibility="{Binding SteamInstalled, Converter={StaticResource BoolToVisibilityConverter}}">
-                            <TextBlock Text="Steam 已安装" FontSize="12" Foreground="#0F7B0F"/>
-                        </Border>
-                    </StackPanel>
-                    <TextBlock TextWrapping="Wrap" Opacity="0.6" FontSize="12" Margin="0,10,0,0" LineHeight="20"
-                               Text="使用方法：在商店页购买并安装壁纸引擎 → 打开后从「已安装」标签挑选壁纸，或到创意工坊订阅喜欢的动态壁纸（自动下载并应用）→ 建议在软件设置中开启开机自启，开机即享动态桌面。"/>
                 </StackPanel>
             </ui:Card>
         </StackPanel>

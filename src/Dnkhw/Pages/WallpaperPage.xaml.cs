@@ -12,15 +12,6 @@ public partial class WallpaperPage : Page
     {
         InitializeComponent();
         DataContext = _viewModel;
-        Loaded += OnLoaded;
-    }
-
-    private void OnLoaded(object sender, RoutedEventArgs e)
-    {
-        if (_viewModel.Items.Count == 0 && !_viewModel.IsBusy)
-        {
-            _ = _viewModel.LoadCommand.ExecuteAsync(null);
-        }
     }
 
     private void OnIconsToggleClick(object sender, RoutedEventArgs e)
