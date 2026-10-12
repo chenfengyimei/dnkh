@@ -73,6 +73,14 @@
                                        FontSize="34" FontWeight="Bold"/>
                             <TextBlock x:Name="VersionText" Text="版本 0.1.0"
                                        Foreground="#BFFFFFFF" FontSize="13" Margin="1,6,0,0"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                                <ui:Button x:Name="CheckUpdateButton" Content="检查更新" Padding="14,7"
+                                           Click="OnCheckUpdateClick"/>
+                                <ui:ProgressRing x:Name="UpdateRing" Width="18" Height="18" IsIndeterminate="True"
+                                                  Margin="12,0,0,0" VerticalAlignment="Center" Visibility="Collapsed"/>
+                            </StackPanel>
+                            <TextBlock x:Name="UpdateStatusText" Foreground="#BFFFFFFF" FontSize="12" Margin="1,8,0,0"
+                                       TextWrapping="Wrap" Visibility="Collapsed"/>
                             <TextBlock Text="让新装 Windows 更快变成顺手的工作空间。"
                                        Foreground="#EBFFFFFF" FontSize="17" FontWeight="SemiBold"
                                        TextWrapping="Wrap" Margin="0,19,0,0"/>

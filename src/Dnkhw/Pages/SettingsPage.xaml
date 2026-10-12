@@ -1,0 +1,87 @@
+<Page x:Class="Dnkhw.Pages.SettingsPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      mc:Ignorable="d">
+    <Page.Resources>
+        <Style x:Key="CardTitleStyle" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="15"/>
+        </Style>
+        <Style x:Key="CardHintStyle" TargetType="TextBlock">
+            <Setter Property="Opacity" Value="0.62"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Margin" Value="0,4,0,0"/>
+        </Style>
+    </Page.Resources>
+
+    <ui:DynamicScrollViewer>
+        <StackPanel MaxWidth="980" HorizontalAlignment="Center" Margin="32,28,32,28">
+            <StackPanel>
+                <TextBlock Text="设置" FontSize="26" FontWeight="Bold"/>
+                <TextBlock Text="外观与行为的个人偏好，保存到本地（不联网、不上传）" Opacity="0.7" Margin="0,6,0,0"/>
+            </StackPanel>
+
+            <!-- 外观 -->
+            <ui:Card Margin="0,16,0,0" Padding="20">
+                <StackPanel>
+                    <TextBlock Text="主题" Style="{StaticResource CardTitleStyle}"/>
+                    <TextBlock Text="界面明暗外观；跟随系统会自动匹配 Windows 的深浅色设置" Style="{StaticResource CardHintStyle}"/>
+                    <StackPanel Margin="0,12,0,0">
+                        <RadioButton Content="跟随系统" FontSize="13" IsChecked="{Binding IsFollow, Mode=TwoWay}"/>
+                        <RadioButton Content="浅色" FontSize="13" Margin="0,8,0,0" IsChecked="{Binding IsLight, Mode=TwoWay}"/>
+                        <RadioButton Content="深色" FontSize="13" Margin="0,8,0,0" IsChecked="{Binding IsDark, Mode=TwoWay}"/>
+                    </StackPanel>
+                </StackPanel>
+            </ui:Card>
+
+            <!-- 行为 -->
+            <ui:Card Margin="0,12,0,0" Padding="20">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="记住上次访问的页面" Style="{StaticResource CardTitleStyle}"/>
+                        <TextBlock Text="下次启动直达上次离开的页面；关闭后始终从「开荒检查」进入" Style="{StaticResource CardHintStyle}"/>
+                    </StackPanel>
+                    <ui:ToggleSwitch Grid.Column="1" VerticalAlignment="Center" Margin="20,0,0,0"
+                                     IsChecked="{Binding RememberLastPage, Mode=TwoWay}"/>
+                </Grid>
+            </ui:Card>
+
+            <!-- 日志 -->
+            <ui:Card Margin="0,12,0,0" Padding="20">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="运行日志" Style="{StaticResource CardTitleStyle}"/>
+                        <TextBlock Text="仅保存在本机，按天滚动、保留 14 天；反馈问题时可一并附上，便于定位原因" Style="{StaticResource CardHintStyle}"/>
+                    </StackPanel>
+                    <ui:Button Grid.Column="1" Content="打开日志文件夹" VerticalAlignment="Center" Margin="20,0,0,0"
+                               Padding="14,7" Click="OnOpenLogsClick"/>
+                </Grid>
+            </ui:Card>
+
+            <!-- 联网说明 -->
+            <ui:Card Margin="0,12,0,0" Padding="20">
+                <StackPanel>
+                    <TextBlock Text="联网与隐私说明" Style="{StaticResource CardTitleStyle}"/>
+                    <TextBlock Style="{StaticResource CardHintStyle}"
+                               Text="· 设置全部保存在本机，不联网、不上传"/>
+                    <TextBlock Style="{StaticResource CardHintStyle}"
+                               Text="· 「检查更新」只在你点击时访问官网一次，不做任何后台静默检查"/>
+                    <TextBlock Style="{StaticResource CardHintStyle}"
+                               Text="· 除 Bing 壁纸接口、winget 官方源与官网内嵌浏览外，本工具不访问任何网络"/>
+                </StackPanel>
+            </ui:Card>
+        </StackPanel>
+    </ui:DynamicScrollViewer>
+</Page>

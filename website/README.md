@@ -58,6 +58,10 @@ author-card + 版权行 + fb-note 渠道说明。
 2. **大小** `66.88 MB` / `70,131,072 字节`
 3. **SHA256** `53537003...05D42B`（下载卡与 data-copy 各 1 处，共 2 个字符串）
 4. 复制最新产物：`Copy-Item publish\Dnkhw.exe website\download\Dnkhw.exe`
+5. **更新 `dnkhw\version.json`**（应用内「关于 → 检查更新」的数据源）：
+   `version` 换为新版本号、`sha256`/`sizeBytes` 与发布物一致、
+   `notes` 一句话亮点（会显示在应用的更新提示里）；
+   随站点部署到 `https://www.cyhaoka.vip/dnkhw/version.json`
 
 > SHA256 获取：`Get-FileHash publish\Dnkhw.exe -Algorithm SHA256`
 > 历史教训（publish.ps1）：必须确认产物是新版再复制，防止杀软/旧进程锁文件导致发旧包。

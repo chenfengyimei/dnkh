@@ -34,6 +34,7 @@
             </ui:NavigationView.MenuItems>
             <ui:NavigationView.FooterMenuItems>
                 <ui:NavigationViewItem x:Name="AdminBadge" Content="权限：检测中…" Icon="{ui:SymbolIcon Shield24}" IsEnabled="False" />
+                <ui:NavigationViewItem Content="设置" Icon="{ui:SymbolIcon Settings24}" TargetPageType="{x:Type pages:SettingsPage}" />
                 <ui:NavigationViewItem Content="关于" Icon="{ui:SymbolIcon Info24}" TargetPageType="{x:Type pages:AboutPage}" />
             </ui:NavigationView.FooterMenuItems>
         </ui:NavigationView>
