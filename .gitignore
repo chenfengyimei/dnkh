@@ -10,6 +10,7 @@ tools/ffmpeg/
 promo/shots/
 promo/audio/
 promo/out/
+promo/out_v2/
 promo/showcase/
 promo/*.mp4
 promo/*.mp3

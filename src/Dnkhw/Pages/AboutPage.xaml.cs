@@ -19,7 +19,7 @@ public partial class AboutPage : Page
     {
         InitializeComponent();
         var version = Assembly.GetExecutingAssembly().GetName().Version;
-        VersionText.Text = version is null ? "版本 0.1.0" : $"版本 {version.Major}.{version.Minor}.{version.Build}";
+        VersionText.Text = version is null ? "版本未知" : $"版本 {version.Major}.{version.Minor}.{version.Build}";
     }
 
     private void OnOpenSiteClick(object sender, RoutedEventArgs e)

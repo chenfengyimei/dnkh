@@ -10,6 +10,7 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-blue)
 ![.NET](https://img.shields.io/badge/.NET-10.0%20LTS-purple)
+![Version](https://img.shields.io/badge/version-1.0.0-0078D4)
 ![Size](https://img.shields.io/badge/%E5%8D%95%E6%96%87%E4%BB%B6-%E5%85%8D%E5%AE%89%E8%A3%85-67MB-orange)
 
 🌐 **官网：[www.cyhaoka.vip](https://www.cyhaoka.vip)** —— 软件下载、使用帮助与最新版本
@@ -40,33 +41,38 @@
 | ![启动项管理](docs/screenshots/startup.png) | ![Windows 优化](docs/screenshots/optimize.png) |
 | **磁盘分析** | **电脑开荒网** |
 | ![磁盘分析](docs/screenshots/disk.png) | ![电脑开荒网](docs/screenshots/website.png) |
+| **设置** | **关于** |
+| ![设置](docs/screenshots/settings.png) | ![关于](docs/screenshots/about.png) |
 
 ## 功能特性
 
 ### 🔍 开荒检查
 一键体检：Windows 版本/CPU/内存/GPU/分区概览，激活状态、Defender 实时保护、防火墙、
-异常驱动、待重启、网络连通、电源计划、休眠文件占用——WMI 并行查询，几秒出报告，支持导出 Markdown。
+异常驱动、待重启、网络连通、电源计划、休眠文件占用——WMI 并行查询，几秒出报告，支持导出 Markdown 或一键复制。
+顶部「开荒进度」面板跨模块汇总：体检 / 优化已应用 / 启动项已禁用 / 默认路径已迁移 / 推荐软件已安装，点击直达对应模块。
 
 ### 🖼 壁纸开荒
 五步桌面美化：隐藏桌面图标 → 任务栏自动隐藏 → 任务栏透明化 → Dock 栏 → 设置壁纸。
 收尾二选一：动态壁纸（直达 Steam 壁纸引擎 Wallpaper Engine 商店页，未装 Steam 可一键安装）
-或静态壁纸（本地图片，或点击加载 Bing 每日壁纸网格——填充/适应/拉伸/平铺/居中五种模式、离线缓存）。
+或静态壁纸（本地图片，或点击加载 Bing 每日壁纸——可「加载更多」回看约 16 天、可切换中国/国际/日本/英国/德国市场，填充/适应/拉伸/平铺/居中五种模式、离线缓存）。
 
 ### 📁 默认路径换盘
 把桌面、文档、下载、图片、音乐、视频从系统盘一键迁到其他盘：**先迁移文件、最后才改系统指向**（中断不产生不一致），
-被占用文件跳过并列出清单；Chrome / Edge / Firefox 下载设置只读检测，跟随系统的自动生效。
+迁移过程可随时取消；被占用文件跳过并列出清单；Chrome / Edge / Firefox 下载设置只读检测，跟随系统的自动生效。
 
 ### 📦 APP 推荐
-精选 25 款软件、8 大类目，收录标准只有一条：**官方渠道、无捆绑安装器、无弹窗广告**。
-已安装自动检测，勾选后 winget 静默批量安装；不在 winget 库的一键跳官网。
+精选 32 款软件、10 大类目（含安全防护、截图录屏等），收录标准只有一条：**官方渠道、无捆绑安装器、无弹窗广告**。
+已安装自动检测，勾选后 winget 静默批量安装，失败可一键重试；不在 winget 库的一键跳官网。
 
 ### 🚀 启动项管理
-Run 键 + 启动文件夹全枚举，数字签名发布者解析；
-禁用走任务管理器同款 StartupApproved 机制——**不删原始条目，随时可恢复**。
+Run 键 + 启动文件夹全枚举，数字签名发布者解析，支持搜索过滤；
+禁用走任务管理器同款 StartupApproved 机制——**不删原始条目，随时可恢复**；
+另有「计划任务（登录触发）」「自启动系统服务」只读参考与系统设置直达（只展示不操作，防止误禁系统任务）。
 
 ### ⚡ Windows 优化
-15 项可逆优化：开始菜单推荐、任务栏小组件、广告 ID、通知建议、联网搜索、Game DVR、
-诊断遥测（需管理员）、高性能电源计划等；按 Win10/11 自动显隐，应用前备份原设置并可精确恢复。
+16 项可逆优化、6 组展示：开始菜单推荐、任务栏小组件、广告 ID、通知建议、联网搜索、Game DVR、
+诊断遥测（需管理员）、高性能电源计划、Win11 经典右键菜单等；按 Win10/11 自动显隐，
+应用前逐项备份原设置并可精确恢复，支持「全部恢复」一键还原。
 
 ### 💾 磁盘分析
 一级目录占用排行 + 最大文件 Top 30，进度可取消；
@@ -76,6 +82,10 @@ Run 键 + 启动文件夹全枚举，数字签名发布者解析；
 应用内直接访问官网 [www.cyhaoka.vip](https://www.cyhaoka.vip)：WebView2 内嵌渲染（与 Edge 同内核），
 无需打开浏览器；提供后退/前进/主页/刷新工具栏与实时状态；
 **站外链接自动交给系统默认浏览器**，内嵌仅显示本站内容；无 WebView2 运行时的精简系统会给出安装指引与浏览器兜底。
+
+### ⚙️ 设置与更新
+主题三态切换（跟随系统/浅色/深色，即时生效）、「记住上次访问的页面」（下次启动直达）、
+打开日志文件夹；关于页「检查更新」**仅在你点击时联网一次**，发现新版直达官网下载。
 
 ## 下载与安装
 
@@ -127,12 +137,15 @@ dnkhw/
 │   ├── Wallpaper/          #   壁纸（Bing 接口 + SPI 设置）
 │   ├── Downloads/          #   默认路径换盘（六个已知文件夹迁移）
 │   ├── AppCatalog/         #   APP 推荐（清单 + winget 封装）
-│   ├── Startup/            #   启动项（StartupApproved 编解码）
-│   ├── Optimize/           #   Windows 优化（注册表/服务/电源）
-│   └── DiskScan/           #   磁盘分析（只读聚合）
-├── src/Dnkhw.Core.Tests/   # xUnit 单元测试
+│   ├── Startup/            #   启动项（StartupApproved 编解码 + 计划任务/服务枚举）
+│   ├── Optimize/           #   Windows 优化（注册表/服务/电源 + 备份还原）
+│   ├── DiskScan/           #   磁盘分析（只读聚合）
+│   ├── Settings/           #   用户偏好（JSON 原子读写）
+│   └── Update/              #   检查更新（version.json 比对）
+├── src/Dnkhw.Core.Tests/   # xUnit 单元测试（128 项）
 ├── tools/Probe/             # 开发探针：真机调用各 Core 服务的控制台工具
 ├── docs/screenshots/        # 界面截图
+├── CHANGELOG.md             # 更新日志
 └── promo/                   # 宣传物料（采集/合成脚本、发布说明）
 ```
 
@@ -140,10 +153,11 @@ dnkhw/
 
 欢迎 Issue 与 PR：
 
-- 提交前请确保 `dotnet test` 全绿、`dotnet build` 零警告
+- 提交前请确保 `dotnet test` 全绿、`dotnet build` 零警告（警告已在构建层强制为错误）
 - 新功能请附带单元测试（Core 库的纯逻辑均可测）
 - APP 推荐清单（`src/Dnkhw.Core/AppCatalog/apps.json`）接受新条目，但必须满足收录标准：官方渠道、无捆绑、无广告
 - UI/UX 改进建议请附截图或原型
+- 用户可见变化请同步更新 `CHANGELOG.md`
 
 如果这个工具帮到了你，欢迎点一个 ⭐ Star，这是持续维护的最大动力。
 
