@@ -108,11 +108,11 @@ if (cmd is "all" or "apps")
     }
 
     // 无副作用验证包解析：winget show 只查询不安装
-    var show = await winget.RunAsync("show --id 7zip.7zip -e");
+    var show = await winget.RunAsync(["show", "--id", "7zip.7zip", "-e"]);
     Console.WriteLine($"winget show 7-Zip: exit={show.ExitCode}，首行={show.Output.Split('\r', '\n').FirstOrDefault(l => l.Trim().Length > 0)}");
 
     // 失败路径验证：不存在的包应返回非零退出码与可读错误
-    var fail = await winget.RunAsync("install --id DNKHW.DoesNotExist -e --silent --accept-package-agreements --accept-source-agreements");
+    var fail = await winget.RunAsync(["install", "--id", "DNKHW.DoesNotExist", "-e", "--silent", "--accept-package-agreements", "--accept-source-agreements"]);
     Console.WriteLine($"winget 失败路径: exit={fail.ExitCode}");
     Console.WriteLine("  " + fail.Output.Split('\r', '\n').FirstOrDefault(l => l.Trim().Length > 0));
 }

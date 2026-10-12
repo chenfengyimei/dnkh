@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <!-- 在 SDK/运行时进入已知漏洞或停止支持状态时让构建主动告警。 -->
+    <CheckSdkVulnerabilities>true</CheckSdkVulnerabilities>
+  </PropertyGroup>
+</Project>

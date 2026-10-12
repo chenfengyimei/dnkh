@@ -1,5 +1,6 @@
 bin/
 obj/
+output/
 publish/
 .vs/
 .idea/

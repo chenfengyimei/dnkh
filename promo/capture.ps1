@@ -2,7 +2,7 @@
 # 1920x1080 physical, and captures PrintWindow stills / frame sequences.
 # ASCII only on purpose: WinPS 5.1 reads .ps1 as ANSI when no BOM present.
 param(
-    [string]$ExePath = "src/Dnkhw/bin/Debug/net9.0-windows/Dnkhw.exe",
+    [string]$ExePath = "src/Dnkhw/bin/Debug/net10.0-windows/Dnkhw.exe",
     [string]$OutDir = "promo/shots"
 )
 
