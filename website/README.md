@@ -70,9 +70,11 @@ author-card + 版权行 + fb-note 渠道说明。
 
 - 界面截图：用 `promo\capture.ps1 --page <页面>` 重采后覆盖
   `assets/img/screenshots/`，并同步回 `docs/screenshots/`（README 也在用）
-- 宣传视频：当前为**无人声 + 字幕**版（无音轨，后期自行配乐）。改字幕文案：
-  编辑 `promo\captions_silent.tsv`（UTF-8）后运行 `powershell promo\make_promo_silent.ps1`
-  → 产出 `promo\dnkhw_promo_silent.mp4`，验证后转正为 `promo\dnkhw_promo_1080p.mp4`
-  并覆盖 `assets/video/dnkhw_promo.mp4`，重新提取封面：
-  `tools\ffmpeg\ffmpeg-9.0.2-essentials_build\bin\ffmpeg.exe -ss 2 -i promo\dnkhw_promo_1080p.mp4 -frames:v 1 -q:v 2 website\assets\img\promo_poster.jpg`
-  （旧解说版备份：promo\dnkhw_promo_v1_narrated.mp4；解说版管线 make_promo.ps1 保留可用）
+- 宣传视频：当前为**展示版 v3**（专门界面展示 + xfade 转场 + 生成式 BGM，43.6s）。改文案/顺序：
+  1. 编辑 `promo\showcase_texts.tsv`（UTF-8）→ `powershell promo\make_showcase.ps1`（重生成展示帧）
+  2. （可选）用 generate_music 生成新 BGM 覆盖 `promo\audio\bgm_promo.mp3`
+  3. `powershell promo\make_promo_v2.ps1` → 产出 `promo\dnkhw_promo_v2_raw.mp4`
+  4. 验证后转正为 `promo\dnkhw_promo_1080p.mp4` 并覆盖 `assets/video/dnkhw_promo.mp4`，
+     重提取封面：`tools\ffmpeg\ffmpeg-9.0.2-essentials_build\bin\ffmpeg.exe -ss 2 -i promo\dnkhw_promo_1080p.mp4 -frames:v 1 -q:v 2 website\assets\img\promo_poster.jpg`
+  （历史版本：v1 解说版 `dnkhw_promo_v1_narrated.mp4`、v2 静音 Ken Burns 版 `dnkhw_promo_v2_silent.mp4`，
+  对应管线 make_promo.ps1 / make_promo_silent.ps1 均保留可用）
