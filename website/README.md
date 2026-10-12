@@ -16,7 +16,7 @@ website/
 │   └── img/
 │       ├── favicon.svg          # 站点图标（软件同款蓝绿渐变显示器）
 │       ├── promo_poster.jpg     # 视频封面（从宣传视频 3s 提取）
-│       └── screenshots/*.png    # 7 张真实界面截图（源自 docs/screenshots）
+│       └── screenshots/*.png    # 8 张真实界面截图（源自 docs/screenshots，含电脑开荒网）
 │   └── video/dnkhw_promo.mp4    # 53 秒宣传视频（源自 promo/）
 ├── download/Dnkhw.exe            # ← 发版时手动放入最新安装包（已 gitignore）
 └── README.md
@@ -32,6 +32,19 @@ website/
 
 必填校验（Bug = 问题描述；收录 = 软件名称 + 官网地址）红框提示，纯前端。
 
+## 作者与联系渠道（页脚展示）
+
+- **哔哩哔哩**：尘风一枚 · https://space.bilibili.com/508302628
+  （两页页脚「关注作者」卡 + 版权行署名 + 反馈页 fb-note 的私信渠道）
+- **反馈邮箱**：2079937150@qq.com（反馈页 mailto）
+
+改作者信息需同步 5 处：index.html 页脚 author-card + 版权行、feedback.html 页脚
+author-card + 版权行 + fb-note 渠道说明。
+
+## 界面组件备忘
+
+- 回到顶部按钮：两页底部 `#toTop`，滚动 >600px 显示（main.js 控制，勿删按钮标记）
+
 ## 本地预览
 
 直接双击 `index.html` 即可（复制按钮在 file:// 下有 execCommand 回退）。
@@ -42,8 +55,8 @@ website/
 每次发布新版本，改 `index.html` 中 4 处数据（全文搜索即可定位）：
 
 1. **版本号** `v0.1.0`（Hero 徽章 + 下载卡 2 处 + feedback.html Bug 表单预填 1 处）
-2. **大小** `58.97 MB` / `61,834,356 字节`
-3. **SHA256** `51D4A39A...74AC35`（下载卡与 data-copy 各 1 处，共 2 个字符串）
+2. **大小** `66.88 MB` / `70,131,072 字节`
+3. **SHA256** `53537003...05D42B`（下载卡与 data-copy 各 1 处，共 2 个字符串）
 4. 复制最新产物：`Copy-Item publish\Dnkhw.exe website\download\Dnkhw.exe`
 
 > SHA256 获取：`Get-FileHash publish\Dnkhw.exe -Algorithm SHA256`

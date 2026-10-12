@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; media-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
   <title>电脑开荒 — 纯净无广告的 Windows 开荒助手</title>
-  <meta name="description" content="电脑开荒：新机到手 / 重装系统后的一站式 Windows 开荒助手。系统体检、Bing 壁纸、下载路径换盘、25 款纯净软件静默安装、启动项管理、Windows 优化、磁盘分析——绿色单文件、免安装、无广告无捆绑。">
+  <meta name="description" content="电脑开荒：新机到手 / 重装系统后的一站式 Windows 开荒助手。系统体检、Bing 壁纸、默认路径换盘、25 款纯净软件静默安装、启动项管理、Windows 优化、磁盘分析——绿色单文件、免安装、无广告无捆绑。">
   <meta name="color-scheme" content="light dark">
   <meta name="theme-color" content="#0078D4">
   <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
@@ -13,7 +15,7 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="电脑开荒网">
   <meta property="og:title" content="电脑开荒 — 纯净无广告的 Windows 开荒助手">
-  <meta property="og:description" content="体检、壁纸、换盘、纯净软件安装、启动项、优化、磁盘分析——一个绿色单文件全搞定。">
+  <meta property="og:description" content="体检、桌面美化、默认路径换盘、纯净软件安装、启动项、优化、磁盘分析、应用内官网——一个绿色单文件全搞定。">
   <meta property="og:url" content="https://www.cyhaoka.vip/">
   <meta property="og:image" content="https://www.cyhaoka.vip/assets/img/screenshots/check.png">
 
@@ -53,12 +55,12 @@
           <div class="hero-badges">
             <span class="badge">v0.1.0 最新版</span>
             <span class="badge">Windows 10 / 11</span>
-            <span class="badge">单文件 58.97 MB · 免安装</span>
+            <span class="badge">单文件 66.88 MB · 免安装</span>
           </div>
           <h1>电脑开荒</h1>
           <p class="tagline">纯净无广告的 Windows 开荒助手</p>
           <p class="lead">
-            新电脑到手、重装系统后的第一件事——系统体检、壁纸设置、下载路径换盘、
+            新电脑到手、重装系统后的第一件事——系统体检、桌面美化、默认路径换盘、
             纯净软件安装——<strong>一个绿色单文件全搞定</strong>，无广告、无捆绑、不上传任何数据。
           </p>
           <div class="hero-cta">
@@ -99,7 +101,7 @@
           <article class="card promise">
             <div class="promise-icon" aria-hidden="true">🔒</div>
             <h3>不收集 · 不上传数据</h3>
-            <p>仅有的联网行为是访问 Bing 壁纸接口与 winget 官方源，除此之外没有任何遥测。</p>
+            <p>仅有的联网行为是访问 Bing 壁纸接口、winget 官方源与官网内嵌浏览，除此之外没有任何遥测。</p>
           </article>
           <article class="card promise">
             <div class="promise-icon" aria-hidden="true">↩️</div>
@@ -115,7 +117,7 @@
       <div class="container">
         <div class="section-head">
           <span class="eyebrow">功能</span>
-          <h2>七大模块，覆盖开荒全流程</h2>
+          <h2>八大模块，覆盖开荒全流程</h2>
           <p class="section-lead">从体检到优化，把「开新机」做成一条完整的动线。</p>
         </div>
         <div class="grid grid-3">
@@ -127,12 +129,12 @@
           <article class="card feature">
             <div class="feature-icon" aria-hidden="true">🖼️</div>
             <h3>壁纸开荒</h3>
-            <p>Bing 中国区近一周每日壁纸网格预览，一键下载并设为桌面；支持 5 种填充模式、本地图片与离线缓存。</p>
+            <p>五步桌面美化：隐藏桌面图标 → 任务栏自动隐藏 → 任务栏透明化 → Dock 栏 → 设置壁纸；收尾二选一——Steam 壁纸引擎动态壁纸，或本地图片 / Bing 每日壁纸（按需加载、5 种填充模式、离线缓存）。</p>
           </article>
           <article class="card feature">
             <div class="feature-icon" aria-hidden="true">📁</div>
-            <h3>下载路径换盘</h3>
-            <p>「下载」文件夹一键迁出系统盘：先迁移文件、最后才改系统指向，中断不产生不一致；浏览器跟随系统自动生效。</p>
+            <h3>默认路径换盘</h3>
+            <p>桌面、文档、下载、图片、音乐、视频六个文件夹一键迁出系统盘：先迁移文件、最后才改系统指向，中断不产生不一致；浏览器跟随系统自动生效。</p>
           </article>
           <article class="card feature">
             <div class="feature-icon" aria-hidden="true">📦</div>
@@ -147,17 +149,22 @@
           <article class="card feature">
             <div class="feature-icon" aria-hidden="true">⚡</div>
             <h3>Windows 优化</h3>
-            <p>开始菜单推荐、任务栏小组件、广告 ID、锁屏资讯等 9 项一键关闭；按 Win10/11 自动显隐，全部可逆。</p>
+            <p>开始菜单推荐、任务栏小组件、广告 ID、联网搜索、Game DVR、诊断遥测等 15 项，按 5 组分区一键关闭；按 Win10/11 自动显隐，应用前备份原设置、可精确恢复。</p>
           </article>
           <article class="card feature">
             <div class="feature-icon" aria-hidden="true">💾</div>
             <h3>磁盘分析</h3>
-            <p>目录占用排行 + 最大文件 Top 30；回收站、Temp、Windows.old、更新缓存只展示、不删除，一键在资源管理器定位。</p>
+            <p>盘符卡片一键切换、自动重扫：目录占用排行 + 最大文件 Top 30；回收站、Temp、Windows.old、更新缓存只展示、不删除，一键在资源管理器定位。</p>
+          </article>
+          <article class="card feature">
+            <div class="feature-icon" aria-hidden="true">🌐</div>
+            <h3>电脑开荒网</h3>
+            <p>应用内直接访问官网 www.cyhaoka.vip：WebView2 内嵌渲染、免开浏览器，带后退 / 前进 / 主页 / 刷新工具栏；站外链接自动交给系统默认浏览器，缺 WebView2 运行时有安装指引。</p>
           </article>
           <article class="card feature feature-wide">
             <div class="feature-icon" aria-hidden="true">🔓</div>
             <h3>开源透明</h3>
-            <p>MIT 许可。全部通过官方公开机制（注册表 / StartupApproved / powercfg / winget）完成，无注入、无全局钩子；业务库 72 项单元测试全绿。</p>
+            <p>MIT 许可。全部通过官方公开机制（注册表 / StartupApproved / powercfg / winget）完成，无注入、无全局钩子；业务库 85 项单元测试全绿。</p>
           </article>
         </div>
       </div>
@@ -179,11 +186,11 @@
           <button class="gallery-tab" role="tab" aria-selected="false"
             data-src="assets/img/screenshots/wallpaper.png"
             data-title="壁纸开荒"
-            data-caption="Bing 中国区近一周每日壁纸，网格预览、一键下载并设为桌面，支持 5 种填充模式。">壁纸开荒</button>
+            data-caption="五步桌面美化：隐藏图标、任务栏自动隐藏、透明化、Dock 栏、壁纸；收尾二选一——Steam 壁纸引擎动态壁纸或静态壁纸。">壁纸开荒</button>
           <button class="gallery-tab" role="tab" aria-selected="false"
             data-src="assets/img/screenshots/downloads.png"
-            data-title="下载路径换盘"
-            data-caption="下载文件夹一键迁出系统盘：先迁文件、后改指向，浏览器自动跟随，可中断、可还原。">下载路径换盘</button>
+            data-title="默认路径换盘"
+            data-caption="桌面、文档、下载、图片、音乐、视频一键迁出系统盘：先迁文件、后改指向，可中断、可还原。">默认路径换盘</button>
           <button class="gallery-tab" role="tab" aria-selected="false"
             data-src="assets/img/screenshots/apps.png"
             data-title="APP 推荐"
@@ -195,11 +202,15 @@
           <button class="gallery-tab" role="tab" aria-selected="false"
             data-src="assets/img/screenshots/optimize.png"
             data-title="Windows 优化"
-            data-caption="9 项推广与广告功能一键关闭，按 Win10/11 自动显隐，随时恢复。">Windows 优化</button>
+            data-caption="15 项系统体验优化按 5 组展示，按 Win10/11 自动显隐，并可恢复应用前设置。">Windows 优化</button>
           <button class="gallery-tab" role="tab" aria-selected="false"
             data-src="assets/img/screenshots/disk.png"
             data-title="磁盘分析"
-            data-caption="目录与大文件占用排行，可清理位置只展示、不删除，一键定位。">磁盘分析</button>
+            data-caption="盘符卡片一键切换、自动重扫：目录与大文件占用排行，可清理位置只展示、不删除，一键定位。">磁盘分析</button>
+          <button class="gallery-tab" role="tab" aria-selected="false"
+            data-src="assets/img/screenshots/website.png"
+            data-title="电脑开荒网"
+            data-caption="应用内直连官网 www.cyhaoka.vip：WebView2 内嵌渲染，站外链接交给系统浏览器。">电脑开荒网</button>
         </div>
         <figure class="gallery-figure">
           <img id="galleryImg" src="assets/img/screenshots/check.png"
@@ -247,14 +258,14 @@
               </div>
             </div>
             <dl class="dl-meta">
-              <div><dt>大小</dt><dd>58.97 MB（61,834,356 字节，自包含单文件）</dd></div>
+              <div><dt>大小</dt><dd>66.88 MB（70,131,072 字节，自包含单文件）</dd></div>
               <div><dt>适用</dt><dd>Windows 10（1709+）/ Windows 11 · 64 位</dd></div>
-              <div><dt>依赖</dt><dd>无需安装 .NET 运行时；「APP 推荐」使用系统自带 winget</dd></div>
+              <div><dt>依赖</dt><dd>无需安装 .NET 运行时；「电脑开荒网」内嵌页用系统自带 WebView2，「APP 推荐」用 winget</dd></div>
               <div><dt>校验</dt><dd>SHA256 见下方，可用 certutil 核对</dd></div>
             </dl>
             <a class="btn btn-primary btn-lg btn-block" href="download/Dnkhw.exe" download>
               <svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M8 1.5a.75.75 0 0 1 .75.75v7.44l2.72-2.72a.75.75 0 1 1 1.06 1.06L8.53 12.03a.75.75 0 0 1-1.06 0L3.47 8.03A.75.75 0 1 1 4.53 6.97l2.72 2.72V2.25A.75.75 0 0 1 8 1.5ZM2.5 13.25a.75.75 0 0 1 .75-.75h9.5a.75.75 0 0 1 0 1.5h-9.5a.75.75 0 0 1-.75-.75Z"/></svg>
-              下载 Dnkhw.exe · 58.97 MB
+              下载 Dnkhw.exe · 66.88 MB
             </a>
             <p class="dl-note">请仅从官网 <strong>www.cyhaoka.vip</strong> 获取安装包，下载后建议核对 SHA256。</p>
           </div>
@@ -270,14 +281,14 @@
             <p class="dl-hash-label">在文件所在目录执行：</p>
             <pre class="code"><code>certutil -hashfile Dnkhw.exe SHA256</code><button class="btn-ghost" type="button" data-copy="certutil -hashfile Dnkhw.exe SHA256">复制</button></pre>
             <p class="dl-hash-label">结果应与下方一致：</p>
-            <pre class="code code-hash"><code>51D4A39A376D8E81F53FB020C1B2DAA27C9FC1A1E70144636B26D8B97074AC35</code><button class="btn-ghost" type="button" data-copy="51D4A39A376D8E81F53FB020C1B2DAA27C9FC1A1E70144636B26D8B97074AC35">复制</button></pre>
+            <pre class="code code-hash"><code>53537003DD2EED09B2BCECF2D6EB70C4A5F25C443736EBE944A977A47905D42B</code><button class="btn-ghost" type="button" data-copy="53537003DD2EED09B2BCECF2D6EB70C4A5F25C443736EBE944A977A47905D42B">复制</button></pre>
           </aside>
         </div>
 
         <div class="trust-row" aria-label="技术信任背书">
           <span class="trust-chip">MIT 开源许可</span>
-          <span class="trust-chip">72 项单元测试全绿</span>
-          <span class="trust-chip">.NET 9 · WPF · Fluent 设计</span>
+          <span class="trust-chip">85 项单元测试全绿</span>
+          <span class="trust-chip">.NET 10 LTS · WPF · Fluent 设计</span>
           <span class="trust-chip">无遥测 · 无后台驻留</span>
         </div>
       </div>
@@ -304,7 +315,7 @@
         <details class="faq-item">
           <summary>需要管理员权限吗？</summary>
           <div class="faq-body">
-            <p>默认以普通权限运行，开荒检查、壁纸、下载路径换盘、APP 推荐、磁盘分析均可正常使用。
+            <p>默认以普通权限运行，开荒检查、壁纸、默认路径换盘、APP 推荐、磁盘分析均可正常使用。
             仅系统级启动项、关闭遥测等少数操作需要提权——页面内会提示并提供「以管理员身份重启」按钮，
             不需要提权的功能绝不要求。</p>
           </div>
@@ -331,13 +342,22 @@
         <details class="faq-item">
           <summary>软件会收集我的数据吗？</summary>
           <div class="faq-body">
-            <p>不会。仅有的联网行为是访问 Bing 壁纸接口与 winget 官方源，
+            <p>不会。仅有的联网行为是访问 Bing 壁纸接口、winget 官方源与官网内嵌浏览（「电脑开荒网」模块），
             除此之外没有任何遥测、统计或上报，也不需要注册账号。</p>
           </div>
         </details>
 
         <details class="faq-item">
-          <summary>支持哪些系统？为什么是 59 MB 的单文件？</summary>
+          <summary>「电脑开荒网」页面打不开或显示异常？</summary>
+          <div class="faq-body">
+            <p>内嵌官网依赖系统的 WebView2 运行时，Win10 / 11 一般随 Edge 自带。
+            极少数精简系统缺失时，应用会给出安装指引，也可直接改用任意浏览器访问
+            www.cyhaoka.vip，功能完全一致。</p>
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary>支持哪些系统？为什么是约 66 MB 的单文件？</summary>
           <div class="faq-body">
             <p>支持 Windows 10（1709 及以上）与 Windows 11 的 64 位系统。
             为了实现「新机双击即用」，程序自带完整 .NET 运行时（自包含单文件），因此比普通软件大——
@@ -361,16 +381,32 @@
           <p class="footer-desc">纯净无广告的 Windows 开荒助手。<br>软件下载 · 使用帮助 · 最新版本。</p>
           <p class="footer-domain">🌐 www.cyhaoka.vip</p>
         </div>
-        <nav class="footer-links" aria-label="页脚导航">
-          <a href="#features">功能</a>
-          <a href="#screenshots">界面</a>
-          <a href="#download">下载</a>
-          <a href="#faq">帮助</a>
-          <a href="feedback.html">反馈</a>
-        </nav>
+        <div class="footer-col">
+          <h4 class="footer-heading">页面</h4>
+          <nav class="footer-links" aria-label="页脚导航">
+            <a href="#features">功能</a>
+            <a href="#screenshots">界面</a>
+            <a href="#download">下载</a>
+            <a href="#faq">帮助</a>
+            <a href="feedback.html">反馈</a>
+          </nav>
+        </div>
+        <div class="footer-col">
+          <h4 class="footer-heading">关注作者</h4>
+          <a class="author-card" href="https://space.bilibili.com/508302628" target="_blank" rel="noopener">
+            <span class="author-avatar" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 9.5a2 2 0 0 1 2-2h15a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-15a2 2 0 0 1-2-2v-8Z"/><path d="m7 2.8 3.1 4.7"/><path d="m17 2.8-3.1 4.7"/><circle cx="8.6" cy="13.4" r="1.1" fill="currentColor" stroke="none"/><circle cx="15.4" cy="13.4" r="1.1" fill="currentColor" stroke="none"/></svg>
+            </span>
+            <span class="author-text">
+              <strong>尘风一枚</strong>
+              <span>哔哩哔哩 · 个人主页</span>
+            </span>
+          </a>
+          <p class="author-note">教程视频与版本动态，B 站第一时间发布。</p>
+        </div>
       </div>
       <div class="footer-bottom">
-        <p>© 2026 电脑开荒（dnkhw）· <a href="https://opensource.org/license/mit" rel="noopener" target="_blank">MIT License</a></p>
+        <p>© 2026 电脑开荒（dnkhw）· 作者 <a href="https://space.bilibili.com/508302628" target="_blank" rel="noopener">@尘风一枚</a> · <a href="https://opensource.org/license/mit" rel="noopener" target="_blank">MIT License</a></p>
         <p class="footer-legal">
           免责声明：本软件按「现状」提供，使用产生的一切后果由使用者自行承担；
           请仅从官方渠道获取安装包，并通过 SHA256 校验完整性，从其他来源获取的文件安全性与作者无关。
@@ -384,6 +420,11 @@
     <button class="lightbox-close" type="button" aria-label="关闭大图">✕</button>
     <img id="lightboxImg" src="assets/img/screenshots/check.png" alt="界面大图">
   </div>
+
+  <!-- ======== 回到顶部 ======== -->
+  <button class="to-top" id="toTop" type="button" aria-label="回到顶部" title="回到顶部">
+    <svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 10 4-4 4 4"/></svg>
+  </button>
 
   <script src="assets/js/main.js" defer></script>
 </body>

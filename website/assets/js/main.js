@@ -72,6 +72,19 @@
     });
   }
 
+  /* ---- 回到顶部 ---- */
+  var toTop = document.getElementById('toTop');
+  if (toTop) {
+    var toggleTop = function () {
+      toTop.classList.toggle('show', window.scrollY > 600);
+    };
+    window.addEventListener('scroll', toggleTop, { passive: true });
+    toggleTop();
+    toTop.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
   /* ---- 复制按钮（file:// 下回退 execCommand） ---- */
   function copyText(text) {
     if (navigator.clipboard && window.isSecureContext) {
