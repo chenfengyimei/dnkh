@@ -66,5 +66,9 @@ author-card + 版权行 + fb-note 渠道说明。
 
 - 界面截图：用 `promo\capture.ps1 --page <页面>` 重采后覆盖
   `assets/img/screenshots/`，并同步回 `docs/screenshots/`（README 也在用）
-- 宣传视频：重新合成后覆盖 `assets/video/dnkhw_promo.mp4`，并重新提取封面：
-  `tools\ffmpeg\bin\ffmpeg.exe -ss 3 -i promo\dnkhw_promo_1080p.mp4 -frames:v 1 -q:v 2 website\assets\img\promo_poster.jpg`
+- 宣传视频：当前为**无人声 + 字幕**版（无音轨，后期自行配乐）。改字幕文案：
+  编辑 `promo\captions_silent.tsv`（UTF-8）后运行 `powershell promo\make_promo_silent.ps1`
+  → 产出 `promo\dnkhw_promo_silent.mp4`，验证后转正为 `promo\dnkhw_promo_1080p.mp4`
+  并覆盖 `assets/video/dnkhw_promo.mp4`，重新提取封面：
+  `tools\ffmpeg\ffmpeg-9.0.2-essentials_build\bin\ffmpeg.exe -ss 2 -i promo\dnkhw_promo_1080p.mp4 -frames:v 1 -q:v 2 website\assets\img\promo_poster.jpg`
+  （旧解说版备份：promo\dnkhw_promo_v1_narrated.mp4；解说版管线 make_promo.ps1 保留可用）
