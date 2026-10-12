@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using Dnkhw.Services;
 using Dnkhw.ViewModels;
 
 namespace Dnkhw.Pages;
@@ -19,7 +20,7 @@ public partial class AppsPage : Page
     {
         if (_viewModel.Categories.Count == 0 && !_viewModel.IsBusy)
         {
-            _ = _viewModel.LoadCommand.ExecuteAsync(null);
+            SafeFireAndForget.Run("APP 清单加载", () => _viewModel.LoadCommand.ExecuteAsync(null));
         }
     }
 }

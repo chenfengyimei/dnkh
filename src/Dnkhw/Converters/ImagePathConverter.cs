@@ -28,8 +28,9 @@ public sealed class ImagePathConverter : IValueConverter
             image.Freeze();
             return image;
         }
-        catch
+        catch (Exception ex)
         {
+            Dnkhw.Services.LogService.Warn($"壁纸缩略图加载失败：{path}", ex);
             return null;
         }
     }

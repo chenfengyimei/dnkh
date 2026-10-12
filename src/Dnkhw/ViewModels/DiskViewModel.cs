@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Dnkhw.Core.DiskScan;
 using Dnkhw.Core.Formatting;
+using Dnkhw.Services;
 
 namespace Dnkhw.ViewModels;
 
@@ -84,7 +85,7 @@ public sealed partial class DiskViewModel : ObservableObject
             // 首次选中即自动扫描（默认系统盘），切换盘符同样自动重扫
             SelectedDrive ??= Drives.FirstOrDefault(d => d.Root.StartsWith("C", StringComparison.OrdinalIgnoreCase))
                 ?? Drives.FirstOrDefault();
-            _ = LoadJunkAsync();
+            SafeFireAndForget.Run("垃圾位置统计", () => LoadJunkAsync());
         }
         catch (Exception ex)
         {
@@ -113,7 +114,7 @@ public sealed partial class DiskViewModel : ObservableObject
         SummaryText = string.Empty;
         ProgressText = $"正在扫描 {newValue.Root} …";
         var requestVersion = Interlocked.Increment(ref _scanRequestVersion);
-        _ = QueueScanAsync(requestVersion);
+        SafeFireAndForget.Run("磁盘扫描", () => QueueScanAsync(requestVersion));
     }
 
     private async Task LoadJunkAsync()
@@ -123,9 +124,10 @@ public sealed partial class DiskViewModel : ObservableObject
             var junk = await _scanner.GetJunkLocationsAsync();
             JunkLocations = junk.Select(j => new JunkRow(j.Name, j.Path, j.Bytes > 0 ? SizeFormatter.Format(j.Bytes) : "—")).ToList();
         }
-        catch
+        catch (Exception ex)
         {
             // 垃圾位置统计失败不影响主流程
+            LogService.Warn("垃圾位置统计失败", ex);
         }
     }
 

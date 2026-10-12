@@ -32,9 +32,10 @@ public static class AdminRelauncher
                 System.Windows.Application.Current.Shutdown();
             }
         }
-        catch
+        catch (Exception ex)
         {
             // 用户取消 UAC 或启动失败：留在当前权限继续使用
+            LogService.Info($"管理员重启未执行：{ex.Message}");
         }
     }
 }

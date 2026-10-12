@@ -39,9 +39,10 @@ public partial class AboutPage : Page
         {
             Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
         }
-        catch
+        catch (Exception ex)
         {
             // 打不开时静默，不弹窗打断使用
+            LogService.Warn($"外链打开失败：{url}", ex);
         }
     }
 }

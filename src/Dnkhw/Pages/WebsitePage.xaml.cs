@@ -3,6 +3,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Web.WebView2.Core;
+using Dnkhw.Services;
 using Wpf.Ui.Appearance;
 
 namespace Dnkhw.Pages;
@@ -40,9 +41,10 @@ public partial class WebsitePage : Page
         {
             runtimeVersion = CoreWebView2Environment.GetAvailableBrowserVersionString();
         }
-        catch
+        catch (Exception ex)
         {
             // 查询异常按运行时缺失处理，走回退卡
+            LogService.Warn("WebView2 运行时版本查询失败，按缺失处理", ex);
         }
 
         if (string.IsNullOrEmpty(runtimeVersion))
@@ -73,8 +75,9 @@ public partial class WebsitePage : Page
             Web.Visibility = Visibility.Visible;
             core.Navigate(SiteUrl);
         }
-        catch
+        catch (Exception ex)
         {
+            LogService.Warn("WebView2 初始化失败，显示回退卡", ex);
             ShowFallback();
         }
     }
@@ -202,9 +205,10 @@ public partial class WebsitePage : Page
         {
             Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
         }
-        catch
+        catch (Exception ex)
         {
             // 打不开时静默，不弹窗打断使用
+            LogService.Warn($"外链打开失败：{url}", ex);
         }
     }
 }

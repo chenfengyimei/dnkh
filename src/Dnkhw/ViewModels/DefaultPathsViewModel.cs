@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Dnkhw.Core.Downloads;
 using Dnkhw.Core.Formatting;
+using Dnkhw.Services;
 
 namespace Dnkhw.ViewModels;
 
@@ -125,7 +126,7 @@ public sealed partial class DefaultPathsViewModel : ObservableObject
         }
 
         OnPropertyChanged(nameof(IsDownloadsSelected));
-        _ = LoadDetailAsync(newValue);
+        SafeFireAndForget.Run("默认路径详情加载", () => LoadDetailAsync(newValue));
     }
 
     private static BrowserView MapBrowser(BrowserDownloadInfo b)

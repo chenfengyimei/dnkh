@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using Dnkhw.Services;
 using Dnkhw.ViewModels;
 
 namespace Dnkhw.Pages;
@@ -19,7 +20,7 @@ public partial class StartupPage : Page
     {
         if (_viewModel.Items.Count == 0 && !_viewModel.IsBusy)
         {
-            _ = _viewModel.LoadCommand.ExecuteAsync(null);
+            SafeFireAndForget.Run("启动项加载", () => _viewModel.LoadCommand.ExecuteAsync(null));
         }
     }
 
@@ -27,7 +28,7 @@ public partial class StartupPage : Page
     {
         if ((sender as FrameworkElement)?.DataContext is StartupItemView row)
         {
-            _ = _viewModel.ToggleAsync(row);
+            SafeFireAndForget.Run("启动项切换", () => _viewModel.ToggleAsync(row));
         }
     }
 }

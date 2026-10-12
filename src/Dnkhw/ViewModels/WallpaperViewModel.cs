@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using Dnkhw.Core.AppCatalog;
 using Dnkhw.Core.DesktopTweaks;
 using Dnkhw.Core.Wallpaper;
+using Dnkhw.Services;
 using Microsoft.Win32;
 namespace Dnkhw.ViewModels;
 
@@ -90,18 +91,20 @@ public sealed partial class WallpaperViewModel : ObservableObject
         {
             DesktopIconsHidden = DesktopTweaksService.GetDesktopIconsHidden();
         }
-        catch
+        catch (Exception ex)
         {
             // 读取失败保持默认 false
+            LogService.Warn("读取桌面图标隐藏状态失败", ex);
         }
 
         try
         {
             TaskbarAutoHide = DesktopTweaksService.GetTaskbarAutoHide();
         }
-        catch
+        catch (Exception ex)
         {
             // 读取失败保持默认 false
+            LogService.Warn("读取任务栏自动隐藏状态失败", ex);
         }
 
         try
@@ -110,9 +113,10 @@ public sealed partial class WallpaperViewModel : ObservableObject
                 "TranslucentTB",
                 InstallDetector.GetInstalledDisplayNames());
         }
-        catch
+        catch (Exception ex)
         {
             TranslucentInstalled = false;
+            LogService.Warn("检测 TranslucentTB 安装状态失败", ex);
         }
 
         try
@@ -121,9 +125,10 @@ public sealed partial class WallpaperViewModel : ObservableObject
                 "Steam",
                 InstallDetector.GetInstalledDisplayNames());
         }
-        catch
+        catch (Exception ex)
         {
             SteamInstalled = false;
+            LogService.Warn("检测 Steam 安装状态失败", ex);
         }
     }
 
@@ -213,8 +218,10 @@ public sealed partial class WallpaperViewModel : ObservableObject
         catch
         {
             // 未装 Steam（无 steam: 协议处理器）等场景回退浏览器打开
+            LogService.Info("Steam 协议未注册，壁纸引擎商店页回退浏览器打开");
             OpenExternal(WallpaperEngineWebUrl, "Steam 商店页");
         }
+
     }
 
     /// <summary>一键安装 Steam（winget 静默安装，供未装 Steam 的用户直达壁纸引擎）。</summary>
@@ -322,9 +329,10 @@ public sealed partial class WallpaperViewModel : ObservableObject
                 {
                     thumbPath = await _store.DownloadThumbAsync(w);
                 }
-                catch
+                catch (Exception ex)
                 {
                     // 缩略图下载失败仅影响预览
+                    LogService.Warn($"下载壁纸缩略图失败：{w.Title}", ex);
                 }
 
                 var fullPath = _store.GetFullPath(w.FullFileName);
