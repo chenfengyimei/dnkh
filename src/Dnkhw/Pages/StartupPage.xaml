@@ -15,10 +15,12 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel>
                     <TextBlock Text="启动项管理" FontSize="26" FontWeight="Bold"/>
-                    <TextBlock Text="查看并禁用开机自启动；与任务管理器同机制，不删除原始条目，随时可恢复" Opacity="0.7" Margin="0,6,0,0" TextWrapping="Wrap"/>
+                    <TextBlock Text="查看并禁用开机自启动；与任务管理器同机制，不删除原始条目，随时可恢复。下方还列出登录触发的计划任务与自启动服务（只读参考）" Opacity="0.7" Margin="0,6,0,0" TextWrapping="Wrap"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding SummaryText}" VerticalAlignment="Center" Margin="0,0,12,0" Opacity="0.7"/>
+                    <ui:TextBox Width="190" PlaceholderText="搜索名称 / 命令 / 发布者"
+                                Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"/>
+                    <TextBlock Text="{Binding SummaryText}" VerticalAlignment="Center" Margin="12,0,12,0" Opacity="0.7"/>
                     <ui:Button Content="重新加载" Command="{Binding LoadCommand}"/>
                     <ui:Button Content="以管理员身份重启" Appearance="Secondary" Margin="10,0,0,0"
                                Command="{Binding RelaunchAdminCommand}"
@@ -31,7 +33,7 @@
             <ui:InfoBar Margin="0,14,0,0" IsOpen="{Binding NoticeOpen, Mode=TwoWay}"
                         Title="{Binding NoticeText}" Severity="Informational" IsClosable="True"/>
 
-            <ItemsControl ItemsSource="{Binding Items}" Margin="0,16,0,0">
+            <ItemsControl ItemsSource="{Binding FilteredItems}" Margin="0,16,0,0">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <ui:Card Margin="0,0,0,8" Padding="14">
@@ -67,6 +69,93 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
+
+            <!-- 登录触发的计划任务：只读参考（禁用请去任务管理器，防止误伤系统任务） -->
+            <Expander Margin="0,20,0,0" IsExpanded="True">
+                <Expander.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="计划任务（登录触发）" FontWeight="SemiBold" FontSize="14" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding TaskSummaryText}" Opacity="0.55" FontSize="12" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Expander.Header>
+                <StackPanel Margin="0,10,0,0">
+                    <TextBlock TextWrapping="Wrap" Opacity="0.6" FontSize="12" LineHeight="20" Margin="0,0,0,10"
+                               Text="这类启动项由任务计划程序驱动，部分是系统组件的正常工作机制。为防止误禁用系统任务导致功能异常，此处仅作参考；需要禁用时请到任务管理器「启动应用」或点右侧按钮操作。"/>
+                    <ui:Button Content="打开系统启动设置 →" Appearance="Secondary" HorizontalAlignment="Left" Padding="14,7"
+                               Command="{Binding OpenStartupSettingsCommand}"/>
+                    <ItemsControl ItemsSource="{Binding Tasks}" Margin="0,10,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <ui:Card Margin="0,0,0,8" Padding="14">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="13" TextTrimming="CharacterEllipsis"/>
+                                                <Border Background="#E8F0FE" CornerRadius="3" Padding="5,1" Margin="6,0,0,0"
+                                                        VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding StateText}" FontSize="10" Foreground="#1A5FB4"/>
+                                                </Border>
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding Path}" Opacity="0.5" FontSize="11" Margin="0,2,0,0"
+                                                       TextTrimming="CharacterEllipsis" ToolTip="{Binding Path}"/>
+                                            <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                                <TextBlock Text="{Binding TriggerText}" Opacity="0.55" FontSize="11"/>
+                                                <TextBlock Text="｜" Opacity="0.3" FontSize="11" Margin="6,0"/>
+                                                <TextBlock Text="{Binding ActionText}" Opacity="0.55" FontSize="11"
+                                                           TextTrimming="CharacterEllipsis" ToolTip="{Binding ActionText}"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Grid>
+                                </ui:Card>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Expander>
+
+            <!-- 自启动系统服务：只读参考 -->
+            <Expander Margin="0,12,0,0" IsExpanded="False">
+                <Expander.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="自启动系统服务" FontWeight="SemiBold" FontSize="14" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding ServiceSummaryText}" Opacity="0.55" FontSize="12" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Expander.Header>
+                <StackPanel Margin="0,10,0,0">
+                    <TextBlock TextWrapping="Wrap" Opacity="0.6" FontSize="12" LineHeight="20" Margin="0,0,0,10"
+                               Text="服务的启停直接影响系统稳定性，本工具只展示不操作；确有问题请到服务控制台（services.msc）谨慎处理，或优先用软件自身设置关闭。"/>
+                    <ui:Button Content="打开服务控制台 →" Appearance="Secondary" HorizontalAlignment="Left" Padding="14,7"
+                               Command="{Binding OpenServicesConsoleCommand}"/>
+                    <ItemsControl ItemsSource="{Binding Services}" Margin="0,10,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <ui:Card Margin="0,0,0,8" Padding="14">
+                                    <StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="13" TextTrimming="CharacterEllipsis"/>
+                                            <Border Background="#E8F0FE" CornerRadius="3" Padding="5,1" Margin="6,0,0,0"
+                                                    VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding StateText}" FontSize="10" Foreground="#1A5FB4"/>
+                                            </Border>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                            <TextBlock Text="{Binding Name}" Opacity="0.5" FontSize="11"/>
+                                            <TextBlock Text="｜" Opacity="0.3" FontSize="11" Margin="6,0"/>
+                                            <TextBlock Text="{Binding Account}" Opacity="0.5" FontSize="11"/>
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding PathText}" Opacity="0.45" FontSize="11" Margin="0,2,0,0"
+                                                   TextTrimming="CharacterEllipsis" ToolTip="{Binding PathText}"/>
+                                    </StackPanel>
+                                </ui:Card>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Expander>
         </StackPanel>
     </ui:DynamicScrollViewer>
 </Page>

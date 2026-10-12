@@ -11,6 +11,9 @@ namespace Dnkhw.ViewModels;
 
 public sealed record FitOption(string Label, WallpaperFit Fit);
 
+/// <summary>Bing 壁纸市场（不同地区的每日壁纸不同）。</summary>
+public sealed record MarketOption(string Label, string Code);
+
 public sealed record WallpaperView(
     string Title,
     string DateText,
@@ -42,6 +45,18 @@ public sealed partial class WallpaperViewModel : ObservableObject
         new FitOption("居中", WallpaperFit.Center),
     ];
 
+    public IReadOnlyList<MarketOption> MarketOptions { get; } =
+    [
+        new MarketOption("中国", "zh-CN"),
+        new MarketOption("国际 (en-US)", "en-US"),
+        new MarketOption("日本", "ja-JP"),
+        new MarketOption("英国", "en-GB"),
+        new MarketOption("德国", "de-DE"),
+    ];
+
+    /// <summary>Bing 接口已加载到的页偏移（0=今天起，每页 8 天）。</summary>
+    private int _pageOffset;
+
     [ObservableProperty]
     private FitOption? _selectedFit;
 
@@ -59,6 +74,22 @@ public sealed partial class WallpaperViewModel : ObservableObject
 
     /// <summary>选择二加载按钮文字：未加载「加载壁纸列表」/ 加载中「正在加载…」/ 已加载「刷新列表」。</summary>
     public string ListButtonLabel => IsBusy ? "正在加载…" : HasLoaded ? "刷新列表" : "加载壁纸列表";
+
+    [ObservableProperty]
+    private MarketOption? _selectedMarket;
+
+    /// <summary>是否还能往前翻页（Bing 最多回看约 16 天，两页）。</summary>
+    [ObservableProperty]
+    private bool _canLoadMore;
+
+    partial void OnSelectedMarketChanged(MarketOption? value)
+    {
+        // 切换市场后重拉第一页（构造期首次赋值不触发）
+        if (HasLoaded && !IsBusy)
+        {
+            SafeFireAndForget.Run("切换壁纸市场", () => LoadAsync());
+        }
+    }
 
     [ObservableProperty]
     private bool _noticeOpen;
@@ -81,6 +112,7 @@ public sealed partial class WallpaperViewModel : ObservableObject
     public WallpaperViewModel()
     {
         _selectedFit = FitOptions[0];
+        _selectedMarket = MarketOptions[0];
         LoadTweakStates();
     }
 
@@ -307,64 +339,16 @@ public sealed partial class WallpaperViewModel : ObservableObject
         NoticeOpen = false;
         try
         {
-            IReadOnlyList<BingWallpaper> list;
-            try
-            {
-                list = await _bing.GetRecentAsync(8);
-            }
-            catch (Exception ex)
-            {
-                list = [];
-                NoticeText = $"Bing 接口不可用（{ex.Message}），仅显示本地缓存";
-                NoticeOpen = true;
-            }
+            _pageOffset = 0;
+            var list = await FetchRemoteAsync(0, reportErrors: true);
+            var remoteViews = await BuildViewsAsync(list);
+            var recentNames = remoteViews
+                .Select(v => v.FullPath is null ? string.Empty : Path.GetFileName(v.FullPath))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-            var items = new List<WallpaperView>();
-            var recentFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-            foreach (var w in list)
-            {
-                string? thumbPath = null;
-                try
-                {
-                    thumbPath = await _store.DownloadThumbAsync(w);
-                }
-                catch (Exception ex)
-                {
-                    // 缩略图下载失败仅影响预览
-                    LogService.Warn($"下载壁纸缩略图失败：{w.Title}", ex);
-                }
-
-                var fullPath = _store.GetFullPath(w.FullFileName);
-                recentFiles.Add(Path.GetFileName(fullPath));
-                items.Add(new WallpaperView(
-                    w.Title,
-                    FormatDate(w.EndDate),
-                    thumbPath,
-                    fullPath,
-                    File.Exists(fullPath),
-                    IsLocal: false,
-                    Source: w));
-            }
-
-            // 附加本地缓存中不在最近一周列表内的文件（离线可用）
-            foreach (var file in _store.GetCachedFiles())
-            {
-                if (!recentFiles.Contains(Path.GetFileName(file)))
-                {
-                    items.Add(new WallpaperView(
-                        Path.GetFileNameWithoutExtension(file),
-                        string.Empty,
-                        file,
-                        file,
-                        IsDownloaded: true,
-                        IsLocal: true,
-                        Source: null));
-                }
-            }
-
-            Items = items;
+            Items = [.. remoteViews, .. LocalCacheExtras(recentNames)];
             HasLoaded = true;
+            CanLoadMore = remoteViews.Count > 0;
         }
         catch (Exception ex)
         {
@@ -375,6 +359,138 @@ public sealed partial class WallpaperViewModel : ObservableObject
         {
             IsBusy = false;
         }
+    }
+
+    /// <summary>往前再翻一页（每页 8 天，Bing 最多回看约 16 天）。</summary>
+    [RelayCommand]
+    private async Task LoadMoreAsync()
+    {
+        if (IsBusy || !CanLoadMore)
+        {
+            return;
+        }
+
+        IsBusy = true;
+        try
+        {
+            var nextOffset = _pageOffset + 8;
+            var list = await FetchRemoteAsync(nextOffset, reportErrors: false);
+            _pageOffset = nextOffset;
+
+            var newViews = await BuildViewsAsync(list);
+            var existingNames = Items
+                .Where(i => !i.IsLocal && i.FullPath is not null)
+                .Select(i => Path.GetFileName(i.FullPath!))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var fresh = newViews
+                .Where(v => v.FullPath is not null && !existingNames.Contains(Path.GetFileName(v.FullPath)))
+                .ToList();
+
+            if (fresh.Count == 0)
+            {
+                CanLoadMore = false;
+                NoticeText = "Bing 最多保留约 16 天壁纸，已全部加载";
+                NoticeOpen = true;
+                return;
+            }
+
+            var freshPaths = fresh.Select(v => v.FullPath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var remoteItems = Items.Where(i => !i.IsLocal).ToList();
+            var localItems = Items
+                .Where(i => i.IsLocal && (i.FullPath is null || !freshPaths.Contains(i.FullPath)))
+                .ToList();
+
+            // 新页插在远程壁纸之后、本地缓存补充之前
+            Items = [.. remoteItems, .. fresh, .. localItems];
+
+            // idx 上限 15：偏移 8 后再翻需要 16，已不可整页回看
+            CanLoadMore = _pageOffset + 8 <= 15;
+            if (!CanLoadMore)
+            {
+                NoticeText = "已加载 Bing 可回看的全部壁纸（约 16 天）";
+                NoticeOpen = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            CanLoadMore = false;
+            NoticeText = $"加载更多失败：{ex.Message}";
+            NoticeOpen = true;
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private async Task<IReadOnlyList<BingWallpaper>> FetchRemoteAsync(int offset, bool reportErrors)
+    {
+        try
+        {
+            return await _bing.GetRecentAsync(8, offset, SelectedMarket?.Code ?? "zh-CN");
+        }
+        catch (Exception ex)
+        {
+            if (reportErrors)
+            {
+                NoticeText = $"Bing 接口不可用（{ex.Message}），仅显示本地缓存";
+                NoticeOpen = true;
+            }
+
+            return [];
+        }
+    }
+
+    private async Task<List<WallpaperView>> BuildViewsAsync(IReadOnlyList<BingWallpaper> list)
+    {
+        var items = new List<WallpaperView>();
+        foreach (var w in list)
+        {
+            string? thumbPath = null;
+            try
+            {
+                thumbPath = await _store.DownloadThumbAsync(w);
+            }
+            catch (Exception ex)
+            {
+                // 缩略图下载失败仅影响预览
+                LogService.Warn($"下载壁纸缩略图失败：{w.Title}", ex);
+            }
+
+            var fullPath = _store.GetFullPath(w.FullFileName);
+            items.Add(new WallpaperView(
+                w.Title,
+                FormatDate(w.EndDate),
+                thumbPath,
+                fullPath,
+                File.Exists(fullPath),
+                IsLocal: false,
+                Source: w));
+        }
+
+        return items;
+    }
+
+    /// <summary>本地缓存中不在远程列表内的文件（离线可用补充）。</summary>
+    private List<WallpaperView> LocalCacheExtras(HashSet<string> recentNames)
+    {
+        var extras = new List<WallpaperView>();
+        foreach (var file in _store.GetCachedFiles())
+        {
+            if (!recentNames.Contains(Path.GetFileName(file)))
+            {
+                extras.Add(new WallpaperView(
+                    Path.GetFileNameWithoutExtension(file),
+                    string.Empty,
+                    file,
+                    file,
+                    IsDownloaded: true,
+                    IsLocal: true,
+                    Source: null));
+            }
+        }
+
+        return extras;
     }
 
     [RelayCommand]

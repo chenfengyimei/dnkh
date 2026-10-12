@@ -22,6 +22,13 @@ public sealed partial class DefaultPathsViewModel : ObservableObject
 {
     private readonly KnownFoldersMigrationService _service = new();
 
+    /// <summary>进行中迁移的取消源；空闲时为 null。</summary>
+    private CancellationTokenSource? _migrateCts;
+
+    /// <summary>是否正在执行迁移（取消按钮只在这个状态显示；读统计的忙碌不显示）。</summary>
+    [ObservableProperty]
+    private bool _isMigrating;
+
     [ObservableProperty]
     private bool _isBusy;
 
@@ -263,6 +270,8 @@ public sealed partial class DefaultPathsViewModel : ObservableObject
         ProgressCompleted = 0;
         ProgressTotal = 0;
         ProgressFile = null;
+        _migrateCts = new CancellationTokenSource();
+        IsMigrating = true;
         try
         {
             var progress = new Progress<MigrationProgress>(p =>
@@ -272,7 +281,7 @@ public sealed partial class DefaultPathsViewModel : ObservableObject
                 ProgressFile = p.CurrentFile;
             });
 
-            var result = await _service.MigrateAsync(folder.Def, selectedDrive.Root, MoveFiles, progress);
+            var result = await _service.MigrateAsync(folder.Def, selectedDrive.Root, MoveFiles, progress, _migrateCts.Token);
             var failureNote = result.Failures.Count > 0 ? $"，{result.Failures.Count} 个失败" : string.Empty;
             LastFailures = result.Failures.Take(20).Select(f => $"{f.RelativePath}：{f.Reason}").ToList();
             RefreshFolders(folder.Key);
@@ -284,6 +293,12 @@ public sealed partial class DefaultPathsViewModel : ObservableObject
             NoticeText = $"迁移完成：「{folder.Name}」已指向 {result.NewPath}，移动 {result.MovedCount} 个文件{failureNote}";
             NoticeOpen = true;
         }
+        catch (OperationCanceledException)
+        {
+            // 中断不产生不一致：系统指向未变更；已移动的文件留在新位置，重新迁移会继续
+            NoticeText = "已取消迁移：系统指向未修改；已移动的文件保留在新位置，重新执行迁移即可继续";
+            NoticeOpen = true;
+        }
         catch (Exception ex)
         {
             NoticeText = $"迁移失败：{ex.Message}";
@@ -291,9 +306,16 @@ public sealed partial class DefaultPathsViewModel : ObservableObject
         }
         finally
         {
+            _migrateCts.Dispose();
+            _migrateCts = null;
+            IsMigrating = false;
             IsBusy = false;
         }
     }
+
+    /// <summary>取消进行中的迁移（文件与注册表分两步，取消不会造成半套状态）。</summary>
+    [RelayCommand]
+    private void CancelMigrate() => _migrateCts?.Cancel();
 
     [RelayCommand]
     private async Task RestoreAsync()

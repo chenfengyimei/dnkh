@@ -61,6 +61,45 @@ public class BingWallpaperServiceTests
         Assert.Equal("https://www.bing.com/th?id=OHR.Abc_400x240.jpg", BingWallpaperService.BuildThumbUrl("/th?id=OHR.Abc"));
     }
 
+    [Fact]
+    public void BuildRequestUrl_ClampsIndexAndCount()
+    {
+        var url = BingWallpaperService.BuildRequestUrl(index: -5, count: 99, market: "zh-CN");
+
+        Assert.Contains("idx=0", url);
+        Assert.Contains("n=8", url);
+        Assert.Contains("mkt=zh-CN", url);
+    }
+
+    [Fact]
+    public void BuildRequestUrl_SecondPageUsesOffsetEight()
+    {
+        var url = BingWallpaperService.BuildRequestUrl(index: 8, count: 8, market: "en-US");
+
+        Assert.Equal("https://www.bing.com/HPImageArchive.aspx?format=js&idx=8&n=8&mkt=en-US", url);
+    }
+
+    [Theory]
+    [InlineData("zh-CN")]
+    [InlineData("en-US")]
+    [InlineData("ja-JP")]
+    [InlineData("en-GB")]
+    [InlineData("de-DE")]
+    public void BuildRequestUrl_AcceptsSupportedMarkets(string market)
+    {
+        Assert.Contains($"mkt={market}", BingWallpaperService.BuildRequestUrl(0, 8, market));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("xx-XX")]
+    [InlineData("zh-CN&hack=1")]
+    [InlineData("../../inject")]
+    public void BuildRequestUrl_RejectsUnknownMarket(string market)
+    {
+        Assert.Throws<ArgumentException>(() => BingWallpaperService.BuildRequestUrl(0, 8, market));
+    }
+
     [Theory]
     [InlineData("松岛海岸的象海豹（© Mint Images）", "松岛海岸的象海豹")]
     [InlineData("Frost flower (© photographer)", "Frost flower ")]

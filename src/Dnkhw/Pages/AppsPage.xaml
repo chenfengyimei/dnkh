@@ -91,6 +91,10 @@
                                                                Command="{Binding DataContext.InstallOneCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                                                CommandParameter="{Binding}"
                                                                Visibility="{Binding CanInstall, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                                    <ui:Button Content="重试" Appearance="Primary" Margin="6,0,0,0"
+                                                               Command="{Binding DataContext.RetryCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                               CommandParameter="{Binding}"
+                                                               Visibility="{Binding CanRetry, Converter={StaticResource BoolToVisibilityConverter}}"/>
                                                     <ui:Button Content="官网" Appearance="Secondary" Margin="6,0,0,0"
                                                                Command="{Binding DataContext.OpenHomeCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                                                CommandParameter="{Binding}"/>

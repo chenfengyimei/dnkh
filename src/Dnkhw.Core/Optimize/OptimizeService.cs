@@ -13,6 +13,11 @@ public sealed class OptimizeService
     private const string HighPerformanceScheme = "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c";
     private const string BalancedScheme = "381b4222-f694-41f0-9685-ff5bb260df2e";
 
+    /// <summary>Win11 经典右键菜单的空 COM 壳键（Explorer 检测到它即显示经典菜单）。</summary>
+    private const string ClassicContextMenuKey
+        = @"Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}";
+    private const string ClassicContextMenuInprocKey = ClassicContextMenuKey + @"\InprocServer32";
+
     private readonly List<OptimizeAction> _actions = BuildActions();
 
     private static readonly (string Id, string Name)[] GroupDefinitions =
@@ -22,6 +27,7 @@ public sealed class OptimizeService
         ("notifications", "通知与建议"),
         ("privacy", "隐私与遥测"),
         ("performance", "性能与游戏"),
+        ("ui", "界面与操作"),
     ];
 
     public bool IsWindows11
@@ -75,12 +81,20 @@ public sealed class OptimizeService
         {
             RestoreBackup(action, backup);
             OptimizeBackupStore.Remove(id);
-            return;
+
+            // 备份未覆盖的动作（如经典右键菜单的「删键」式恢复）继续走动作自身的恢复
+            if (HasRestorableBackup(action))
+            {
+                return;
+            }
         }
 
         // 兼容升级前已应用、尚无备份记录的设置：恢复为 Windows 常用默认值。
         action.Revert();
     }
+
+    private static bool HasRestorableBackup(OptimizeAction action)
+        => action.BackupTargets is { Count: > 0 } || action.BackupPowerScheme || action.ServiceName is not null;
 
     private IEnumerable<OptimizeAction> IncludedActions()
     {
@@ -227,6 +241,21 @@ public sealed class OptimizeService
                 Revert: () => RunPowerCfg($"/setactive {BalancedScheme}"),
                 GroupId: "performance",
                 BackupPowerScheme: true),
+
+            // ---- 界面与操作 ----
+            new OptimizeAction(
+                "classicContextMenu", "Win11 恢复经典右键菜单",
+                "文件资源管理器右键直接显示全部选项，无需再点「显示更多选项」；写入后需重启资源管理器生效（任务栏会闪一下，属正常现象），随时可恢复",
+                NeedsAdmin: false,
+                Win11Only: true,
+                IsApplied: () => Registry.CurrentUser.OpenSubKey(ClassicContextMenuInprocKey) is not null,
+                Apply: () =>
+                {
+                    using var key = Registry.CurrentUser.CreateSubKey(ClassicContextMenuInprocKey);
+                    key.SetValue(string.Empty, string.Empty, RegistryValueKind.String);
+                },
+                Revert: () => Registry.CurrentUser.DeleteSubKeyTree(ClassicContextMenuKey, throwOnMissingSubKey: false),
+                GroupId: "ui"),
         };
 
         return actions;

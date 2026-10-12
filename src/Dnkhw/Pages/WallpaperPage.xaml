@@ -121,12 +121,15 @@
                         <TextBlock Text="填充模式" VerticalAlignment="Center" Margin="12,0,6,0" Opacity="0.7"/>
                         <ComboBox Width="110" ItemsSource="{Binding FitOptions}" DisplayMemberPath="Label"
                                   SelectedItem="{Binding SelectedFit}"/>
+                        <TextBlock Text="市场" VerticalAlignment="Center" Margin="12,0,6,0" Opacity="0.7"/>
+                        <ComboBox Width="130" ItemsSource="{Binding MarketOptions}" DisplayMemberPath="Label"
+                                  SelectedItem="{Binding SelectedMarket, Mode=TwoWay}"/>
                         <ui:Button Content="{Binding ListButtonLabel}" Appearance="Secondary" Margin="12,0,0,0"
                                    Command="{Binding LoadCommand}"/>
                     </StackPanel>
                     <TextBlock TextWrapping="Wrap" Opacity="0.6" FontSize="12" Margin="0,0,0,12" LineHeight="20"
                                Visibility="{Binding HasLoaded, Converter={StaticResource InverseBoolToVisibilityConverter}}"
-                               Text="Bing 精选壁纸需联网下载，点上方「加载壁纸列表」按钮显示近一周每日壁纸（本地缓存离线可用）；赶时间可直接用「本地图片」。"/>
+                               Text="Bing 精选壁纸需联网下载，点上方「加载壁纸列表」按钮显示近一周每日壁纸（可切换市场、点「加载更多」回看更早，本地缓存离线可用）；赶时间可直接用「本地图片」。"/>
                     <ItemsControl ItemsSource="{Binding Items}"
                                   Visibility="{Binding HasLoaded, Converter={StaticResource BoolToVisibilityConverter}}">
                         <ItemsControl.ItemsPanel>
@@ -160,6 +163,9 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
+                    <ui:Button Content="加载更多（更早的壁纸）" Appearance="Secondary" HorizontalAlignment="Left"
+                               Margin="0,2,0,4" Command="{Binding LoadMoreCommand}"
+                               Visibility="{Binding CanLoadMore, Converter={StaticResource BoolToVisibilityConverter}}"/>
                 </StackPanel>
             </ui:Card>
         </StackPanel>

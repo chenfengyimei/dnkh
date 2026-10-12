@@ -10,6 +10,13 @@
       ]
     },
     {
+      "id": "security",
+      "name": "安全防护",
+      "apps": [
+        { "name": "火绒安全软件", "description": "国产口碑安全软件，个人版无广告无捆绑，静默防护不打扰", "homepage": "https://www.huorong.cn/person5.html", "wingetId": null, "recommend": true }
+      ]
+    },
+    {
       "id": "compress",
       "name": "压缩解压",
       "apps": [
@@ -22,7 +29,8 @@
       "name": "影音播放",
       "apps": [
         { "name": "VLC", "description": "开源全能播放器，无广告", "homepage": "https://www.videolan.org/", "wingetId": "VideoLAN.VLC", "recommend": true },
-        { "name": "foobar2000", "description": "轻量高音质音乐播放器", "homepage": "https://www.foobar2000.org/", "wingetId": "Peter.Pawlowsky.foobar2000" }
+        { "name": "foobar2000", "description": "轻量高音质音乐播放器", "homepage": "https://www.foobar2000.org/", "wingetId": "Peter.Pawlowsky.foobar2000" },
+        { "name": "HandBrake", "description": "开源视频转码，压制常见格式", "homepage": "https://handbrake.fr/", "wingetId": "HandBrake.HandBrake" }
       ]
     },
     {
@@ -30,6 +38,7 @@
       "name": "办公通讯",
       "apps": [
         { "name": "LibreOffice", "description": "开源办公套件，无广告的 Office 替代", "homepage": "https://zh-cn.libreoffice.org/", "wingetId": "TheDocumentFoundation.LibreOffice" },
+        { "name": "SumatraPDF", "description": "开源极简 PDF 阅读器，秒开不臃肿", "homepage": "https://www.sumatrapdfreader.org/", "wingetId": "SumatraPDF.SumatraPDF" },
         { "name": "微信", "description": "官网安装包无捆绑", "homepage": "https://pc.weixin.qq.com/", "wingetId": "Tencent.WeChat", "recommend": true },
         { "name": "QQ", "description": "官网 NT 版安装包", "homepage": "https://im.qq.com/pcqq/index.shtml", "wingetId": "Tencent.QQ.NT" },
         { "name": "腾讯会议", "description": "远程会议", "homepage": "https://meeting.tencent.com/", "wingetId": "Tencent.TencentMeeting" },
@@ -42,7 +51,16 @@
       "apps": [
         { "name": "LocalSend", "description": "开源局域网互传，替代微信传文件", "homepage": "https://localsend.org/", "wingetId": "LocalSend.LocalSend", "recommend": true },
         { "name": "Motrix", "description": "开源全能下载器，界面简洁", "homepage": "https://motrix.app/", "wingetId": "agalwood.Motrix" },
-        { "name": "qBittorrent", "description": "开源 BT/磁力下载", "homepage": "https://www.qbittorrent.org/", "wingetId": "qBittorrent.qBittorrent" }
+        { "name": "qBittorrent", "description": "开源 BT/磁力下载", "homepage": "https://www.qbittorrent.org/", "wingetId": "qBittorrent.qBittorrent" },
+        { "name": "RustDesk", "description": "开源远程桌面，自建中继可自用，替代收费远控", "homepage": "https://rustdesk.com/", "wingetId": null }
+      ]
+    },
+    {
+      "id": "capture",
+      "name": "截图录屏",
+      "apps": [
+        { "name": "ShareX", "description": "开源截图/录屏全能王，功能极多", "homepage": "https://getsharex.com/", "wingetId": "ShareX.ShareX" },
+        { "name": "OBS Studio", "description": "开源录屏直播标准，推流/推流录制皆宜", "homepage": "https://obsproject.com/", "wingetId": "OBSProject.OBSStudio" }
       ]
     },
     {
@@ -52,6 +70,7 @@
         { "name": "Everything", "description": "极速文件搜索，极简纯净", "homepage": "https://www.voidtools.com/zh-cn/", "wingetId": "voidtools.Everything", "recommend": true },
         { "name": "PowerToys", "description": "微软官方效率工具包（窗口管理/取色器等）", "homepage": "https://learn.microsoft.com/windows/powertoys/", "wingetId": "Microsoft.PowerToys", "recommend": true },
         { "name": "Snipaste", "description": "截图 + 贴图利器", "homepage": "https://zh.snipaste.com/", "wingetId": "Snipaste.Snipaste" },
+        { "name": "ImageGlass", "description": "开源轻量看图工具，替代照片查看器", "homepage": "https://imageglass.org/", "wingetId": "DuongDieuPhap.ImageGlass" },
         { "name": "Geek Uninstaller", "description": "轻量级卸载工具，可清残留", "homepage": "https://geekuninstaller.com/", "wingetId": "GeekUninstaller.GeekUninstaller" }
       ]
     },

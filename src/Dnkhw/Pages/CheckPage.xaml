@@ -60,6 +60,7 @@
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                     <ui:Button Content="开始检查" Command="{Binding CheckCommand}"/>
                     <ui:Button Content="导出报告" Margin="10,0,0,0" Appearance="Secondary" Command="{Binding ExportCommand}"/>
+                    <ui:Button Content="复制报告" Margin="10,0,0,0" Appearance="Secondary" Command="{Binding CopyReportCommand}"/>
                     <ui:ProgressRing Width="22" Height="22" IsIndeterminate="True" Margin="12,0,0,0"
                                      Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibilityConverter}}"/>
                 </StackPanel>
@@ -67,6 +68,34 @@
 
             <ui:InfoBar Margin="0,14,0,0" IsOpen="{Binding NoticeOpen, Mode=TwoWay}"
                         Title="{Binding NoticeText}" Severity="Informational" IsClosable="True"/>
+
+            <!-- 开荒进度：跨模块状态汇总，点击直达 -->
+            <ui:Card Margin="0,16,0,0" Padding="18"
+                     Visibility="{Binding Progress, Converter={StaticResource NullToVisibilityConverter}}">
+                <StackPanel>
+                    <TextBlock Text="开荒进度" FontWeight="SemiBold" FontSize="15" Margin="0,0,0,10"/>
+                    <ItemsControl ItemsSource="{Binding Progress}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <ui:Button Appearance="Secondary" Padding="14,7" Margin="0,0,8,8"
+                                           Command="{Binding DataContext.GoFixCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                           CommandParameter="{Binding PageKey}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Label}" FontWeight="SemiBold" FontSize="12"/>
+                                        <TextBlock Text="{Binding StatusText}" FontSize="12" Opacity="0.7" Margin="10,0,0,0"/>
+                                    </StackPanel>
+                                </ui:Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Text="点击可直达对应模块；「已迁移」由本工具的迁移记录统计得出" Opacity="0.5" FontSize="11" Margin="0,2,0,0"/>
+                </StackPanel>
+            </ui:Card>
 
             <ui:Card Margin="0,16,0,0" Padding="18" Visibility="{Binding Fields, Converter={StaticResource NullToVisibilityConverter}}">
                 <StackPanel>

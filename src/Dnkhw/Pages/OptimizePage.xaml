@@ -47,6 +47,10 @@
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="{Binding SummaryText}" VerticalAlignment="Center" Margin="0,0,12,0" Opacity="0.7"/>
                     <ui:Button Content="一键优化" Command="{Binding ApplyAllCommand}"/>
+                    <ui:Button Content="全部恢复" Appearance="Secondary" Margin="10,0,0,0" Command="{Binding RestoreAllCommand}"/>
+                    <ui:Button Content="重启资源管理器" Appearance="Secondary" Margin="10,0,0,0"
+                               Command="{Binding RestartExplorerCommand}"
+                               Visibility="{Binding IsClassicMenuApplied, Converter={StaticResource BoolToVisibilityConverter}}"/>
                     <ui:Button Content="重新检测" Appearance="Secondary" Margin="10,0,0,0" Command="{Binding LoadCommand}"/>
                     <ui:Button Content="以管理员身份重启" Appearance="Secondary" Margin="10,0,0,0"
                                Command="{Binding RelaunchAdminCommand}"

@@ -4,11 +4,17 @@ using System.Text.Json;
 namespace Dnkhw.Core.Wallpaper;
 
 /// <summary>
-/// Bing 中国区每日壁纸接口（HPImageArchive，无需 API Key）。
+/// Bing 每日壁纸接口（HPImageArchive，无需 API Key）。idx 0=今天起，最多回看 15 天。
 /// </summary>
 public sealed class BingWallpaperService
 {
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(10) };
+
+    /// <summary>壁纸市场下拉的可选值（校验白名单，防止拼接任意参数）。</summary>
+    public static readonly IReadOnlyList<string> SupportedMarkets =
+    [
+        "zh-CN", "en-US", "ja-JP", "en-GB", "de-DE",
+    ];
 
     public static string BuildFullUrl(string urlBase) => $"https://www.bing.com{NormalizeBase(urlBase)}_1920x1080.jpg";
 
@@ -23,6 +29,19 @@ public sealed class BingWallpaperService
         }
 
         return urlBase.StartsWith('/') ? urlBase : "/" + urlBase;
+    }
+
+    /// <summary>构造 HPImageArchive 请求地址：参数全部钳制 + 市场白名单校验。</summary>
+    internal static string BuildRequestUrl(int index, int count, string market)
+    {
+        index = Math.Clamp(index, 0, 15);
+        count = Math.Clamp(count, 1, 8);
+        if (!SupportedMarkets.Contains(market, StringComparer.Ordinal))
+        {
+            throw new ArgumentException($"不支持的市场：{market}", nameof(market));
+        }
+
+        return $"https://www.bing.com/HPImageArchive.aspx?format=js&idx={index}&n={count}&mkt={market}";
     }
 
     /// <summary>
@@ -66,12 +85,15 @@ public sealed class BingWallpaperService
     }
 
     /// <summary>
-    /// 获取最近 n 天的壁纸列表（Bing 最多保留 8 天）。
+    /// 获取每日壁纸列表：index=0 为今天起，每次最多 8 张；Bing 最多回看 16 天（index≤8 有效）。
     /// </summary>
-    public async Task<IReadOnlyList<BingWallpaper>> GetRecentAsync(int count = 8, CancellationToken ct = default)
+    public async Task<IReadOnlyList<BingWallpaper>> GetRecentAsync(
+        int count = 8,
+        int index = 0,
+        string market = "zh-CN",
+        CancellationToken ct = default)
     {
-        count = Math.Clamp(count, 1, 8);
-        var url = $"https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n={count}&mkt=zh-CN";
+        var url = BuildRequestUrl(index, count, market);
         using var resp = await Http.GetAsync(url, ct).ConfigureAwait(false);
         resp.EnsureSuccessStatusCode();
 

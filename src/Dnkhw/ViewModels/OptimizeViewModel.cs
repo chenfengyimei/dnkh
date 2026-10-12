@@ -1,3 +1,6 @@
+using System.Diagnostics;
+using System.IO;
+using System.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Dnkhw.Core.Optimize;
@@ -74,6 +77,10 @@ public sealed partial class OptimizeViewModel : ObservableObject
 
     [ObservableProperty]
     private string _summaryText = string.Empty;
+
+    /// <summary>经典右键菜单项当前是否已应用（决定「重启资源管理器」按钮是否显示）。</summary>
+    [ObservableProperty]
+    private bool _isClassicMenuApplied;
 
     [RelayCommand]
     private async Task LoadAsync()
@@ -255,6 +262,107 @@ public sealed partial class OptimizeViewModel : ObservableObject
         }
     }
 
+    /// <summary>全部恢复：把本工具应用过的优化项逐项还原（含无备份记录的旧项，走默认值恢复）。</summary>
+    [RelayCommand]
+    private async Task RestoreAllAsync()
+    {
+        if (IsBusy)
+        {
+            return;
+        }
+
+        var targets = Groups.SelectMany(g => g.Rows).Where(r => r.IsApplied).ToList();
+        if (targets.Count == 0)
+        {
+            NoticeText = "当前没有已应用的优化项，无需恢复";
+            NoticeOpen = true;
+            return;
+        }
+
+        IsBusy = true;
+        NoticeOpen = false;
+        var restored = 0;
+        var failed = new List<string>();
+        try
+        {
+            foreach (var row in targets)
+            {
+                row.IsBusy = true;
+                try
+                {
+                    await Task.Run(() => _service.Revert(row.Item.Id));
+                    row.IsApplied = false;
+                    restored++;
+                }
+                catch (Exception ex)
+                {
+                    failed.Add($"{row.Title}：{ex.Message}");
+                }
+                finally
+                {
+                    row.IsBusy = false;
+                }
+            }
+
+            NoticeText = failed.Count == 0
+                ? $"已全部恢复：还原 {restored} 项"
+                : $"还原 {restored} 项，失败 {failed.Count} 项：{string.Join("；", failed.Take(3))}";
+            NoticeOpen = true;
+            UpdateSummary();
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    /// <summary>经典右键菜单写入后需重启资源管理器生效；弹确认再执行。</summary>
+    [RelayCommand]
+    private void RestartExplorer()
+    {
+        var owner = System.Windows.Application.Current.MainWindow;
+        var answer = System.Windows.MessageBox.Show(
+            "重启资源管理器会让任务栏与已打开的文件夹窗口短暂消失（约 1 秒）。\n其他程序不受影响。现在重启吗？",
+            "电脑开荒",
+            System.Windows.MessageBoxButton.YesNo,
+            System.Windows.MessageBoxImage.Question);
+        if (answer != System.Windows.MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        try
+        {
+            foreach (var process in Process.GetProcessesByName("explorer"))
+            {
+                try
+                {
+                    process.Kill();
+                }
+                catch
+                {
+                    // 个别进程退出中的竞态可忽略
+                }
+            }
+
+            Thread.Sleep(700);
+            Process.Start(new ProcessStartInfo(Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+                "explorer.exe"))
+            {
+                UseShellExecute = true,
+            });
+            NoticeText = "资源管理器已重启，右键菜单设置已生效";
+            NoticeOpen = true;
+        }
+        catch (Exception ex)
+        {
+            LogService.Warn("重启资源管理器失败", ex);
+            NoticeText = $"重启资源管理器失败：{ex.Message}（可手动重启电脑生效）";
+            NoticeOpen = true;
+        }
+    }
+
     [RelayCommand]
     private void RelaunchAdmin() => AdminRelauncher.Relaunch();
 
@@ -263,6 +371,7 @@ public sealed partial class OptimizeViewModel : ObservableObject
         var rows = Groups.SelectMany(g => g.Rows).ToList();
         var applied = rows.Count(i => i.IsApplied);
         SummaryText = $"可优化 {rows.Count} 项，已应用 {applied} 项";
+        IsClassicMenuApplied = rows.FirstOrDefault(r => r.Item.Id == "classicContextMenu")?.IsApplied ?? false;
         foreach (var group in Groups)
         {
             group.RefreshProgress();

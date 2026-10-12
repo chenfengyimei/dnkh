@@ -40,6 +40,7 @@ public sealed partial class AppRowViewModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(StatusText))]
     [NotifyPropertyChangedFor(nameof(CanInstall))]
+    [NotifyPropertyChangedFor(nameof(CanRetry))]
     private AppRowState _state = AppRowState.Unknown;
 
     [ObservableProperty]
@@ -56,6 +57,9 @@ public sealed partial class AppRowViewModel : ObservableObject
     };
 
     public bool CanInstall => State is AppRowState.NotInstalled && WingetId is not null;
+
+    /// <summary>失败后可重试（与一键安装同一条 winget 路径）。</summary>
+    public bool CanRetry => State is AppRowState.Failed && WingetId is not null;
 }
 
 public sealed record CategoryViewModel(string Id, string Name, IReadOnlyList<AppRowViewModel> Apps);
@@ -138,6 +142,20 @@ public sealed partial class AppsViewModel : ObservableObject
         => row is null || !row.CanInstall
             ? Task.CompletedTask
             : InstallBatchAsync([row]);
+
+    /// <summary>失败行内重试：回到可安装态再走同一条安装路径。</summary>
+    [RelayCommand]
+    private Task RetryAsync(AppRowViewModel? row)
+    {
+        if (row is null || !row.CanRetry)
+        {
+            return Task.CompletedTask;
+        }
+
+        row.State = AppRowState.NotInstalled;
+        row.StatusDetail = null;
+        return InstallBatchAsync([row]);
+    }
 
     private async Task InstallBatchAsync(IReadOnlyList<AppRowViewModel> rows)
     {

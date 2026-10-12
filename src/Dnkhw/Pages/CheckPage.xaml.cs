@@ -18,6 +18,9 @@ public partial class CheckPage : Page
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
+        // 进度面板每次进页都刷新（状态可能被其他页的操作改变）
+        SafeFireAndForget.Run("开荒进度汇总", () => _viewModel.LoadProgressCommand.ExecuteAsync(null));
+
         // 页面实例被缓存，仅在首次进入且无结果时自动体检一次
         if (_viewModel.Results.Count == 0 && !_viewModel.IsBusy)
         {

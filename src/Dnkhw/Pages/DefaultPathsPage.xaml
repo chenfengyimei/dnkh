@@ -119,6 +119,8 @@
 
                     <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
                         <ui:Button Content="开始迁移" Command="{Binding MigrateCommand}"/>
+                        <ui:Button Content="取消迁移" Appearance="Secondary" Margin="10,0,0,0" Command="{Binding CancelMigrateCommand}"
+                                   Visibility="{Binding IsMigrating, Converter={StaticResource BoolToVisibilityConverter}}"/>
                         <ui:Button Content="还原默认位置" Appearance="Secondary" Margin="10,0,0,0" Command="{Binding RestoreCommand}"
                                    Visibility="{Binding IsRedirected, Converter={StaticResource BoolToVisibilityConverter}}"/>
                     </StackPanel>

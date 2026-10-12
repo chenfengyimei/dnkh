@@ -444,6 +444,13 @@ public sealed class KnownFoldersMigrationService
         return ReadStateMap().TryGetValue(key, out var path) ? path : null;
     }
 
+    /// <summary>由本工具迁移过且尚有还原记录的文件夹数（供开荒进度汇总；只读状态文件，不做目录统计）。</summary>
+    public static int CountMigratedFolders()
+    {
+        var map = ReadStateMap();
+        return Folders.Count(def => map.ContainsKey(def.Key));
+    }
+
     /// <returns>本次是否新增了初始状态。</returns>
     private static bool SaveInitialState(string key, string previousPath)
     {
