@@ -12,11 +12,15 @@ public sealed record WingetResult(bool Success, int ExitCode, string Output);
 public sealed partial class WingetInstaller
 {
     private static readonly TimeSpan DefaultTimeout = TimeSpan.FromMinutes(15);
-    private static readonly string WingetPath = Path.Combine(
+
+    /// <summary>winget.exe 的用户级安装位置（App Installer 每用户安装到 WindowsApps）。</summary>
+    public static string ExecutablePath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "Microsoft",
         "WindowsApps",
         "winget.exe");
+
+    private static string WingetPath => ExecutablePath;
 
     [GeneratedRegex("^[A-Za-z0-9][A-Za-z0-9._+-]{0,199}$", RegexOptions.CultureInvariant)]
     private static partial Regex WingetIdRegex();

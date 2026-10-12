@@ -7,11 +7,23 @@
       mc:Ignorable="d"
       Loaded="OnLoaded">
     <Page.Resources>
+        <!-- 键盘焦点反馈：细虚线圆角框（默认实线矩形框与 chip 样式冲突被去除，但完全无焦点框会让 Tab 导航不可见） -->
+        <Style x:Key="ChipFocusVisual">
+            <Setter Property="Control.Template">
+                <Setter.Value>
+                    <ControlTemplate>
+                        <Rectangle RadiusX="6" RadiusY="6" Margin="-4"
+                                   Stroke="#1967D2" StrokeDashArray="2 2" StrokeThickness="1.2"
+                                   SnapsToDevicePixels="True"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <Style TargetType="ListBoxItem">
             <Setter Property="Padding" Value="0"/>
             <Setter Property="Margin" Value="0"/>
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
-            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="FocusVisualStyle" Value="{StaticResource ChipFocusVisual}"/>
             <!-- 选中/焦点视觉交给 chip 自身样式，去掉默认的矩形选中框 -->
             <Setter Property="Template">
                 <Setter.Value>

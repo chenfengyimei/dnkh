@@ -32,15 +32,15 @@
             <DataTemplate.Triggers>
                 <DataTrigger Binding="{Binding Status}" Value="Ok">
                     <Setter TargetName="StatusIcon" Property="Symbol" Value="CheckmarkCircle24"/>
-                    <Setter TargetName="StatusIcon" Property="Foreground" Value="#0F7B0F"/>
+                    <Setter TargetName="StatusIcon" Property="Foreground" Value="#16A34A"/>
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Status}" Value="Warn">
                     <Setter TargetName="StatusIcon" Property="Symbol" Value="Warning24"/>
-                    <Setter TargetName="StatusIcon" Property="Foreground" Value="#9D5C00"/>
+                    <Setter TargetName="StatusIcon" Property="Foreground" Value="#B45309"/>
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Status}" Value="Info">
                     <Setter TargetName="StatusIcon" Property="Symbol" Value="Info24"/>
-                    <Setter TargetName="StatusIcon" Property="Foreground" Value="#616161"/>
+                    <Setter TargetName="StatusIcon" Property="Foreground" Value="#9CA3AF"/>
                 </DataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>
@@ -93,7 +93,7 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                    <TextBlock Text="点击可直达对应模块；「已迁移」由本工具的迁移记录统计得出" Opacity="0.5" FontSize="11" Margin="0,2,0,0"/>
+                    <TextBlock Text="点击可直达对应模块；「已迁移」由本工具的迁移记录统计得出" Opacity="0.65" FontSize="11" Margin="0,2,0,0"/>
                 </StackPanel>
             </ui:Card>
 

@@ -21,10 +21,6 @@ public partial class SplashWindow : Window
     {
         InitializeComponent();
 
-        var wingetPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Microsoft", "WindowsApps", "winget.exe");
-
         _stages =
         [
             ("加载精选软件清单…", () =>
@@ -46,7 +42,7 @@ public partial class SplashWindow : Window
             })),
             ("检查安装组件…", () =>
             {
-                _ = File.Exists(wingetPath);
+                _ = File.Exists(WingetInstaller.ExecutablePath);
                 return Task.CompletedTask;
             }),
         ];

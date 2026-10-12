@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using Dnkhw.Core;
 using Dnkhw.Core.Update;
 using Dnkhw.Services;
 
@@ -9,7 +10,6 @@ namespace Dnkhw.Pages;
 
 public partial class AboutPage : Page
 {
-    private const string OfficialSite = "https://www.cyhaoka.vip";
     private const string BilibiliProfile = "https://space.bilibili.com/508302628";
 
     private readonly UpdateChecker _updateChecker = new();
@@ -24,7 +24,7 @@ public partial class AboutPage : Page
 
     private void OnOpenSiteClick(object sender, RoutedEventArgs e)
     {
-        OpenExternalLink(OfficialSite);
+        OpenExternalLink(ProductLinks.OfficialSite);
     }
 
     private void OnOpenSiteInAppClick(object sender, RoutedEventArgs e)
@@ -44,7 +44,7 @@ public partial class AboutPage : Page
     {
         if (_updateFound)
         {
-            OpenExternalLink(OfficialSite);
+            OpenExternalLink(ProductLinks.DownloadPage);
             return;
         }
 

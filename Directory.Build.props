@@ -2,5 +2,8 @@
   <PropertyGroup>
     <!-- 在 SDK/运行时进入已知漏洞或停止支持状态时让构建主动告警。 -->
     <CheckSdkVulnerabilities>true</CheckSdkVulnerabilities>
+    <!-- 「零警告」从口头约定升级为构建强制：新警告直接失败，防止退化。 -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
   </PropertyGroup>
 </Project>

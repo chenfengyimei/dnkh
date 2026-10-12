@@ -14,8 +14,22 @@ namespace Dnkhw.Pages;
 /// </summary>
 public partial class WebsitePage : Page
 {
-    private const string SiteUrl = "https://www.cyhaoka.vip";
     private const string RuntimeDownloadUrl = "https://developer.microsoft.com/microsoft-edge/webview2/";
+
+    /// <summary>内嵌站点：只放行该域名与子域，其余一律交系统浏览器。</summary>
+    private static string SiteUrl => Dnkhw.Core.ProductLinks.OfficialSite;
+
+    /// <summary>从官网地址派生的裸域名（去掉 www. 前缀），供内嵌放行判断。</summary>
+    private static string OwnDomain
+    {
+        get
+        {
+            var host = new Uri(SiteUrl).Host;
+            return host.StartsWith("www.", StringComparison.OrdinalIgnoreCase)
+                ? host["www.".Length..]
+                : host;
+        }
+    }
 
     private bool _initialized;
     private bool _titleShown;
@@ -93,8 +107,8 @@ public partial class WebsitePage : Page
 
         var isHttp = uri.Scheme.Equals("http", StringComparison.OrdinalIgnoreCase)
                      || uri.Scheme.Equals("https", StringComparison.OrdinalIgnoreCase);
-        var isOwnSite = uri.Host.Equals("cyhaoka.vip", StringComparison.OrdinalIgnoreCase)
-                        || uri.Host.EndsWith(".cyhaoka.vip", StringComparison.OrdinalIgnoreCase);
+        var isOwnSite = uri.Host.Equals(OwnDomain, StringComparison.OrdinalIgnoreCase)
+                        || uri.Host.EndsWith("." + OwnDomain, StringComparison.OrdinalIgnoreCase);
         if (!isHttp || !isOwnSite)
         {
             e.Cancel = true;
@@ -130,7 +144,7 @@ public partial class WebsitePage : Page
 
         if (!_titleShown)
         {
-            StatusText.Text = "www.cyhaoka.vip";
+            StatusText.Text = new Uri(SiteUrl).Host;
         }
     }
 

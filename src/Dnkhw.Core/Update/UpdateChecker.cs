@@ -80,7 +80,6 @@ public static class VersionComparer
 /// </summary>
 public sealed class UpdateChecker
 {
-    private const string DefaultVersionUrl = "https://www.cyhaoka.vip/dnkhw/version.json";
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(5);
 
     private readonly string _url;
@@ -88,7 +87,7 @@ public sealed class UpdateChecker
 
     public UpdateChecker(string? url = null, HttpMessageHandler? handler = null)
     {
-        _url = url ?? DefaultVersionUrl;
+        _url = url ?? ProductLinks.VersionJson;
         _client = handler is null
             ? new HttpClient { Timeout = Timeout }
             : new HttpClient(handler, disposeHandler: false);
