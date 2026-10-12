@@ -20,6 +20,7 @@ public sealed partial class DiskViewModel : ObservableObject
     private readonly DiskScanner _scanner = new();
     private readonly SemaphoreSlim _scanLock = new(1, 1);
     private CancellationTokenSource? _scanCts;
+    private int _scanRequestVersion;
 
     [ObservableProperty]
     private IReadOnlyList<DiskDriveView> _drives = [];
@@ -108,9 +109,11 @@ public sealed partial class DiskViewModel : ObservableObject
         // 清掉旧盘结果并给出即时反馈，避免「不确定有没有切换成功」
         TopFolders = [];
         TopFiles = [];
+        ScannedRoot = null;
         SummaryText = string.Empty;
         ProgressText = $"正在扫描 {newValue.Root} …";
-        _ = ScanCommand.ExecuteAsync(null);
+        var requestVersion = Interlocked.Increment(ref _scanRequestVersion);
+        _ = QueueScanAsync(requestVersion);
     }
 
     private async Task LoadJunkAsync()
@@ -127,19 +130,24 @@ public sealed partial class DiskViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task ScanAsync()
+    private Task ScanAsync()
     {
-        var drive = SelectedDrive;
-        if (drive is null)
-        {
-            return;
-        }
+        _scanCts?.Cancel();
+        return QueueScanAsync(Interlocked.Increment(ref _scanRequestVersion));
+    }
 
+    private async Task QueueScanAsync(int requestVersion)
+    {
         await _scanLock.WaitAsync();
         try
         {
-            // 等锁期间盘符可能又变了，以最新选中为准
-            drive = SelectedDrive;
+            // 多次快速切盘时丢弃已经过期的排队请求，只扫描最后一次选择。
+            if (requestVersion != Volatile.Read(ref _scanRequestVersion))
+            {
+                return;
+            }
+
+            var drive = SelectedDrive;
             if (drive is null)
             {
                 return;
@@ -151,12 +159,23 @@ public sealed partial class DiskViewModel : ObservableObject
             TopFolders = [];
             TopFiles = [];
             SummaryText = string.Empty;
-            _scanCts = new CancellationTokenSource();
+            using var scanCts = new CancellationTokenSource();
+            _scanCts = scanCts;
             try
             {
                 var progress = new Progress<long>(scanned =>
-                    ProgressText = $"正在扫描 {drive.Root} · 已扫描 {scanned:N0} 个文件…");
-                var result = await _scanner.ScanAsync(drive.Root, progress, _scanCts.Token);
+                {
+                    if (requestVersion == Volatile.Read(ref _scanRequestVersion))
+                    {
+                        ProgressText = $"正在扫描 {drive.Root} · 已扫描 {scanned:N0} 个文件…";
+                    }
+                });
+                var result = await _scanner.ScanAsync(drive.Root, progress, scanCts.Token);
+
+                if (requestVersion != Volatile.Read(ref _scanRequestVersion))
+                {
+                    return;
+                }
 
                 ScannedRoot = result.Root;
                 SummaryText = $"共 {result.ScannedFiles:N0} 个文件，统计占用 {SizeFormatter.Format(result.ScannedBytes)}"
@@ -177,25 +196,37 @@ public sealed partial class DiskViewModel : ObservableObject
             }
             finally
             {
-                _scanCts.Dispose();
-                _scanCts = null;
+                if (ReferenceEquals(_scanCts, scanCts))
+                {
+                    _scanCts = null;
+                }
             }
         }
         catch (OperationCanceledException)
         {
-            ProgressText = null;
-            NoticeText = "扫描已取消，可换盘或点「重新扫描」";
-            NoticeOpen = true;
+            if (requestVersion == Volatile.Read(ref _scanRequestVersion))
+            {
+                ProgressText = null;
+                NoticeText = "扫描已取消，可换盘或点「重新扫描」";
+                NoticeOpen = true;
+            }
         }
         catch (Exception ex)
         {
-            ProgressText = null;
-            NoticeText = $"扫描失败：{ex.Message}";
-            NoticeOpen = true;
+            if (requestVersion == Volatile.Read(ref _scanRequestVersion))
+            {
+                ProgressText = null;
+                NoticeText = $"扫描失败：{ex.Message}";
+                NoticeOpen = true;
+            }
         }
         finally
         {
-            IsScanning = false;
+            if (requestVersion == Volatile.Read(ref _scanRequestVersion))
+            {
+                IsScanning = false;
+            }
+
             _scanLock.Release();
         }
     }
@@ -215,8 +246,18 @@ public sealed partial class DiskViewModel : ObservableObject
         {
             // 文件在资源管理器中定位选中，目录直接打开
             var isFile = File.Exists(path);
-            var arguments = isFile ? $"/select,\"{path}\"" : path;
-            Process.Start(new ProcessStartInfo("explorer.exe", arguments) { UseShellExecute = true });
+            var explorer = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe");
+            var startInfo = new ProcessStartInfo(explorer)
+            {
+                UseShellExecute = false,
+            };
+            if (isFile)
+            {
+                startInfo.ArgumentList.Add("/select,");
+            }
+
+            startInfo.ArgumentList.Add(path);
+            Process.Start(startInfo);
         }
         catch (Exception ex)
         {

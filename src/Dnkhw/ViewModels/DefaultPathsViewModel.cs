@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -6,7 +5,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Dnkhw.Core.Downloads;
 using Dnkhw.Core.Formatting;
-using Microsoft.Win32;
 
 namespace Dnkhw.ViewModels;
 
@@ -84,6 +82,7 @@ public sealed partial class DefaultPathsViewModel : ObservableObject
     public bool IsDownloadsSelected => SelectedFolder?.Key == "downloads";
 
     private bool _suppressSelectionLoad;
+    private int _detailLoadVersion;
 
     [RelayCommand]
     private async Task LoadAsync()
@@ -97,24 +96,13 @@ public sealed partial class DefaultPathsViewModel : ObservableObject
         NoticeOpen = false;
         try
         {
-            // 六个文件夹的路径/重定向状态读取是瞬时的，chip 立即出现；文件统计在选中后进行
-            Folders = KnownFoldersMigrationService.Folders
-                .Select(def =>
-                {
-                    var current = KnownFolders.GetKnownFolderPath(def.Id);
-                    var isRedirected = !string.Equals(current, def.DefaultPath, StringComparison.OrdinalIgnoreCase);
-                    return new FolderView(def.Key, def.Name, current, isRedirected, def);
-                })
-                .ToList();
-
-            _suppressSelectionLoad = true;
-            SelectedFolder ??= Folders.FirstOrDefault(f => f.Key == "downloads");
-            _suppressSelectionLoad = false;
+            // chip 与详情使用同一个注册表真相源，避免 SHGetKnownFolderPath 失败时显示旧路径。
+            RefreshFolders(SelectedFolder?.Key ?? "downloads");
 
             // 首次详情同步等待，保持加载态直到统计完成
             if (SelectedFolder is not null)
             {
-                await LoadDetailAsync(SelectedFolder);
+                await LoadDetailAsync(SelectedFolder, clearNotice: false);
             }
         }
         catch (Exception ex)
@@ -136,6 +124,7 @@ public sealed partial class DefaultPathsViewModel : ObservableObject
             return;
         }
 
+        OnPropertyChanged(nameof(IsDownloadsSelected));
         _ = LoadDetailAsync(newValue);
     }
 
@@ -151,14 +140,24 @@ public sealed partial class DefaultPathsViewModel : ObservableObject
             : new BrowserView(b.Name, $"已自定义下载目录：{b.CustomDir}", b.SettingsUrl, b.ExecutablePath, CanOpen: b.ExecutablePath is not null);
     }
 
-    private async Task LoadDetailAsync(FolderView folder)
+    private async Task LoadDetailAsync(FolderView folder, bool clearNotice = true)
     {
+        var loadVersion = Interlocked.Increment(ref _detailLoadVersion);
         var def = folder.Def;
         IsBusy = true;
-        NoticeOpen = false;
+        if (clearNotice)
+        {
+            NoticeOpen = false;
+        }
+
         try
         {
             var status = await Task.Run(() => _service.GetStatus(def));
+            if (loadVersion != Volatile.Read(ref _detailLoadVersion)
+                || SelectedFolder?.Key != folder.Key)
+            {
+                return;
+            }
 
             CurrentPath = status.CurrentPath;
             IsRedirected = status.IsRedirected;
@@ -192,25 +191,62 @@ public sealed partial class DefaultPathsViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            NoticeText = $"读取「{folder.Name}」状态失败：{ex.Message}";
-            NoticeOpen = true;
+            if (loadVersion == Volatile.Read(ref _detailLoadVersion))
+            {
+                NoticeText = $"读取「{folder.Name}」状态失败：{ex.Message}";
+                NoticeOpen = true;
+            }
         }
         finally
         {
-            IsBusy = false;
+            if (loadVersion == Volatile.Read(ref _detailLoadVersion))
+            {
+                IsBusy = false;
+            }
         }
+    }
+
+    private void RefreshFolders(string preferredKey)
+    {
+        var folders = KnownFoldersMigrationService.Folders
+            .Select(def =>
+            {
+                var current = _service.GetCurrentPath(def);
+                var defaultPath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(def.DefaultPath));
+                return new FolderView(
+                    def.Key,
+                    def.Name,
+                    current,
+                    !string.Equals(current, defaultPath, StringComparison.OrdinalIgnoreCase),
+                    def);
+            })
+            .ToList();
+
+        _suppressSelectionLoad = true;
+        try
+        {
+            Folders = folders;
+            SelectedFolder = folders.FirstOrDefault(f => f.Key == preferredKey) ?? folders.FirstOrDefault();
+        }
+        finally
+        {
+            _suppressSelectionLoad = false;
+        }
+
+        OnPropertyChanged(nameof(IsDownloadsSelected));
     }
 
     [RelayCommand]
     private async Task MigrateAsync()
     {
         var folder = SelectedFolder;
-        if (IsBusy || folder is null || SelectedDrive is null)
+        var selectedDrive = SelectedDrive;
+        if (IsBusy || folder is null || selectedDrive is null)
         {
             return;
         }
 
-        var target = Path.Combine(SelectedDrive.Root, folder.Def.DefaultSubFolder);
+        var target = Path.Combine(selectedDrive.Root, folder.Def.DefaultSubFolder);
         var moveText = MoveFiles
             ? $"并移动现有内容（{SourceFileSummary.Replace("现有内容：", string.Empty)}）。"
             : "不移动现有文件。";
@@ -235,12 +271,17 @@ public sealed partial class DefaultPathsViewModel : ObservableObject
                 ProgressFile = p.CurrentFile;
             });
 
-            var result = await Task.Run(() => _service.MigrateAsync(folder.Def, SelectedDrive.Root, MoveFiles, progress));
+            var result = await _service.MigrateAsync(folder.Def, selectedDrive.Root, MoveFiles, progress);
             var failureNote = result.Failures.Count > 0 ? $"，{result.Failures.Count} 个失败" : string.Empty;
+            LastFailures = result.Failures.Take(20).Select(f => $"{f.RelativePath}：{f.Reason}").ToList();
+            RefreshFolders(folder.Key);
+            if (SelectedFolder is not null)
+            {
+                await LoadDetailAsync(SelectedFolder, clearNotice: false);
+            }
+
             NoticeText = $"迁移完成：「{folder.Name}」已指向 {result.NewPath}，移动 {result.MovedCount} 个文件{failureNote}";
             NoticeOpen = true;
-            LastFailures = result.Failures.Take(20).Select(f => $"{f.RelativePath}：{f.Reason}").ToList();
-            await LoadDetailAsync(folder);
         }
         catch (Exception ex)
         {
@@ -273,9 +314,14 @@ public sealed partial class DefaultPathsViewModel : ObservableObject
         try
         {
             await Task.Run(() => _service.Restore(folder.Def));
+            RefreshFolders(folder.Key);
+            if (SelectedFolder is not null)
+            {
+                await LoadDetailAsync(SelectedFolder, clearNotice: false);
+            }
+
             NoticeText = $"「{folder.Name}」已还原（文件不回移，如需可手动搬回）";
             NoticeOpen = true;
-            await LoadDetailAsync(folder);
         }
         catch (Exception ex)
         {

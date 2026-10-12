@@ -34,7 +34,7 @@ public class DiskScannerTests : IDisposable
     public async Task Scan_AggregatesTopFoldersAndFiles()
     {
         var scanner = new DiskScanner();
-        var result = await scanner.ScanAsync(_root, null);
+        var result = await scanner.ScanAsync(_root, null, TestContext.Current.CancellationToken);
 
         Assert.Equal(165, result.ScannedBytes);
         Assert.Equal(5, result.RootLooseBytes);
@@ -61,7 +61,7 @@ public class DiskScannerTests : IDisposable
     {
         var scanner = new DiskScanner();
         var collector = new SyncProgress<long>();
-        await scanner.ScanAsync(_root, collector);
+        await scanner.ScanAsync(_root, collector, TestContext.Current.CancellationToken);
 
         Assert.Contains(4L, collector.Values);
     }
@@ -81,7 +81,39 @@ public class DiskScannerTests : IDisposable
     {
         var scanner = new DiskScanner();
         await Assert.ThrowsAsync<DirectoryNotFoundException>(
-            () => scanner.ScanAsync(Path.Combine(_root, "no-such-dir"), null));
+            () => scanner.ScanAsync(
+                Path.Combine(_root, "no-such-dir"),
+                null,
+                TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task Scan_KeepsOnlyThirtyLargestFiles()
+    {
+        for (var i = 1; i <= 40; i++)
+        {
+            File.WriteAllBytes(Path.Combine(_root, $"top-{i:00}.bin"), new byte[i]);
+        }
+
+        var result = await new DiskScanner().ScanAsync(
+            _root,
+            null,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(30, result.TopFiles.Count);
+        Assert.Equal(100, result.TopFiles[0].Bytes); // 夹具中的 x.bin 仍是最大文件
+        Assert.Equal(13, result.TopFiles[^1].Bytes);
+    }
+
+    [Fact]
+    public void GetTopFolderPath_DriveRootPreservesRootSemantics()
+    {
+        var driveRoot = Path.GetPathRoot(_root)!;
+        var file = Path.Combine(driveRoot, "Windows", "System32", "example.dll");
+
+        var top = DiskScanner.GetTopFolderPath(driveRoot, file);
+
+        Assert.Equal(Path.Combine(driveRoot, "Windows"), top, ignoreCase: true);
     }
 
     private sealed class SyncProgress<T> : IProgress<T>

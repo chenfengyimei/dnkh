@@ -21,24 +21,43 @@ public static class InstallDetector
         {
             foreach (var keyPath in UninstallKeys)
             {
-                using var key = hive.OpenSubKey(keyPath);
-                if (key is null)
+                RegistryKey? key = null;
+                try
                 {
-                    continue;
-                }
-
-                foreach (var subKeyName in key.GetSubKeyNames())
-                {
-                    using var subKey = key.OpenSubKey(subKeyName);
-                    if (subKey?.GetValue("DisplayName") is string name && !string.IsNullOrWhiteSpace(name))
+                    key = hive.OpenSubKey(keyPath);
+                    if (key is null)
                     {
-                        names.Add(name);
+                        continue;
                     }
+
+                    foreach (var subKeyName in key.GetSubKeyNames())
+                    {
+                        try
+                        {
+                            using var subKey = key.OpenSubKey(subKeyName);
+                            if (subKey?.GetValue("DisplayName") is string name && !string.IsNullOrWhiteSpace(name))
+                            {
+                                names.Add(name.Trim());
+                            }
+                        }
+                        catch
+                        {
+                            // 单个卸载项损坏或拒绝访问时继续枚举其余项目。
+                        }
+                    }
+                }
+                catch
+                {
+                    // 单个注册表视图不可读不影响其他来源。
+                }
+                finally
+                {
+                    key?.Dispose();
                 }
             }
         }
 
-        return names;
+        return names.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
     }
 
     /// <summary>名称匹配：忽略大小写下双向包含（清单名 ⊂ 注册名 或 注册名 ⊂ 清单名）。</summary>

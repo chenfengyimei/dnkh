@@ -1,5 +1,8 @@
 using System.Security.Cryptography.X509Certificates;
-using Microsoft.Win32;namespace Dnkhw.Core.Startup;
+using System.Runtime.InteropServices;
+using Microsoft.Win32;
+
+namespace Dnkhw.Core.Startup;
 
 /// <summary>
 /// 开机启动项：枚举 Run 键与启动文件夹，读取/写入 StartupApproved 标记（任务管理器同机制，可逆）。
@@ -9,14 +12,20 @@ public sealed class StartupService
 {
     private const string RunSubkey = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private const string ApprovedRunSubkey = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
+    private const string ApprovedRun32Subkey = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run32";
     private const string ApprovedFolderSubkey = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\StartupFolder";
 
     public IReadOnlyList<StartupItem> GetItems()
     {
         var items = new List<StartupItem>();
 
-        CollectRunItems(Registry.CurrentUser, StartupLocation.RunUser, needsAdmin: false, items);
-        CollectRunItems(Registry.LocalMachine, StartupLocation.RunMachine, needsAdmin: true, items);
+        CollectRunItems(Registry.CurrentUser, Registry.CurrentUser, ApprovedRunSubkey, StartupLocation.RunUser, needsAdmin: false, items);
+        CollectRunItems(Registry.LocalMachine, Registry.LocalMachine, ApprovedRunSubkey, StartupLocation.RunMachine, needsAdmin: true, items);
+        if (Environment.Is64BitOperatingSystem)
+        {
+            using var machine32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
+            CollectRunItems(machine32, Registry.LocalMachine, ApprovedRun32Subkey, StartupLocation.RunMachine32, needsAdmin: true, items);
+        }
 
         var userFolder = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
         var commonFolder = Environment.GetFolderPath(Environment.SpecialFolder.CommonStartup);
@@ -36,6 +45,7 @@ public sealed class StartupService
         {
             StartupLocation.RunUser => (Registry.CurrentUser, ApprovedRunSubkey),
             StartupLocation.RunMachine => (Registry.LocalMachine, ApprovedRunSubkey),
+            StartupLocation.RunMachine32 => (Registry.LocalMachine, ApprovedRun32Subkey),
             StartupLocation.FolderUser => (Registry.CurrentUser, ApprovedFolderSubkey),
             StartupLocation.FolderCommon => (Registry.LocalMachine, ApprovedFolderSubkey),
             _ => throw new ArgumentOutOfRangeException(nameof(item)),
@@ -47,20 +57,21 @@ public sealed class StartupService
     }
 
     private static void CollectRunItems(
-        RegistryKey hive,
+        RegistryKey runHive,
+        RegistryKey approvedHive,
+        string approvedSubkey,
         StartupLocation location,
         bool needsAdmin,
         List<StartupItem> items)
     {
         try
         {
-            using var key = hive.OpenSubKey(RunSubkey);
+            using var key = runHive.OpenSubKey(RunSubkey);
             if (key is null)
             {
                 return;
             }
 
-            var approvedHive = hive == Registry.LocalMachine ? Registry.LocalMachine : Registry.CurrentUser;
             foreach (var name in key.GetValueNames())
             {
                 if (key.GetValue(name) is not string command || string.IsNullOrWhiteSpace(command))
@@ -73,7 +84,7 @@ public sealed class StartupService
                     RawName: name,
                     Command: command,
                     Location: location,
-                    IsEnabled: ReadApproved(approvedHive, ApprovedRunSubkey, name),
+                    IsEnabled: ReadApproved(approvedHive, approvedSubkey, name),
                     NeedsAdmin: needsAdmin,
                     Publisher: GetPublisher(CommandResolver.ResolveExecutable(command))));
             }
@@ -143,6 +154,8 @@ public sealed class StartupService
 
     private static string? ResolveShortcutTarget(string lnkPath)
     {
+        object? shell = null;
+        object? shortcut = null;
         try
         {
             var shellType = Type.GetTypeFromProgID("WScript.Shell");
@@ -151,13 +164,27 @@ public sealed class StartupService
                 return null;
             }
 
-            dynamic shell = Activator.CreateInstance(shellType)!;
-            dynamic shortcut = shell.CreateShortcut(lnkPath);
-            return (string?)shortcut.TargetPath;
+            shell = Activator.CreateInstance(shellType)!;
+            dynamic dynamicShell = shell;
+            shortcut = dynamicShell.CreateShortcut(lnkPath);
+            dynamic dynamicShortcut = shortcut;
+            return (string?)dynamicShortcut.TargetPath;
         }
         catch
         {
             return null;
+        }
+        finally
+        {
+            if (shortcut is not null && Marshal.IsComObject(shortcut))
+            {
+                _ = Marshal.FinalReleaseComObject(shortcut);
+            }
+
+            if (shell is not null && Marshal.IsComObject(shell))
+            {
+                _ = Marshal.FinalReleaseComObject(shell);
+            }
         }
     }
 
@@ -170,7 +197,7 @@ public sealed class StartupService
 
         try
         {
-            // net9 无签名文件证书加载的替代 API，CreateFromSignedFile 仍可用（SYSLIB0057）
+            // 当前目标框架暂无更合适的签名文件证书加载替代 API，CreateFromSignedFile 仍可用（SYSLIB0057）
 #pragma warning disable SYSLIB0057
             using var cert = new X509Certificate2(X509Certificate.CreateFromSignedFile(executablePath));
 #pragma warning restore SYSLIB0057

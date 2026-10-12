@@ -76,6 +76,11 @@ public sealed partial class CheckViewModel : ObservableObject
                 .ToArray();
             Results = results;
         }
+        catch (Exception ex)
+        {
+            NoticeText = $"系统检查失败：{ex.Message}";
+            NoticeOpen = true;
+        }
         finally
         {
             IsBusy = false;
@@ -97,9 +102,17 @@ public sealed partial class CheckViewModel : ObservableObject
         };
         if (dialog.ShowDialog() == true)
         {
-            await File.WriteAllTextAsync(dialog.FileName, CheckReportBuilder.BuildMarkdown(Overview, Results));
-            NoticeText = $"已导出报告：{dialog.FileName}";
-            NoticeOpen = true;
+            try
+            {
+                await File.WriteAllTextAsync(dialog.FileName, CheckReportBuilder.BuildMarkdown(Overview, Results));
+                NoticeText = $"已导出报告：{dialog.FileName}";
+                NoticeOpen = true;
+            }
+            catch (Exception ex)
+            {
+                NoticeText = $"导出报告失败：{ex.Message}";
+                NoticeOpen = true;
+            }
         }
     }
 

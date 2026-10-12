@@ -30,7 +30,8 @@ public sealed partial class BrowserDownloadDetector
 
     private BrowserDownloadInfo DetectChromium(string name, string preferencesPath, string settingsUrl, string appPathsKey)
     {
-        if (!File.Exists(preferencesPath))
+        var executable = ResolveExecutable(appPathsKey);
+        if (!File.Exists(preferencesPath) && executable is null)
         {
             return new BrowserDownloadInfo(name, IsInstalled: false, UsesSystemDefault: true, null, settingsUrl, null);
         }
@@ -38,7 +39,10 @@ public sealed partial class BrowserDownloadDetector
         string? customDir = null;
         try
         {
-            customDir = ChromiumPrefs.ParseDefaultDirectory(File.ReadAllText(preferencesPath));
+            if (File.Exists(preferencesPath))
+            {
+                customDir = ChromiumPrefs.ParseDefaultDirectory(File.ReadAllText(preferencesPath));
+            }
         }
         catch
         {
@@ -51,24 +55,29 @@ public sealed partial class BrowserDownloadDetector
             UsesSystemDefault: customDir is null,
             customDir,
             settingsUrl,
-            ResolveExecutable(appPathsKey));
+            executable);
     }
 
     private BrowserDownloadInfo DetectFirefox()
     {
         var profilesRoot = Path.Combine(AppData, @"Mozilla\Firefox\Profiles");
-        if (!Directory.Exists(profilesRoot))
+        var executable = ResolveExecutable(@"App Paths\firefox.exe");
+        if (!Directory.Exists(profilesRoot) && executable is null)
         {
-            return new BrowserDownloadInfo("Firefox", IsInstalled: false, UsesSystemDefault: true, null, "about:preferences#downloads", ResolveExecutable(@"App Paths\firefox.exe"));
+            return new BrowserDownloadInfo("Firefox", IsInstalled: false, UsesSystemDefault: true, null, "about:preferences#downloads", null);
         }
 
         string? customDir = null;
         try
         {
             // 取最近修改的 default-release 配置目录
-            var prefsFile = Directory.EnumerateFiles(profilesRoot, "prefs.js", SearchOption.AllDirectories)
+            var prefsFiles = Directory.Exists(profilesRoot)
+                ? Directory.EnumerateFiles(profilesRoot, "prefs.js", SearchOption.AllDirectories)
                 .OrderByDescending(f => File.GetLastWriteTimeUtc(f))
-                .FirstOrDefault(f => f.Contains("default-release", StringComparison.OrdinalIgnoreCase));
+                .ToList()
+                : [];
+            var prefsFile = prefsFiles.FirstOrDefault(f => f.Contains("default-release", StringComparison.OrdinalIgnoreCase))
+                ?? prefsFiles.FirstOrDefault();
             if (prefsFile is not null)
             {
                 customDir = FirefoxPrefs.ParseDownloadDir(File.ReadAllText(prefsFile));
@@ -85,7 +94,7 @@ public sealed partial class BrowserDownloadDetector
             UsesSystemDefault: customDir is null,
             customDir,
             "about:preferences#downloads",
-            ResolveExecutable(@"App Paths\firefox.exe"));
+            executable);
     }
 
     private static string? ResolveExecutable(string appPathsKey)
@@ -136,15 +145,20 @@ public static partial class FirefoxPrefs
     private static partial Regex FolderListRegex();
 
     /// <summary>
-    /// 解析下载目录。folderList=2 表示自定义目录；1 表示跟随系统「下载」文件夹。
+    /// 解析下载目录。folderList=0 表示桌面，2 表示自定义目录；1 表示跟随系统「下载」文件夹。
     /// </summary>
     public static string? ParseDownloadDir(string prefsContent)
     {
         var folderList = 1;
-        var listMatch = FolderListRegex().Match(prefsContent);
-        if (listMatch.Success)
+        var listMatch = FolderListRegex().Matches(prefsContent).LastOrDefault();
+        if (listMatch is not null && listMatch.Success)
         {
             folderList = int.Parse(listMatch.Groups["list"].Value);
+        }
+
+        if (folderList == 0)
+        {
+            return Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
         }
 
         if (folderList != 2)
@@ -152,8 +166,8 @@ public static partial class FirefoxPrefs
             return null;
         }
 
-        var match = DownloadDirRegex().Match(prefsContent);
-        if (!match.Success)
+        var match = DownloadDirRegex().Matches(prefsContent).LastOrDefault();
+        if (match is null || !match.Success)
         {
             return null;
         }

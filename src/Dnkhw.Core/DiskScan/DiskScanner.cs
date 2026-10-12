@@ -35,9 +35,12 @@ public sealed class DiskScanner
             throw new DirectoryNotFoundException($"目录不存在：{root}");
         }
 
-        var rootFull = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar);
+        // Path.TrimEndingDirectorySeparator 会保留盘符根目录的反斜杠（C:\\），
+        // 避免把 C:\\ 变成具有“当前盘工作目录”语义的 C:，进而错误归类一级目录。
+        var rootFull = Path.TrimEndingDirectorySeparator(Path.GetFullPath(root));
         var folders = new Dictionary<string, (long Bytes, long Files)>(StringComparer.OrdinalIgnoreCase);
-        var files = new List<FileUsage>();
+        // 全盘可能包含数百万文件，只保留最大的 TopCount 项，避免内存随文件数线性增长。
+        var topFileQueue = new PriorityQueue<FileUsage, long>();
         long totalBytes = 0;
         long rootLoose = 0;
         long scanned = 0;
@@ -69,18 +72,20 @@ public sealed class DiskScanner
 
                 scanned++;
                 totalBytes += size;
-                files.Add(new FileUsage(file, size));
+                topFileQueue.Enqueue(new FileUsage(file, size), size);
+                if (topFileQueue.Count > TopCount)
+                {
+                    topFileQueue.Dequeue();
+                }
 
                 // 归属到根下的一级目录（含其全部子级）
-                var relative = Path.GetRelativePath(rootFull, file);
-                var separator = relative.IndexOfAny(['\\', '/']);
-                if (separator < 0)
+                var topFolder = GetTopFolderPath(rootFull, file);
+                if (topFolder is null)
                 {
                     rootLoose += size; // 根目录下的散文件
                 }
                 else
                 {
-                    var topFolder = Path.Combine(rootFull, relative[..separator]);
                     var current = folders.TryGetValue(topFolder, out var v) ? v : (0, 0);
                     folders[topFolder] = (current.Bytes + size, current.Files + 1);
                 }
@@ -104,12 +109,21 @@ public sealed class DiskScanner
                 kv.Value.Files))
             .ToList();
 
-        var topFiles = files
+        var topFiles = topFileQueue.UnorderedItems
+            .Select(item => item.Element)
             .OrderByDescending(f => f.Bytes)
-            .Take(TopCount)
             .ToList();
 
-        return new DiskScanResult(root, totalBytes, rootLoose, topFolders, topFiles, scanned, skipped);
+        return new DiskScanResult(rootFull, totalBytes, rootLoose, topFolders, topFiles, scanned, skipped);
+    }
+
+    /// <summary>返回文件所属的根下一级目录；根目录散文件返回 null。</summary>
+    internal static string? GetTopFolderPath(string root, string file)
+    {
+        var normalizedRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(root));
+        var relative = Path.GetRelativePath(normalizedRoot, Path.GetFullPath(file));
+        var separator = relative.IndexOfAny(['\\', '/']);
+        return separator < 0 ? null : Path.Combine(normalizedRoot, relative[..separator]);
     }
 
     /// <summary>
@@ -132,11 +146,11 @@ public sealed class DiskScanner
         ];
 
         return await Task.Run(
-            () => definitions.Select(d => new JunkLocation(d.Name, d.Path, TryGetSize(d.Path))).ToList(),
+            () => definitions.Select(d => new JunkLocation(d.Name, d.Path, TryGetSize(d.Path, ct))).ToList(),
             ct).ConfigureAwait(false);
     }
 
-    private static long TryGetSize(string path)
+    private static long TryGetSize(string path, CancellationToken ct)
     {
         try
         {
@@ -151,6 +165,7 @@ public sealed class DiskScanner
                 var options = new EnumerationOptions { IgnoreInaccessible = true, RecurseSubdirectories = true, AttributesToSkip = FileAttributes.ReparsePoint };
                 foreach (var file in Directory.EnumerateFiles(path, "*", options))
                 {
+                    ct.ThrowIfCancellationRequested();
                     try
                     {
                         total += new FileInfo(file).Length;
@@ -163,6 +178,10 @@ public sealed class DiskScanner
 
                 return total;
             }
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
         }
         catch
         {

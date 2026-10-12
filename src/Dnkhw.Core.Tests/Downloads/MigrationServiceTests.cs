@@ -35,7 +35,8 @@ public class MigrationServiceTests : IDisposable
         File.WriteAllText(Path.Combine(_source, "sub", "b.txt"), "b");
         File.WriteAllText(Path.Combine(_source, "c.bin"), "c");
 
-        var (moved, failures) = await KnownFoldersMigrationService.MigrateDirectoryContentsAsync(_source, _target, null, CancellationToken.None);
+        var (moved, failures) = await KnownFoldersMigrationService.MigrateDirectoryContentsAsync(
+            _source, _target, null, TestContext.Current.CancellationToken);
 
         Assert.Equal(3, moved);
         Assert.Empty(failures);
@@ -53,14 +54,17 @@ public class MigrationServiceTests : IDisposable
         Directory.CreateDirectory(_target);
         File.WriteAllText(Path.Combine(_target, "dup.txt"), "existing");
 
-        var (moved, failures) = await KnownFoldersMigrationService.MigrateDirectoryContentsAsync(_source, _target, null, CancellationToken.None);
+        var (moved, failures) = await KnownFoldersMigrationService.MigrateDirectoryContentsAsync(
+            _source, _target, null, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, moved);
         var failure = Assert.Single(failures);
         Assert.Equal("dup.txt", failure.RelativePath);
         Assert.Equal("目标已存在同名文件", failure.Reason);
-        Assert.Equal("source", await File.ReadAllTextAsync(Path.Combine(_source, "dup.txt")));
-        Assert.Equal("existing", await File.ReadAllTextAsync(Path.Combine(_target, "dup.txt")));
+        Assert.Equal("source", await File.ReadAllTextAsync(
+            Path.Combine(_source, "dup.txt"), TestContext.Current.CancellationToken));
+        Assert.Equal("existing", await File.ReadAllTextAsync(
+            Path.Combine(_target, "dup.txt"), TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -68,11 +72,12 @@ public class MigrationServiceTests : IDisposable
     {
         File.WriteAllText(Path.Combine(_source, "ok.txt"), "ok");
         var lockedPath = Path.Combine(_source, "locked.txt");
-        await File.WriteAllTextAsync(lockedPath, "locked");
+        await File.WriteAllTextAsync(lockedPath, "locked", TestContext.Current.CancellationToken);
 
         using var _ = File.Open(lockedPath, FileMode.Open, FileAccess.Read, FileShare.None);
 
-        var (moved, failures) = await KnownFoldersMigrationService.MigrateDirectoryContentsAsync(_source, _target, null, CancellationToken.None);
+        var (moved, failures) = await KnownFoldersMigrationService.MigrateDirectoryContentsAsync(
+            _source, _target, null, TestContext.Current.CancellationToken);
 
         Assert.Equal(1, moved);
         var failure = Assert.Single(failures);
@@ -88,12 +93,47 @@ public class MigrationServiceTests : IDisposable
         File.WriteAllText(Path.Combine(_source, "2.txt"), "2");
 
         var collector = new SyncProgress<MigrationProgress>();
-        await KnownFoldersMigrationService.MigrateDirectoryContentsAsync(_source, _target, collector, CancellationToken.None);
+        await KnownFoldersMigrationService.MigrateDirectoryContentsAsync(
+            _source, _target, collector, TestContext.Current.CancellationToken);
 
         Assert.NotEmpty(collector.Values);
         var last = collector.Values[^1];
         Assert.Equal(2, last.Completed);
         Assert.Equal(2, last.Total);
+    }
+
+    [Fact]
+    public async Task Migrate_MissingSource_IsTreatedAsEmptyFolder()
+    {
+        Directory.Delete(_source);
+
+        var result = await KnownFoldersMigrationService.MigrateDirectoryContentsAsync(
+            _source, _target, null, TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, result.Moved);
+        Assert.Empty(result.Failures);
+    }
+
+    [Fact]
+    public async Task Migrate_SameSourceAndTarget_Throws()
+    {
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            KnownFoldersMigrationService.MigrateDirectoryContentsAsync(
+                _source,
+                _source + Path.DirectorySeparatorChar,
+                null,
+                TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public void ProtectedMigrationSource_BlocksBroadSystemLocations()
+    {
+        var volumeRoot = Path.GetPathRoot(Environment.SystemDirectory)!;
+        var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+
+        Assert.True(KnownFoldersMigrationService.IsProtectedMigrationSource(volumeRoot));
+        Assert.True(KnownFoldersMigrationService.IsProtectedMigrationSource(userProfile));
+        Assert.False(KnownFoldersMigrationService.IsProtectedMigrationSource(_source));
     }
 
     [Fact]

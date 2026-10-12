@@ -226,8 +226,16 @@ public sealed partial class AppsViewModel : ObservableObject
     [RelayCommand]
     private void InstallAppInstaller()
     {
-        // Microsoft Store 中的 App Installer（winget）产品页
-        Process.Start(new ProcessStartInfo("ms-windows-store://pdp/?productid=9NBLGGG16N6W") { UseShellExecute = true });
+        try
+        {
+            // Microsoft Store 中的 App Installer（winget）产品页
+            Process.Start(new ProcessStartInfo("ms-windows-store://pdp/?productid=9NBLGGG16N6W") { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            NoticeText = $"无法打开 Microsoft Store：{ex.Message}";
+            NoticeOpen = true;
+        }
     }
 
     private static string FirstMeaningfulLine(string output)

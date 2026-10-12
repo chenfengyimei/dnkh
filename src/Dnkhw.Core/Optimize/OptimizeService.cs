@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Microsoft.Win32;
 
@@ -62,9 +61,26 @@ public sealed class OptimizeService
 
     public bool IsApplied(string id) => Find(id).IsApplied();
 
-    public void Apply(string id) => Find(id).Apply();
+    public void Apply(string id)
+    {
+        var action = Find(id);
+        OptimizeBackupStore.SaveIfMissing(id, () => CaptureBackup(action));
+        action.Apply();
+    }
 
-    public void Revert(string id) => Find(id).Revert();
+    public void Revert(string id)
+    {
+        var action = Find(id);
+        if (OptimizeBackupStore.TryGet(id, out var backup))
+        {
+            RestoreBackup(action, backup);
+            OptimizeBackupStore.Remove(id);
+            return;
+        }
+
+        // 兼容升级前已应用、尚无备份记录的设置：恢复为 Windows 常用默认值。
+        action.Revert();
+    }
 
     private IEnumerable<OptimizeAction> IncludedActions()
     {
@@ -88,7 +104,12 @@ public sealed class OptimizeService
         Action Revert,
         bool Win11Only = false,
         bool Win10Only = false,
-        string GroupId = "");
+        string GroupId = "",
+        IReadOnlyList<RegistryTarget>? BackupTargets = null,
+        bool BackupPowerScheme = false,
+        string? ServiceName = null);
+
+    private sealed record RegistryTarget(string Id, RegistryKey Hive, string Path, string Name);
 
     private static List<OptimizeAction> BuildActions()
     {
@@ -130,7 +151,8 @@ public sealed class OptimizeService
                 Apply: () => SetDword(Registry.CurrentUser, searchPolicies, "DisableSearchBoxSuggestions", 1),
                 Revert: () => SetDword(Registry.CurrentUser, searchPolicies, "DisableSearchBoxSuggestions", 0),
                 Win11Only: true,
-                GroupId: "search"),
+                GroupId: "search",
+                BackupTargets: [new RegistryTarget("policy", Registry.CurrentUser, searchPolicies, "DisableSearchBoxSuggestions")]),
             RegAction("searchBing", "关闭搜索框 Bing 网络搜索",
                 "Win10：开始菜单搜索不再联网（Win11 上此键无效，已自动隐藏）",
                 @"Software\Microsoft\Windows\CurrentVersion\Search", "BingSearchEnabled", win10Only: true, group: "search"),
@@ -148,10 +170,12 @@ public sealed class OptimizeService
                 "停止用广告标识符生成个性化广告",
                 @"Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo", "Enabled", group: "privacy"),
             new OptimizeAction(
-                "telemetry", "关闭诊断遥测",
+                "telemetry", "限制诊断遥测",
                 "限制诊断数据为最低档并停用 DiagTrack 服务（家庭版仍保留基础档；需管理员）",
                 NeedsAdmin: true,
-                IsApplied: () => GetDword(Registry.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\DataCollection", "AllowTelemetry") == 0,
+                IsApplied: () =>
+                    GetDword(Registry.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\DataCollection", "AllowTelemetry") == 0
+                    && GetDword(Registry.LocalMachine, @"SYSTEM\CurrentControlSet\Services\DiagTrack", "Start") == 4,
                 Apply: () =>
                 {
                     SetDword(Registry.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\DataCollection", "AllowTelemetry", 0);
@@ -162,14 +186,22 @@ public sealed class OptimizeService
                     SetDword(Registry.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\DataCollection", "AllowTelemetry", 1);
                     SetService("DiagTrack", startValue: 2, stop: false);
                 },
-                GroupId: "privacy"),
+                GroupId: "privacy",
+                BackupTargets:
+                [
+                    new RegistryTarget("policy", Registry.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\DataCollection", "AllowTelemetry"),
+                    new RegistryTarget("serviceStart", Registry.LocalMachine, @"SYSTEM\CurrentControlSet\Services\DiagTrack", "Start"),
+                ],
+                ServiceName: "DiagTrack"),
 
             // ---- 性能与游戏 ----
             new OptimizeAction(
                 "gameDvr", "关闭 Xbox 后台录制 (Game DVR)",
                 "停止游戏后台录制与 Win+G 录制提示，释放部分性能（影响 Xbox 手柄录制按钮）",
                 NeedsAdmin: false,
-                IsApplied: () => GetDword(Registry.CurrentUser, @"System\GameConfigStore", "GameDVR_Enabled") == 0,
+                IsApplied: () =>
+                    GetDword(Registry.CurrentUser, @"System\GameConfigStore", "GameDVR_Enabled") == 0
+                    && GetDword(Registry.CurrentUser, @"Software\Microsoft\Windows\CurrentVersion\GameDVR", "AppCaptureEnabled") == 0,
                 Apply: () =>
                 {
                     SetDword(Registry.CurrentUser, @"System\GameConfigStore", "GameDVR_Enabled", 0);
@@ -180,7 +212,12 @@ public sealed class OptimizeService
                     SetDword(Registry.CurrentUser, @"System\GameConfigStore", "GameDVR_Enabled", 1);
                     SetDword(Registry.CurrentUser, @"Software\Microsoft\Windows\CurrentVersion\GameDVR", "AppCaptureEnabled", 1);
                 },
-                GroupId: "performance"),
+                GroupId: "performance",
+                BackupTargets:
+                [
+                    new RegistryTarget("gameDvr", Registry.CurrentUser, @"System\GameConfigStore", "GameDVR_Enabled"),
+                    new RegistryTarget("capture", Registry.CurrentUser, @"Software\Microsoft\Windows\CurrentVersion\GameDVR", "AppCaptureEnabled"),
+                ]),
             new OptimizeAction(
                 "power", "切换高性能电源计划",
                 "电源计划切换为高性能，台式机/插电场景更顺手（笔记本略增耗电）",
@@ -188,7 +225,8 @@ public sealed class OptimizeService
                 IsApplied: () => string.Equals(GetActivePowerScheme(), HighPerformanceScheme, StringComparison.OrdinalIgnoreCase),
                 Apply: () => RunPowerCfg($"/setactive {HighPerformanceScheme}"),
                 Revert: () => RunPowerCfg($"/setactive {BalancedScheme}"),
-                GroupId: "performance"),
+                GroupId: "performance",
+                BackupPowerScheme: true),
         };
 
         return actions;
@@ -214,7 +252,120 @@ public sealed class OptimizeService
             Revert: () => SetDword(Registry.CurrentUser, path, valueName, 1),
             Win11Only: win11Only,
             Win10Only: win10Only,
-            GroupId: group);
+            GroupId: group,
+            BackupTargets: [new RegistryTarget("value", Registry.CurrentUser, path, valueName)]);
+
+    private static OptimizeBackup CaptureBackup(OptimizeAction action)
+    {
+        var registryValues = new Dictionary<string, DwordBackup>(StringComparer.Ordinal);
+        foreach (var target in action.BackupTargets ?? [])
+        {
+            using var key = target.Hive.OpenSubKey(target.Path);
+            if (key is null || !key.GetValueNames().Contains(target.Name, StringComparer.OrdinalIgnoreCase))
+            {
+                registryValues[target.Id] = new DwordBackup(Exists: false, Value: 0);
+                continue;
+            }
+
+            if (key.GetValueKind(target.Name) != RegistryValueKind.DWord
+                || key.GetValue(target.Name) is not int value)
+            {
+                throw new InvalidOperationException($"无法安全备份注册表值 {target.Path}\\{target.Name}：类型不是 DWORD");
+            }
+
+            registryValues[target.Id] = new DwordBackup(Exists: true, value);
+        }
+
+        var powerScheme = action.BackupPowerScheme ? GetActivePowerScheme() : null;
+        if (action.BackupPowerScheme && string.IsNullOrWhiteSpace(powerScheme))
+        {
+            throw new InvalidOperationException("无法读取当前电源计划，已取消修改");
+        }
+
+        return new OptimizeBackup(
+            registryValues,
+            powerScheme,
+            action.ServiceName is null ? null : TryGetServiceRunning(action.ServiceName));
+    }
+
+    private static void RestoreBackup(OptimizeAction action, OptimizeBackup backup)
+    {
+        foreach (var target in action.BackupTargets ?? [])
+        {
+            if (!backup.RegistryValues.TryGetValue(target.Id, out var value))
+            {
+                throw new InvalidOperationException($"优化备份缺少 {target.Id}，为避免错误覆盖已停止恢复");
+            }
+
+            if (value.Exists)
+            {
+                if (!IsSafeBackupValue(action.Id, target.Id, value.Value))
+                {
+                    throw new InvalidOperationException($"优化备份中的 {target.Id} 值无效，已停止恢复");
+                }
+
+                SetDword(target.Hive, target.Path, target.Name, value.Value);
+            }
+            else
+            {
+                using var key = target.Hive.OpenSubKey(target.Path, writable: true);
+                key?.DeleteValue(target.Name, throwOnMissingValue: false);
+            }
+        }
+
+        if (action.BackupPowerScheme)
+        {
+            if (!Guid.TryParse(backup.PowerScheme, out var powerScheme))
+            {
+                throw new InvalidOperationException("优化备份缺少原电源计划，为避免错误覆盖已停止恢复");
+            }
+
+            RunPowerCfg($"/setactive {powerScheme:D}");
+        }
+
+        if (action.ServiceName is not null && backup.ServiceRunning is bool wasRunning)
+        {
+            RunSc($"{(wasRunning ? "start" : "stop")} {action.ServiceName}");
+        }
+    }
+
+    private static bool? TryGetServiceRunning(string name)
+    {
+        try
+        {
+            var result = ProcessRunner.Run(
+                Path.Combine(Environment.SystemDirectory, "sc.exe"),
+                ["query", name],
+                TimeSpan.FromSeconds(10));
+            if (result.ExitCode != 0)
+            {
+                return null;
+            }
+
+            return Regex.IsMatch(
+                result.CombinedOutput,
+                @"(?im)^\s*(?:STATE|状态)\s*:\s*4\b");
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static bool IsSafeBackupValue(string actionId, string targetId, int value)
+    {
+        if (actionId == "telemetry" && targetId == "serviceStart")
+        {
+            return value is 2 or 3 or 4;
+        }
+
+        if (actionId == "telemetry" && targetId == "policy")
+        {
+            return value is >= 0 and <= 3;
+        }
+
+        return value is 0 or 1;
+    }
 
     private static int GetDword(RegistryKey hive, string path, string name)
     {
@@ -245,16 +396,10 @@ public sealed class OptimizeService
 
     private static void RunSc(string arguments)
     {
-        var psi = new ProcessStartInfo("sc.exe", arguments)
-        {
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            CreateNoWindow = true,
-        };
-        using var process = Process.Start(psi) ?? throw new InvalidOperationException("无法启动 sc.exe");
-        _ = process.StandardOutput.ReadToEnd();
-        process.WaitForExit(15000);
+        _ = ProcessRunner.Run(
+            Path.Combine(Environment.SystemDirectory, "sc.exe"),
+            arguments.Split(' ', StringSplitOptions.RemoveEmptyEntries),
+            TimeSpan.FromSeconds(15));
         // sc stop 已停止的服务等场景会返回非零，忽略
     }
 
@@ -267,17 +412,12 @@ public sealed class OptimizeService
 
     private static string RunPowerCfg(string arguments)
     {
-        var psi = new ProcessStartInfo("powercfg", arguments)
-        {
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            CreateNoWindow = true,
-        };
-        using var process = Process.Start(psi) ?? throw new InvalidOperationException("无法启动 powercfg");
-        var output = process.StandardOutput.ReadToEnd() + process.StandardError.ReadToEnd();
-        process.WaitForExit(10000);
-        if (process.ExitCode != 0)
+        var result = ProcessRunner.Run(
+            Path.Combine(Environment.SystemDirectory, "powercfg.exe"),
+            arguments.Split(' ', StringSplitOptions.RemoveEmptyEntries),
+            TimeSpan.FromSeconds(10));
+        var output = result.CombinedOutput;
+        if (result.ExitCode != 0)
         {
             throw new InvalidOperationException($"powercfg 失败（{output.Trim()}）");
         }

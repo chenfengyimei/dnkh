@@ -39,4 +39,27 @@ public class BrowserPrefsTests
             """;
         Assert.Null(FirefoxPrefs.ParseDownloadDir(prefs));
     }
+
+    [Fact]
+    public void FirefoxPrefs_DesktopFolderList0_ReturnsDesktop()
+    {
+        const string prefs = """user_pref("browser.download.folderList", 0);""";
+
+        Assert.Equal(
+            Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+            FirefoxPrefs.ParseDownloadDir(prefs));
+    }
+
+    [Fact]
+    public void FirefoxPrefs_LastPreferenceWins()
+    {
+        const string prefs = """
+            user_pref("browser.download.folderList", 1);
+            user_pref("browser.download.folderList", 2);
+            user_pref("browser.download.dir", "C:\\old");
+            user_pref("browser.download.dir", "D:\\new");
+            """;
+
+        Assert.Equal(@"D:\new", FirefoxPrefs.ParseDownloadDir(prefs));
+    }
 }

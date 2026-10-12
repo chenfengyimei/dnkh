@@ -85,10 +85,14 @@ public static class DesktopTweaksService
     /// <summary>设置任务栏自动隐藏（SHAppBarMessage ABM_SETSTATE，立即生效）。</summary>
     public static void SetTaskbarAutoHide(bool autoHide)
     {
+        var stateData = new AppBarData { CbSize = Marshal.SizeOf<AppBarData>() };
+        var current = (int)SHAppBarMessage(AbmGetState, ref stateData).ToInt64();
+        var next = autoHide ? current | AbsAutoHide : current & ~AbsAutoHide;
         var data = new AppBarData
         {
             CbSize = Marshal.SizeOf<AppBarData>(),
-            LParam = (IntPtr)AbsAutoHide * (autoHide ? 1 : 0),
+            // 保留 ABS_ALWAYSONTOP 等其他任务栏标志，只切换自动隐藏位。
+            LParam = (IntPtr)next,
         };
         SHAppBarMessage(AbmSetState, ref data);
     }

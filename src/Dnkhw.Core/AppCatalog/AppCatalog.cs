@@ -67,6 +67,11 @@ public static class AppCatalogLoader
                 {
                     throw new InvalidOperationException($"wingetId 重复：{app.WingetId}");
                 }
+
+                if (app.WingetId is not null && !WingetInstaller.IsValidWingetId(app.WingetId))
+                {
+                    throw new InvalidOperationException($"条目 {app.Name} 的 wingetId 格式无效");
+                }
             }
         }
 

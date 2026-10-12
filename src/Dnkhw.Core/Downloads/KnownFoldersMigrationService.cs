@@ -12,6 +12,7 @@ namespace Dnkhw.Core.Downloads;
 public sealed class KnownFoldersMigrationService
 {
     private const string UserShellFoldersKey = @"Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders";
+    private static readonly object StateLock = new();
 
     private static readonly JsonSerializerOptions StateJsonOptions = new()
     {
@@ -23,7 +24,7 @@ public sealed class KnownFoldersMigrationService
     private static string StateFile => Path.Combine(StateDirectory, "known-folders-migration.json");
 
     /// <summary>可迁移的六个已知文件夹。</summary>
-    public static IReadOnlyList<KnownFolderDef> Folders =
+    public static readonly IReadOnlyList<KnownFolderDef> Folders =
     [
         new KnownFolderDef("downloads", "下载", KnownFolders.DownloadsId, "Downloads",
             "{374DE290-123F-4565-9164-39C4925E467B}", null),
@@ -61,7 +62,7 @@ public sealed class KnownFoldersMigrationService
 
                 if (key?.GetValue(name) is string value && !string.IsNullOrWhiteSpace(value))
                 {
-                    return value;
+                    return Environment.ExpandEnvironmentVariables(value.Trim());
                 }
             }
         }
@@ -73,15 +74,31 @@ public sealed class KnownFoldersMigrationService
         return string.Empty;
     }
 
+    /// <summary>读取 Explorer 当前实际使用的路径，不执行文件统计。</summary>
+    public string GetCurrentPath(KnownFolderDef def)
+    {
+        ArgumentNullException.ThrowIfNull(def);
+        var registryValue = ReadRegistryValue(def);
+        var path = !string.IsNullOrWhiteSpace(registryValue)
+            ? registryValue
+            : KnownFolders.GetKnownFolderPath(def.Id);
+        if (!Path.IsPathFullyQualified(path)
+            || path.StartsWith(@"\\.\", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWith(@"\\?\GLOBALROOT\", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException($"已知文件夹「{def.Name}」的路径无效：{path}");
+        }
+
+        return Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
+    }
+
     /// <summary>读取单个文件夹状态：当前路径、是否重定向、内容统计、OneDrive 接管检测、可还原记录。</summary>
     public KnownFolderStatus GetStatus(KnownFolderDef def)
     {
         // 真相源优先：User Shell Folders 的 GUID/旧名值（Explorer 实际行为）；
         // 无注册表值时用 SHGetKnownFolderPath 标准解析（含缺失文件夹创建）
-        var registryValue = ReadRegistryValue(def);
-        var shellPath = KnownFolders.GetKnownFolderPath(def.Id);
-        var current = !string.IsNullOrWhiteSpace(registryValue) ? registryValue : shellPath;
-        var defaultPath = def.DefaultPath;
+        var current = GetCurrentPath(def);
+        var defaultPath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(def.DefaultPath));
         var isRedirected = !string.Equals(current, defaultPath, StringComparison.OrdinalIgnoreCase);
         var (count, bytes) = CountFiles(current);
 
@@ -106,28 +123,63 @@ public sealed class KnownFoldersMigrationService
         IProgress<MigrationProgress>? progress,
         CancellationToken ct = default)
     {
-        var registryValue = ReadRegistryValue(def);
-        var current = !string.IsNullOrWhiteSpace(registryValue) ? registryValue : KnownFolders.GetKnownFolderPath(def.Id);
-        var target = Path.Combine(targetRoot, def.DefaultSubFolder);
+        ArgumentException.ThrowIfNullOrWhiteSpace(targetRoot);
+        var current = GetCurrentPath(def);
+        var normalizedTargetRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(targetRoot));
+        var volumeRoot = Path.TrimEndingDirectorySeparator(Path.GetPathRoot(normalizedTargetRoot)
+            ?? throw new InvalidOperationException("目标位置不属于有效分区"));
+        if (!string.Equals(normalizedTargetRoot, volumeRoot, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("目标位置必须是磁盘根目录");
+        }
 
-        if (string.Equals(Path.GetPathRoot(current), Path.GetPathRoot(targetRoot), StringComparison.OrdinalIgnoreCase))
+        var target = Path.Combine(normalizedTargetRoot, def.DefaultSubFolder);
+
+        if (string.Equals(current, target, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("目标位置与当前文件夹相同，无需迁移");
+        }
+
+        if (string.Equals(Path.GetPathRoot(current), Path.GetPathRoot(normalizedTargetRoot), StringComparison.OrdinalIgnoreCase))
         {
             throw new InvalidOperationException("目标盘与当前文件夹在同一个分区，无需迁移");
+        }
+
+        if (moveFiles && IsProtectedMigrationSource(current))
+        {
+            throw new InvalidOperationException(
+                $"当前路径 {current} 范围过大或属于系统保护位置，已拒绝自动搬移；请先在 Windows 设置中修正该文件夹路径");
         }
 
         var previousPath = current;
         List<FileFailure> failures = [];
         var moved = 0;
 
-        if (moveFiles)
+        // 即使选择“不移动文件”，也必须先创建目标目录，避免把 Shell 指向不存在的位置。
+        Directory.CreateDirectory(target);
+        // 首次迁移的原位置必须保留，连续换盘不能把中间位置覆盖为“原位置”。
+        // 在搬文件前先安全持久化，状态写入失败时不会产生文件已移动但无法恢复的半成品。
+        var stateAdded = SaveInitialState(def.Key, previousPath);
+        try
         {
-            Directory.CreateDirectory(target);
-            (moved, failures) = await MigrateDirectoryContentsAsync(current, target, progress, ct).ConfigureAwait(false);
+            if (moveFiles && Directory.Exists(current))
+            {
+                (moved, failures) = await MigrateDirectoryContentsAsync(current, target, progress, ct).ConfigureAwait(false);
+            }
+
+            // 文件步骤结束后再改注册表（见类注释的顺序保证）。
+            ApplyRegistryPath(def, target);
+        }
+        catch
+        {
+            if (stateAdded)
+            {
+                ClearState(def.Key);
+            }
+
+            throw;
         }
 
-        // 文件步骤结束后再改注册表（见类注释的顺序保证）
-        ApplyRegistryPath(def, target);
-        SaveState(def.Key, previousPath);
         KnownFolders.NotifyFolderChanged(previousPath, target);
 
         return new MigrationResult(previousPath, target, moved, moveFiles, failures);
@@ -136,10 +188,10 @@ public sealed class KnownFoldersMigrationService
     /// <summary>还原到迁移前的路径；无记录时还原系统默认位置（写 %USERPROFILE% 形式的标准默认值）。</summary>
     public void Restore(KnownFolderDef def)
     {
-        var restoreTo = ReadState(def.Key) ?? def.DefaultPath;
+        var restoreTo = Path.TrimEndingDirectorySeparator(Path.GetFullPath(ReadState(def.Key) ?? def.DefaultPath));
         Directory.CreateDirectory(restoreTo);
 
-        var current = KnownFolders.GetKnownFolderPath(def.Id);
+        var current = GetCurrentPath(def);
         ApplyRegistryPath(def, restoreTo);
         ClearState(def.Key);
         KnownFolders.NotifyFolderChanged(current, restoreTo);
@@ -155,13 +207,30 @@ public sealed class KnownFoldersMigrationService
         IProgress<MigrationProgress>? progress,
         CancellationToken ct)
     {
+        if (!Directory.Exists(source))
+        {
+            return (0, []);
+        }
+
+        var sourceFull = Path.TrimEndingDirectorySeparator(Path.GetFullPath(source));
+        var targetFull = Path.TrimEndingDirectorySeparator(Path.GetFullPath(target));
+        if (string.Equals(sourceFull, targetFull, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("源目录与目标目录不能相同");
+        }
+
         Directory.CreateDirectory(target);
         var sameVolume = string.Equals(
-            Path.GetPathRoot(Path.GetFullPath(source)),
-            Path.GetPathRoot(Path.GetFullPath(target)),
+            Path.GetPathRoot(sourceFull),
+            Path.GetPathRoot(targetFull),
             StringComparison.OrdinalIgnoreCase);
 
-        var options = new EnumerationOptions { IgnoreInaccessible = true, RecurseSubdirectories = true };
+        var options = new EnumerationOptions
+        {
+            IgnoreInaccessible = true,
+            RecurseSubdirectories = true,
+            AttributesToSkip = FileAttributes.ReparsePoint,
+        };
         var relativeFiles = await Task.Run(() =>
         {
             var list = new List<string>();
@@ -234,7 +303,12 @@ public sealed class KnownFoldersMigrationService
     {
         try
         {
-            var options = new EnumerationOptions { IgnoreInaccessible = true, RecurseSubdirectories = true };
+            var options = new EnumerationOptions
+            {
+                IgnoreInaccessible = true,
+                RecurseSubdirectories = true,
+                AttributesToSkip = FileAttributes.ReparsePoint,
+            };
             foreach (var dir in Directory.EnumerateDirectories(root, "*", options).OrderByDescending(p => p.Length))
             {
                 if (!Directory.EnumerateFileSystemEntries(dir).Any())
@@ -266,7 +340,12 @@ public sealed class KnownFoldersMigrationService
         long count = 0, bytes = 0;
         try
         {
-            var options = new EnumerationOptions { IgnoreInaccessible = true, RecurseSubdirectories = true };
+            var options = new EnumerationOptions
+            {
+                IgnoreInaccessible = true,
+                RecurseSubdirectories = true,
+                AttributesToSkip = FileAttributes.ReparsePoint,
+            };
             foreach (var f in Directory.EnumerateFiles(root, "*", options))
             {
                 count++;
@@ -288,6 +367,39 @@ public sealed class KnownFoldersMigrationService
         return (count, bytes);
     }
 
+    /// <summary>
+    /// 防止损坏的已知文件夹配置把磁盘根目录、用户配置根目录或系统目录当作普通内容整体搬走。
+    /// 这些位置的任一祖先目录同样视为危险；正常的 Desktop/Documents 等子目录不受影响。
+    /// </summary>
+    internal static bool IsProtectedMigrationSource(string path)
+    {
+        var source = Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
+        var root = Path.TrimEndingDirectorySeparator(Path.GetPathRoot(source) ?? source);
+        if (string.Equals(source, root, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        var protectedPaths = new[]
+        {
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+            Environment.SystemDirectory,
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonProgramFiles),
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonProgramFilesX86),
+        };
+
+        var sourcePrefix = source + Path.DirectorySeparatorChar;
+        return protectedPaths
+            .Where(protectedPath => !string.IsNullOrWhiteSpace(protectedPath))
+            .Select(protectedPath => Path.TrimEndingDirectorySeparator(Path.GetFullPath(protectedPath)))
+            .Any(protectedPath =>
+                string.Equals(source, protectedPath, StringComparison.OrdinalIgnoreCase)
+                || protectedPath.StartsWith(sourcePrefix, StringComparison.OrdinalIgnoreCase));
+    }
+
     /// <summary>写入 Explorer 实际使用的值名（现代 GUID 优先；桌面为旧名 Desktop）。</summary>
     private static void ApplyRegistryPath(KnownFolderDef def, string path)
     {
@@ -307,19 +419,23 @@ public sealed class KnownFoldersMigrationService
 
     private static Dictionary<string, string> ReadStateMap()
     {
-        try
+        lock (StateLock)
         {
-            if (!File.Exists(StateFile))
+            try
             {
-                return [];
-            }
+                if (!File.Exists(StateFile))
+                {
+                    return [];
+                }
 
-            var map = JsonSerializer.Deserialize<MigrationStateMap>(File.ReadAllText(StateFile), StateJsonOptions);
-            return map?.PreviousPaths ?? [];
-        }
-        catch
-        {
-            return [];
+                var map = JsonSerializer.Deserialize<MigrationStateMap>(File.ReadAllText(StateFile), StateJsonOptions);
+                return map?.PreviousPaths ?? [];
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    $"默认路径迁移记录损坏，已停止修改以保护原路径：{StateFile}", ex);
+            }
         }
     }
 
@@ -328,36 +444,70 @@ public sealed class KnownFoldersMigrationService
         return ReadStateMap().TryGetValue(key, out var path) ? path : null;
     }
 
-    private static void SaveState(string key, string previousPath)
+    /// <returns>本次是否新增了初始状态。</returns>
+    private static bool SaveInitialState(string key, string previousPath)
     {
-        Directory.CreateDirectory(StateDirectory);
-        var map = ReadStateMap();
-        map[key] = previousPath;
-        File.WriteAllText(StateFile, JsonSerializer.Serialize(new MigrationStateMap { PreviousPaths = map }, StateJsonOptions));
+        lock (StateLock)
+        {
+            Directory.CreateDirectory(StateDirectory);
+            var map = ReadStateMap();
+            if (!map.TryAdd(key, previousPath))
+            {
+                return false;
+            }
+
+            WriteStateMap(map);
+            return true;
+        }
     }
 
     private static void ClearState(string key)
     {
-        try
+        lock (StateLock)
         {
-            var map = ReadStateMap();
-            if (!map.Remove(key))
+            try
             {
-                return;
-            }
+                var map = ReadStateMap();
+                if (!map.Remove(key))
+                {
+                    return;
+                }
 
-            if (map.Count == 0)
-            {
-                File.Delete(StateFile);
+                if (map.Count == 0)
+                {
+                    File.Delete(StateFile);
+                }
+                else
+                {
+                    WriteStateMap(map);
+                }
             }
-            else
+            catch
             {
-                File.WriteAllText(StateFile, JsonSerializer.Serialize(new MigrationStateMap { PreviousPaths = map }, StateJsonOptions));
+                // 状态文件清理失败不影响还原结果
             }
         }
-        catch
+    }
+
+    private static void WriteStateMap(Dictionary<string, string> map)
+    {
+        Directory.CreateDirectory(StateDirectory);
+        var temp = Path.Combine(StateDirectory, $"known-folders-migration.{Guid.NewGuid():N}.tmp");
+        try
         {
-            // 状态文件清理失败不影响还原结果
+            File.WriteAllText(temp, JsonSerializer.Serialize(new MigrationStateMap { PreviousPaths = map }, StateJsonOptions));
+            File.Move(temp, StateFile, overwrite: true);
+        }
+        finally
+        {
+            try
+            {
+                File.Delete(temp);
+            }
+            catch
+            {
+                // 原子替换成功后通常已无临时文件；失败清理由下次写入覆盖。
+            }
         }
     }
 }

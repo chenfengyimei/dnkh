@@ -75,4 +75,20 @@ public class AppCatalogTests
 
         Assert.Throws<InvalidOperationException>(() => AppCatalogLoader.Parse(json));
     }
+
+    [Fact]
+    public void Parse_RejectsWingetIdContainingArguments()
+    {
+        const string json = """
+        {
+          "categories": [
+            { "id": "a", "name": "A", "apps": [
+              { "name": "App", "description": "x", "homepage": "https://example.com", "wingetId": "Safe.Id --source untrusted" }
+            ]}
+          ]
+        }
+        """;
+
+        Assert.Throws<InvalidOperationException>(() => AppCatalogLoader.Parse(json));
+    }
 }

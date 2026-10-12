@@ -24,6 +24,38 @@ public class BingWallpaperServiceTests
     }
 
     [Fact]
+    public void ExtractId_RemovesTraversalAndQueryCharacters()
+    {
+        var id = BingWallpaperService.ExtractId("/th?id=../../unsafe/name&rf=LaDigue");
+
+        Assert.DoesNotContain('/', id);
+        Assert.DoesNotContain('\\', id);
+        Assert.DoesNotContain('&', id);
+        Assert.NotEqual("..", id);
+    }
+
+    [Fact]
+    public void WallpaperStore_RejectsPathsOutsideCacheDirectory()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "dnkhw-wallpaper-tests", Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new WallpaperStore(directory);
+
+            Assert.Throws<ArgumentException>(() => store.GetFullPath("../outside.jpg"));
+            Assert.Throws<ArgumentException>(() => store.GetFullPath("not-an-image.exe"));
+            Assert.Equal(Path.Combine(directory, "safe.jpg"), store.GetFullPath("safe.jpg"), ignoreCase: true);
+        }
+        finally
+        {
+            if (Directory.Exists(directory))
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
     public void BuildThumbUrl_AppendsThumbResolution()
     {
         Assert.Equal("https://www.bing.com/th?id=OHR.Abc_400x240.jpg", BingWallpaperService.BuildThumbUrl("/th?id=OHR.Abc"));

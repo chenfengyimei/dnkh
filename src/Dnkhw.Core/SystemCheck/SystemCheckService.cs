@@ -1,6 +1,6 @@
-using System.Diagnostics;
 using System.Management;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using Dnkhw.Core.Formatting;
 using Microsoft.Win32;
@@ -206,7 +206,7 @@ public sealed class SystemCheckService
             CheckProblemDevicesAsync(),
             CheckPendingRebootAsync(),
             CheckNetworkAsync(ct),
-            CheckPowerPlanAsync(),
+            CheckPowerPlanAsync(ct),
             CheckHiberfilAsync(),
             CheckSystemDiskAsync()).ConfigureAwait(false);
         return items;
@@ -291,6 +291,7 @@ public sealed class SystemCheckService
 
     private static Task<CheckItem> CheckFirewallAsync() => Task.Run(() =>
     {
+        object? firewall = null;
         try
         {
             var type = Type.GetTypeFromProgID("HNetCfg.FwPolicy2");
@@ -299,7 +300,8 @@ public sealed class SystemCheckService
                 return new CheckItem("firewall", "防火墙", CheckStatus.Info, "无法创建防火墙 COM 组件，跳过检测");
             }
 
-            dynamic fw = Activator.CreateInstance(type)!;
+            firewall = Activator.CreateInstance(type)!;
+            dynamic fw = firewall;
             // NET_FW_PROFILE2：1=域网络 2=专用网络 4=公用网络
             var disabled = new List<string>();
             if (!Convert.ToBoolean(fw.FirewallEnabled[1]))
@@ -324,6 +326,13 @@ public sealed class SystemCheckService
         catch (Exception ex)
         {
             return ErrorItem("firewall", "防火墙", ex);
+        }
+        finally
+        {
+            if (firewall is not null && Marshal.IsComObject(firewall))
+            {
+                _ = Marshal.FinalReleaseComObject(firewall);
+            }
         }
     });
 
@@ -369,19 +378,24 @@ public sealed class SystemCheckService
     {
         var reasons = new List<string>();
 
-        if (Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending") is not null)
+        using (var componentReboot = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending"))
         {
-            reasons.Add("组件存储");
+            if (componentReboot is not null)
+            {
+                reasons.Add("组件存储");
+            }
         }
 
-        if (Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired") is not null)
+        using (var updateReboot = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired"))
         {
-            reasons.Add("Windows 更新");
+            if (updateReboot is not null)
+            {
+                reasons.Add("Windows 更新");
+            }
         }
 
-        var sessionManager = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Session Manager");
+        using var sessionManager = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Session Manager");
         var pfro = sessionManager?.GetValue("PendingFileRenameOperations");
-        sessionManager?.Dispose();
         if (PendingFileRename.HasPendingOperations(pfro))
         {
             reasons.Add("文件重命名");
@@ -404,25 +418,30 @@ public sealed class SystemCheckService
                 ? new CheckItem("network", "网络连接", CheckStatus.Ok, "网络连接正常")
                 : new CheckItem("network", "网络连接", CheckStatus.Warn, $"外网访问异常（HTTP {(int)resp.StatusCode}）", "检查网络连接或代理设置");
         }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             return new CheckItem("network", "网络连接", CheckStatus.Warn, $"无法访问外网：{ex.Message}", "检查网线 / Wi-Fi 或代理设置");
         }
     }
 
-    private static async Task<CheckItem> CheckPowerPlanAsync()
+    private static async Task<CheckItem> CheckPowerPlanAsync(CancellationToken ct)
     {
         try
         {
-            var psi = new ProcessStartInfo("powercfg", "/getactivescheme")
+            var process = await ProcessRunner.RunAsync(
+                Path.Combine(Environment.SystemDirectory, "powercfg.exe"),
+                ["/getactivescheme"],
+                TimeSpan.FromSeconds(10),
+                ct).ConfigureAwait(false);
+            var output = process.CombinedOutput;
+            if (process.ExitCode != 0)
             {
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                CreateNoWindow = true,
-            };
-            using var p = Process.Start(psi) ?? throw new InvalidOperationException("无法启动 powercfg");
-            var output = await p.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
-            await p.WaitForExitAsync().ConfigureAwait(false);
+                return ErrorItem("power", "电源计划", new InvalidOperationException($"powercfg 退出码 {process.ExitCode}"));
+            }
 
             var match = Regex.Match(output, "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
             if (!match.Success)
@@ -441,6 +460,10 @@ public sealed class SystemCheckService
             return name == "平衡"
                 ? new CheckItem("power", "电源计划", CheckStatus.Info, "当前电源计划：平衡", "台式机可切换高性能以发挥全部性能", "optimize")
                 : new CheckItem("power", "电源计划", CheckStatus.Ok, $"当前电源计划：{name}");
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {

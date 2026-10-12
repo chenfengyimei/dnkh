@@ -8,6 +8,9 @@ public enum StartupLocation
     /// <summary>HKLM\...\CurrentVersion\Run（需管理员）</summary>
     RunMachine,
 
+    /// <summary>HKLM 32 位视图 ...\CurrentVersion\Run（需管理员）</summary>
+    RunMachine32,
+
     /// <summary>用户启动文件夹（%APPDATA%\...\Startup）</summary>
     FolderUser,
 
@@ -28,6 +31,7 @@ public sealed record StartupItem(
     {
         StartupLocation.RunUser => "用户 Run 键",
         StartupLocation.RunMachine => "系统 Run 键（需管理员）",
+        StartupLocation.RunMachine32 => "系统 Run 键（32 位，需管理员）",
         StartupLocation.FolderUser => "用户启动文件夹",
         StartupLocation.FolderCommon => "公共启动文件夹（需管理员）",
         _ => string.Empty,
