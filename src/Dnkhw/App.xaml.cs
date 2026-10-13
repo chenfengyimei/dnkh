@@ -1,11 +1,13 @@
 ﻿using System.Windows;
+using Dnkhw.Core.Update;
 using Dnkhw.Services;
 
 namespace Dnkhw;
 
 public partial class App : Application
 {
-    private static Mutex? _singleInstanceMutex;
+    /// <summary>单实例互斥体：在线更新重启前需先释放，避免新进程撞「已在运行」。</summary>
+    internal static Mutex? _singleInstanceMutex;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -21,6 +23,9 @@ public partial class App : Application
         }
 
         RegisterGlobalExceptionHandlers();
+
+        // 上次在线升级的残留清理（旧 .old 与过期下载包），失败无害
+        SelfUpdater.CleanupOldBinary();
 
         // 首次运行（或调试用 --splash 参数）播放启动动画，之后直达主窗口
         var forceSplash = e.Args.Contains("--splash", StringComparer.OrdinalIgnoreCase);

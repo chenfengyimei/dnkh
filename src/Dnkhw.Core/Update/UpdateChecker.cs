@@ -4,13 +4,18 @@ using System.Text.Json.Serialization;
 
 namespace Dnkhw.Core.Update;
 
-/// <summary>官网 version.json 的解析模型（version 用字符串承载，比对统一走 VersionComparer）。</summary>
+/// <summary>一次可用更新的完整信息（多个来源归一后的统一模型）。</summary>
 public sealed record UpdateInfo(
-    [property: JsonPropertyName("version")] string Version,
-    [property: JsonPropertyName("notes")] string? Notes = null,
-    [property: JsonPropertyName("downloadUrl")] string? DownloadUrl = null,
-    [property: JsonPropertyName("sha256")] string? Sha256 = null,
-    [property: JsonPropertyName("sizeBytes")] long? SizeBytes = null);
+    string Version,
+    string? Notes = null,
+    /// <summary>面向人的下载页（官网/仓库页）。</summary>
+    string? DownloadUrl = null,
+    /// <summary>exe 直链；为空表示该来源只能引导手动下载（如无哈希的 Gitee）。</summary>
+    string? DirectUrl = null,
+    string? Sha256 = null,
+    long? SizeBytes = null,
+    /// <summary>信息来源（提示与日志用）。</summary>
+    UpdateSourceKind Source = UpdateSourceKind.VersionJson);
 
 public enum UpdateCheckStatus
 {
@@ -75,19 +80,20 @@ public static class VersionComparer
 }
 
 /// <summary>
-/// 手动检查更新：读取官网 version.json 与当前版本比对。
-/// 仅在用户点击时联网一次（应用不做任何后台静默检查）。
+/// 手动检查更新：按「GitHub → Gitee → 官网 version.json」顺序尝试，
+/// 任一源给出明确结论（有新版/已是最新）即返回；全部失败才报错。
+/// 仅在用户点击时联网（应用不做任何后台静默检查）。
 /// </summary>
 public sealed class UpdateChecker
 {
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(5);
 
-    private readonly string _url;
+    private readonly IReadOnlyList<UpdateSource> _sources;
     private readonly HttpClient _client;
 
-    public UpdateChecker(string? url = null, HttpMessageHandler? handler = null)
+    public UpdateChecker(HttpMessageHandler? handler = null, IReadOnlyList<UpdateSource>? sources = null)
     {
-        _url = url ?? ProductLinks.VersionJson;
+        _sources = sources ?? UpdateSources.Defaults;
         _client = handler is null
             ? new HttpClient { Timeout = Timeout }
             : new HttpClient(handler, disposeHandler: false);
@@ -95,34 +101,71 @@ public sealed class UpdateChecker
 
     public async Task<UpdateCheckResult> CheckAsync(string currentVersion, CancellationToken ct = default)
     {
-        try
+        var lastError = "没有可用的更新源";
+        foreach (var source in _sources)
         {
-            using var response = await _client.GetAsync(_url, ct).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
+            try
             {
-                return UpdateCheckResult.Failed($"官网返回 {(int)response.StatusCode}，暂时无法检查");
-            }
+                using var request = new HttpRequestMessage(HttpMethod.Get, source.Url);
+                if (source.Kind == UpdateSourceKind.GitHubRelease)
+                {
+                    // GitHub API 强制要求 User-Agent，缺省直接 403
+                    request.Headers.UserAgent.ParseAdd("dnkhw-updater/1.0 (+https://www.cyhaoka.vip)");
+                    request.Headers.Accept.ParseAdd("application/vnd.github+json");
+                }
 
-            var json = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-            return ParseAndCompare(json, currentVersion);
+                using var response = await _client.SendAsync(request, ct).ConfigureAwait(false);
+                if (!response.IsSuccessStatusCode)
+                {
+                    lastError = $"{SourceName(source.Kind)}返回 {(int)response.StatusCode}";
+                    continue;
+                }
+
+                var json = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+                var result = ParseAndCompare(json, currentVersion, source.Kind);
+                if (result.Status != UpdateCheckStatus.FetchFailed)
+                {
+                    return result;
+                }
+
+                lastError = $"{SourceName(source.Kind)}：{result.Error}";
+            }
+            catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+            {
+                lastError = $"{SourceName(source.Kind)}超时";
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                lastError = $"{SourceName(source.Kind)}网络异常：{ex.Message}";
+            }
         }
-        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
-        {
-            // HttpClient 超时也表现为取消，但用户并未取消
-            return UpdateCheckResult.Failed("网络超时，请稍后再试");
-        }
-        catch (Exception ex)
-        {
-            return UpdateCheckResult.Failed($"网络异常：{ex.Message}");
-        }
+
+        return UpdateCheckResult.Failed($"检查失败：{lastError}");
     }
 
-    /// <summary>解析 version.json 并与当前版本比对；internal 供单测直接验证。</summary>
-    internal static UpdateCheckResult ParseAndCompare(string json, string currentVersion)
+    public static string SourceName(UpdateSourceKind kind) => kind switch
+    {
+        UpdateSourceKind.GitHubRelease => "GitHub",
+        UpdateSourceKind.GiteeRelease => "Gitee",
+        _ => "官网",
+    };
+
+    /// <summary>按源类型解析并比对；internal 供单测直接验证。</summary>
+    internal static UpdateCheckResult ParseAndCompare(string json, string currentVersion, UpdateSourceKind kind)
     {
         try
         {
-            var info = JsonSerializer.Deserialize<UpdateInfo>(json);
+            var info = kind switch
+            {
+                UpdateSourceKind.GitHubRelease => ParseGitHubRelease(json),
+                UpdateSourceKind.GiteeRelease => ParseGiteeRelease(json),
+                _ => ParseVersionJson(json),
+            };
+
             if (info is null || string.IsNullOrWhiteSpace(info.Version))
             {
                 return UpdateCheckResult.Failed("版本信息为空");
@@ -136,5 +179,123 @@ public sealed class UpdateChecker
         {
             return UpdateCheckResult.Failed("版本信息格式不正确");
         }
+    }
+
+    /// <summary>官网 version.json：directUrl 为 exe 直链（在线更新用）。</summary>
+    private static UpdateInfo? ParseVersionJson(string json)
+    {
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        return new UpdateInfo(
+            Version: root.GetString("version") ?? string.Empty,
+            Notes: root.GetString("notes"),
+            DownloadUrl: root.GetString("downloadUrl"),
+            DirectUrl: root.GetString("directUrl"),
+            Sha256: root.GetString("sha256"),
+            SizeBytes: root.TryGetInt64("sizeBytes", out var size) ? size : null,
+            Source: UpdateSourceKind.VersionJson);
+    }
+
+    /// <summary>GitHub/Gitee 的 tag 通常带 v 前缀，统一剥掉对齐 version.json 的纯数字约定。</summary>
+    internal static string? StripTagPrefix(string? tag) =>
+        string.IsNullOrWhiteSpace(tag) ? tag : tag.Trim().TrimStart('v', 'V');
+
+    /// <summary>GitHub latest release：tag_name + assets[].browser_download_url + digest(sha256:...)。</summary>
+    private static UpdateInfo? ParseGitHubRelease(string json)
+    {
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        var info = new UpdateInfo(
+            Version: StripTagPrefix(root.GetString("tag_name")) ?? string.Empty,
+            Notes: root.GetString("body"),
+            DownloadUrl: root.GetString("html_url"),
+            DirectUrl: null,
+            Sha256: null,
+            SizeBytes: null,
+            Source: UpdateSourceKind.GitHubRelease);
+        if (!root.TryGetProperty("assets", out var assets))
+        {
+            return info;
+        }
+
+        foreach (var asset in assets.EnumerateArray())
+        {
+            if (!string.Equals(asset.GetString("name"), UpdateSources.AssetFileName, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            return info with
+            {
+                DirectUrl = asset.GetString("browser_download_url"),
+                Sha256 = ExtractSha256(asset.GetString("digest")),
+                SizeBytes = asset.TryGetInt64("size", out var size) ? size : null,
+            };
+        }
+
+        return info;
+    }
+
+    /// <summary>Gitee latest release：API 不提供资产哈希 → 只引导下载页，不参与在线自更新。</summary>
+    private static UpdateInfo? ParseGiteeRelease(string json)
+    {
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        var info = new UpdateInfo(
+            Version: StripTagPrefix(root.GetString("tag_name")) ?? string.Empty,
+            Notes: root.GetString("body"),
+            DownloadUrl: root.GetString("html_url"),
+            DirectUrl: null,
+            Sha256: null,
+            SizeBytes: null,
+            Source: UpdateSourceKind.GiteeRelease);
+        if (!root.TryGetProperty("assets", out var assets))
+        {
+            return info;
+        }
+
+        foreach (var asset in assets.EnumerateArray())
+        {
+            if (!string.Equals(asset.GetString("name"), UpdateSources.AssetFileName, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            return info with
+            {
+                // Gitee 资产链接有时效，仅作为直链尝试；无哈希故在线更新仍会被拒绝
+                DirectUrl = asset.GetString("browser_download_url"),
+            };
+        }
+
+        return info;
+    }
+
+    /// <summary>"sha256:ABC123" → "ABC123"；其他格式原样返回。</summary>
+    internal static string? ExtractSha256(string? digest) => digest is null
+        ? null
+        : digest.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase)
+            ? digest["sha256:".Length..].Trim().ToUpperInvariant()
+            : digest.Trim().ToUpperInvariant();
+}
+
+internal static class JsonElementExtensions
+{
+    public static string? GetString(this JsonElement element, string name)
+        => element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
+
+    public static bool TryGetInt64(this JsonElement element, string name, out long value)
+    {
+        if (element.TryGetProperty(name, out var property)
+            && property.ValueKind == JsonValueKind.Number
+            && property.TryGetInt64(out value))
+        {
+            return true;
+        }
+
+        value = 0;
+        return false;
     }
 }

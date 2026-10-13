@@ -76,11 +76,21 @@
                             <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
                                 <ui:Button x:Name="CheckUpdateButton" Content="检查更新" Padding="14,7"
                                            Click="OnCheckUpdateClick"/>
+                                <ui:Button x:Name="UpdateNowButton" Content="在线更新" Appearance="Primary"
+                                           Padding="14,7" Margin="10,0,0,0" Visibility="Collapsed"
+                                           Click="OnUpdateNowClick"/>
                                 <ui:ProgressRing x:Name="UpdateRing" Width="18" Height="18" IsIndeterminate="True"
                                                   Margin="12,0,0,0" VerticalAlignment="Center" Visibility="Collapsed"/>
                             </StackPanel>
                             <TextBlock x:Name="UpdateStatusText" Foreground="#BFFFFFFF" FontSize="12" Margin="1,8,0,0"
                                        TextWrapping="Wrap" Visibility="Collapsed"/>
+                            <StackPanel x:Name="DownloadProgressPanel" Orientation="Horizontal" Margin="1,10,0,0"
+                                        Visibility="Collapsed">
+                                <ProgressBar x:Name="DownloadProgressBar" Width="220" Height="6"
+                                             Minimum="0" Maximum="100" VerticalAlignment="Center"/>
+                                <ui:Button Content="取消" Appearance="Secondary" Margin="10,0,0,0" Padding="12,5"
+                                           FontSize="12" Click="OnCancelUpdateClick"/>
+                            </StackPanel>
                             <TextBlock Text="让新装 Windows 更快变成顺手的工作空间。"
                                        Foreground="#EBFFFFFF" FontSize="17" FontWeight="SemiBold"
                                        TextWrapping="Wrap" Margin="0,19,0,0"/>

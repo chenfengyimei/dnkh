@@ -10,7 +10,7 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-blue)
 ![.NET](https://img.shields.io/badge/.NET-10.0%20LTS-purple)
-![Version](https://img.shields.io/badge/version-1.0.0-0078D4)
+![Version](https://img.shields.io/badge/version-1.0.1-0078D4)
 ![Size](https://img.shields.io/badge/%E5%8D%95%E6%96%87%E4%BB%B6-%E5%85%8D%E5%AE%89%E8%A3%85-67MB-orange)
 
 🌐 **官网：[www.cyhaoka.vip](https://www.cyhaoka.vip)** —— 软件下载、使用帮助与最新版本
@@ -85,7 +85,9 @@ Run 键 + 启动文件夹全枚举，数字签名发布者解析，支持搜索�
 
 ### ⚙️ 设置与更新
 主题三态切换（跟随系统/浅色/深色，即时生效）、「记住上次访问的页面」（下次启动直达）、
-打开日志文件夹；关于页「检查更新」**仅在你点击时联网一次**，发现新版直达官网下载。
+打开日志文件夹；关于页「检查更新」**仅在你点击时联网一次**，更新源按
+GitHub Releases → Gitee Releases → 官网 version.json 多级回落（开源仓库建好后即接入）；
+发现新版可**在线更新**：应用内下载 → SHA256 强校验 → 原地替换 → 重启即用。
 
 ## 下载与安装
 
