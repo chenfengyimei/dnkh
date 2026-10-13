@@ -10,7 +10,7 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-blue)
 ![.NET](https://img.shields.io/badge/.NET-10.0%20LTS-purple)
-![Version](https://img.shields.io/badge/version-1.0.4-0078D4)
+![Version](https://img.shields.io/badge/version-1.0.5-0078D4)
 ![Size](https://img.shields.io/badge/%E5%8D%95%E6%96%87%E4%BB%B6-%E5%85%8D%E5%AE%89%E8%A3%85-67.60MB-orange)
 
 🌐 **官网：[app.cyhaoka.vip](https://app.cyhaoka.vip)** —— 软件下载、使用帮助与最新版本

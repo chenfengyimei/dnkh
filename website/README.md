@@ -77,16 +77,16 @@ author-card + 版权行 + fb-note 渠道说明。
 
 每次发布新版本，改 `index.html` 中 4 处数据（全文搜索即可定位）：
 
-1. **版本号** `v1.0.4`（Hero 徽章 + 下载卡 2 处 + feedback.html Bug 表单预填 1 处）
-2. **大小** `67.60 MB` / `70,881,672 字节`
-3. **SHA256** `FE87BC51...1FA74B`（下载卡与 data-copy 各 1 处，共 2 个字符串）
+1. **版本号** `v1.0.5`（Hero 徽章 + 下载卡 2 处 + feedback.html Bug 表单预填 1 处）
+2. **大小** `67.60 MB` / `70,883,088 字节`
+3. **SHA256** `CC6945C1...A89FDF29`（下载卡与 data-copy 各 1 处，共 2 个字符串）
 4. 复制最新产物：`Copy-Item publish\Dnkhw.exe website\download\Dnkhw.exe`
 5. **更新 `dnkhw\version.json`**（由 `dnkhw\version.php` 无缓存输出，应用内「关于 → 检查更新」的数据源）：
    `version` 换为新版本号、`sha256`/`sizeBytes` 与发布物一致、
    `notes` 一句话亮点（会显示在应用的更新提示里）；
    随站点部署到 `https://app.cyhaoka.vip/dnkhw/version.php`
 6. **网盘渠道**：若新版本也在蓝奏云/百度/夸克上传了安装包，更新 `dl/config.php` 各渠道的
-   `url`（直连 url 指向当前版本的不可变路径，如 `/download/releases/v1.0.4/Dnkhw.exe`）
+   `url`（直连 url 指向当前版本的不可变路径，如 `/download/releases/v1.0.5/Dnkhw.exe`）
 
 > SHA256 获取：`Get-FileHash publish\Dnkhw.exe -Algorithm SHA256`
 > 历史教训（publish.ps1）：必须确认产物是新版再复制，防止杀软/旧进程锁文件导致发旧包。

@@ -64,8 +64,10 @@ try {
         }
     }
 
+    # 被杀软短暂占用的旧备份会保留到下次清理；它不应把已经成功的发布判为失败。
+    $backupPattern = "$([System.IO.Path]::GetFileName($target)).backup-*"
     $unexpected = @(Get-ChildItem -LiteralPath $outputFull -Force | Where-Object {
-        $_.FullName -ne (Get-Item -LiteralPath $target).FullName
+        $_.FullName -ne (Get-Item -LiteralPath $target).FullName -and $_.Name -notlike $backupPattern
     })
     if ($unexpected.Count -gt 0) {
         $names = ($unexpected | Select-Object -ExpandProperty Name) -join ", "

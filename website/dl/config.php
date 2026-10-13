@@ -13,7 +13,7 @@ return [
     'keepDays' => 180,
 
     'channels' => [
-        'direct' => ['label' => '本站直连',   'type' => 'file', 'url' => '/download/releases/v1.0.4/Dnkhw.exe'],
+        'direct' => ['label' => '本站直连',   'type' => 'file', 'url' => '/download/releases/v1.0.5/Dnkhw.exe'],
         'lanzou' => ['label' => '蓝奏云',     'type' => 'link', 'url' => ''],
         'baidu'  => ['label' => '百度网盘',   'type' => 'link', 'url' => ''],
         'quark'  => ['label' => '夸克网盘',   'type' => 'link', 'url' => ''],
