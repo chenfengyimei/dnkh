@@ -77,9 +77,9 @@ author-card + 版权行 + fb-note 渠道说明。
 
 每次发布新版本，改 `index.html` 中 4 处数据（全文搜索即可定位）：
 
-1. **版本号** `v0.1.0`（Hero 徽章 + 下载卡 2 处 + feedback.html Bug 表单预填 1 处）
-2. **大小** `66.88 MB` / `70,131,072 字节`
-3. **SHA256** `53537003...05D42B`（下载卡与 data-copy 各 1 处，共 2 个字符串）
+1. **版本号** `v1.0.1`（Hero 徽章 + 下载卡 2 处 + feedback.html Bug 表单预填 1 处）
+2. **大小** `67.60 MB` / `70,881,606 字节`
+3. **SHA256** `E0A5B939...C119F5`（下载卡与 data-copy 各 1 处，共 2 个字符串）
 4. 复制最新产物：`Copy-Item publish\Dnkhw.exe website\download\Dnkhw.exe`
 5. **更新 `dnkhw\version.json`**（应用内「关于 → 检查更新」的数据源）：
    `version` 换为新版本号、`sha256`/`sizeBytes` 与发布物一致、
