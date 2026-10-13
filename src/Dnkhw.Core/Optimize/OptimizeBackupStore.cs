@@ -19,18 +19,20 @@ internal static class OptimizeBackupStore
 
     private static string StateFile => Path.Combine(StateDirectory, "optimize-backup.json");
 
-    public static void SaveIfMissing(string actionId, Func<OptimizeBackup> capture)
+    /// <returns>本次是否新建了备份；调用方据此决定失败时能否安全自动回滚。</returns>
+    public static bool SaveIfMissing(string actionId, Func<OptimizeBackup> capture)
     {
         lock (Sync)
         {
             var state = ReadState();
             if (state.ContainsKey(actionId))
             {
-                return;
+                return false;
             }
 
             state[actionId] = capture();
             WriteState(state);
+            return true;
         }
     }
 

@@ -135,6 +135,17 @@ public class UpdateCheckerParsingTests
         Assert.Equal(UpdateCheckStatus.FetchFailed, result.Status);
     }
 
+    [Fact]
+    public void Parse_InvalidVersion_ReturnsFetchFailed()
+    {
+        var result = UpdateChecker.ParseAndCompare(
+            """{ "version": "newest", "directUrl": "https://example/dl.exe" }""",
+            "1.0.0",
+            UpdateSourceKind.VersionJson);
+
+        Assert.Equal(UpdateCheckStatus.FetchFailed, result.Status);
+    }
+
     [Theory]
     [InlineData("sha256:abc", "ABC")]
     [InlineData("sha256:ABC", "ABC")]

@@ -55,12 +55,12 @@ public class UpdateDownloaderTests
         var payload = "new binary content"u8.ToArray();
         using var handler = new BytesHandler(payload);
         var downloader = new UpdateDownloader(handler);
-        var info = MakeInfo(payload) with { Sha256 = "DEADBEEF" };
+        var info = MakeInfo(payload) with { Sha256 = new string('D', 64) };
 
         await Assert.ThrowsAsync<InvalidOperationException>(
             () => downloader.DownloadAsync(info, null, TestContext.Current.CancellationToken));
 
-        Assert.False(File.Exists(Path.Combine(UpdateDownloader.DownloadDirectory, "Dnkhw.download.tmp")));
+        Assert.Empty(Directory.EnumerateFiles(UpdateDownloader.DownloadDirectory, "Dnkhw.*.download.tmp"));
     }
 
     [Fact]
@@ -94,7 +94,11 @@ public class UpdateDownloaderTests
     {
         using var handler = new BytesHandler("x"u8.ToArray(), HttpStatusCode.Forbidden);
         var downloader = new UpdateDownloader(handler);
-        var info = new UpdateInfo("1.0.1", DirectUrl: "https://dl.test/Dnkhw.exe", Sha256: "AA");
+        var info = new UpdateInfo(
+            "1.0.1",
+            DirectUrl: "https://dl.test/Dnkhw.exe",
+            Sha256: new string('A', 64),
+            SizeBytes: 1);
 
         await Assert.ThrowsAsync<HttpRequestException>(
             () => downloader.DownloadAsync(info, null, TestContext.Current.CancellationToken));
@@ -141,7 +145,26 @@ public class UpdateDownloaderTests
             () => downloader.DownloadAsync(info, null, TestContext.Current.CancellationToken));
 
         Assert.Contains("大小", ex.Message);
-        Assert.False(File.Exists(Path.Combine(UpdateDownloader.DownloadDirectory, "Dnkhw.download.tmp")));
+        Assert.Empty(Directory.EnumerateFiles(UpdateDownloader.DownloadDirectory, "Dnkhw.*.download.tmp"));
+    }
+
+    [Theory]
+    [InlineData("http://dl.test/Dnkhw.exe", "HTTPS")]
+    [InlineData("https://dl.test/Dnkhw.exe", "SHA256")]
+    public async Task Download_InvalidMetadata_RefusesBeforeDownload(string url, string expectedMessage)
+    {
+        using var handler = new BytesHandler("x"u8.ToArray());
+        var downloader = new UpdateDownloader(handler);
+        var info = new UpdateInfo(
+            "1.0.1",
+            DirectUrl: url,
+            Sha256: url.StartsWith("http:", StringComparison.Ordinal) ? new string('A', 64) : "invalid",
+            SizeBytes: 1);
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => downloader.DownloadAsync(info, null, TestContext.Current.CancellationToken));
+
+        Assert.Contains(expectedMessage, ex.Message);
     }
 
     /// <summary>同步记录（xUnit 无同步上下文，Progress<T> 会异步投递产生竞态）。</summary>
@@ -268,6 +291,7 @@ public class SelfUpdaterTests
             restartAfterApply: true);
 
         Assert.Contains("Get-Process -Id $processId", script);
+        Assert.Contains("Remove-Item -LiteralPath $backup", script);
         Assert.Contains("Move-Item -LiteralPath $target", script);
         Assert.Contains("Start-Process -FilePath $target", script);
         Assert.DoesNotContain(@"C:\Program Files\dnkhw\Dnkhw.exe", script);

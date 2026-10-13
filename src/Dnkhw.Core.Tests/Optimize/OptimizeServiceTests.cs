@@ -101,9 +101,9 @@ public class OptimizeServiceTests
         // 经典右键菜单是「键存在/删除」式动作，无注册表值备份载荷：
         // Revert 走动作自身的恢复（不会因空备份而跳过）
         var item = service.GetItems().FirstOrDefault(i => i.Id == "classicContextMenu");
-        if (item is null)
+        if (item is null || service.IsApplied("classicContextMenu"))
         {
-            // Win10 上该项隐藏，跳过
+            // Win10 上该项隐藏；已有键可能是用户/第三方配置，单测不能触碰。
             return;
         }
 

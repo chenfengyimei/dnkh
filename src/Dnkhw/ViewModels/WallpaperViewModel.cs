@@ -23,6 +23,9 @@ public sealed record WallpaperView(
     bool IsLocal,
     BingWallpaper? Source);
 
+/// <summary>远端壁纸拉取结果：网络失败与「正常但无更多图片」必须区分，避免错误地关闭“加载更多”。</summary>
+public sealed record WallpaperFetchResult(IReadOnlyList<BingWallpaper> Items, string? Error = null);
+
 public sealed partial class WallpaperViewModel : ObservableObject
 {
     private readonly BingWallpaperService _bing = new();
@@ -340,8 +343,8 @@ public sealed partial class WallpaperViewModel : ObservableObject
         try
         {
             _pageOffset = 0;
-            var list = await FetchRemoteAsync(0, reportErrors: true);
-            var remoteViews = await BuildViewsAsync(list);
+            var fetch = await FetchRemoteAsync(0);
+            var remoteViews = await BuildViewsAsync(fetch.Items);
             var recentNames = remoteViews
                 .Select(v => v.FullPath is null ? string.Empty : Path.GetFileName(v.FullPath))
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -349,6 +352,11 @@ public sealed partial class WallpaperViewModel : ObservableObject
             Items = [.. remoteViews, .. LocalCacheExtras(recentNames)];
             HasLoaded = true;
             CanLoadMore = remoteViews.Count > 0;
+            if (fetch.Error is not null)
+            {
+                NoticeText = $"Bing 接口不可用（{fetch.Error}），仅显示本地缓存";
+                NoticeOpen = true;
+            }
         }
         catch (Exception ex)
         {
@@ -374,10 +382,18 @@ public sealed partial class WallpaperViewModel : ObservableObject
         try
         {
             var nextOffset = _pageOffset + 8;
-            var list = await FetchRemoteAsync(nextOffset, reportErrors: false);
+            var fetch = await FetchRemoteAsync(nextOffset);
+            if (fetch.Error is not null)
+            {
+                // 网络暂时失败不等于 Bing 历史壁纸已经耗尽，保留重试入口。
+                NoticeText = $"加载更多失败：{fetch.Error}（可稍后重试）";
+                NoticeOpen = true;
+                return;
+            }
+
             _pageOffset = nextOffset;
 
-            var newViews = await BuildViewsAsync(list);
+            var newViews = await BuildViewsAsync(fetch.Items);
             var existingNames = Items
                 .Where(i => !i.IsLocal && i.FullPath is not null)
                 .Select(i => Path.GetFileName(i.FullPath!))
@@ -423,21 +439,16 @@ public sealed partial class WallpaperViewModel : ObservableObject
         }
     }
 
-    private async Task<IReadOnlyList<BingWallpaper>> FetchRemoteAsync(int offset, bool reportErrors)
+    private async Task<WallpaperFetchResult> FetchRemoteAsync(int offset)
     {
         try
         {
-            return await _bing.GetRecentAsync(8, offset, SelectedMarket?.Code ?? "zh-CN");
+            return new WallpaperFetchResult(
+                await _bing.GetRecentAsync(8, offset, SelectedMarket?.Code ?? "zh-CN"));
         }
         catch (Exception ex)
         {
-            if (reportErrors)
-            {
-                NoticeText = $"Bing 接口不可用（{ex.Message}），仅显示本地缓存";
-                NoticeOpen = true;
-            }
-
-            return [];
+            return new WallpaperFetchResult([], ex.Message);
         }
     }
 

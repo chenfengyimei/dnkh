@@ -4,8 +4,8 @@ using System.Text;
 namespace Dnkhw.Core.Update;
 
 /// <summary>
-/// 就地自替换：Windows 允许重命名正在运行的 exe，
-/// 「旧→.old、新→原名」两步即可无辅助进程完成升级；失败时回滚。
+/// 自替换支持：实际升级由独立进程在主程序退出后完成，避免 Windows 锁定运行中 exe；
+/// 旧文件保留为短暂备份，替换失败时回滚。
 /// </summary>
 public static class SelfUpdater
 {
@@ -62,6 +62,7 @@ public static class SelfUpdater
             CreateNoWindow = true,
         };
         startInfo.ArgumentList.Add("-NoProfile");
+        startInfo.ArgumentList.Add("-NonInteractive");
         startInfo.ArgumentList.Add("-ExecutionPolicy");
         startInfo.ArgumentList.Add("Bypass");
         startInfo.ArgumentList.Add("-File");
@@ -147,6 +148,11 @@ public static class SelfUpdater
         $backup = "$target.old"
         for ($attempt = 0; $attempt -lt 120; $attempt++) {
             try {
+                # 上一次被杀毒软件/异常中断留下的备份不能阻塞后续升级；当前主程序仍在，
+                # 因而在创建本次新备份前可以安全删除这个旧残留。
+                if (Test-Path -LiteralPath $backup) {
+                    Remove-Item -LiteralPath $backup -Force -ErrorAction Stop
+                }
                 Move-Item -LiteralPath $target -Destination $backup -Force -ErrorAction Stop
                 try {
                     Move-Item -LiteralPath $ready -Destination $target -Force -ErrorAction Stop

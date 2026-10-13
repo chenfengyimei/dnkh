@@ -55,6 +55,17 @@ public class BingWallpaperServiceTests
         }
     }
 
+    [Theory]
+    [InlineData("https://www.bing.com/th?id=OHR.Abc", true)]
+    [InlineData("https://tse4.mm.bing.net/th?id=OHR.Abc", true)]
+    [InlineData("http://www.bing.com/th?id=OHR.Abc", false)]
+    [InlineData("https://evilbing.com/image.jpg", false)]
+    [InlineData("https://example.com/image.jpg", false)]
+    public void WallpaperStore_OnlyAllowsBingHttpsHosts(string url, bool expected)
+    {
+        Assert.Equal(expected, WallpaperStore.IsAllowedBingUri(new Uri(url)));
+    }
+
     [Fact]
     public void BuildThumbUrl_AppendsThumbResolution()
     {

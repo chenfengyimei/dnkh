@@ -85,8 +85,29 @@ public class SettingsStoreTests
         {
             SettingsStore.Save(new AppSettings { LastPageKey = "check" }, path);
 
-            Assert.False(File.Exists(path + ".tmp"));
+            Assert.Empty(Directory.EnumerateFiles(
+                Path.GetDirectoryName(path)!,
+                Path.GetFileName(path) + ".*.tmp"));
             Assert.True(File.Exists(path));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void Load_InvalidThemeAndUnsafePageKey_AreNormalized()
+    {
+        var path = TempJsonPath();
+        try
+        {
+            File.WriteAllText(path, """{ "Theme": 999, "LastPageKey": "\u0001bad" }""");
+
+            var settings = SettingsStore.Load(path);
+
+            Assert.Equal(AppTheme.Follow, settings.Theme);
+            Assert.Null(settings.LastPageKey);
         }
         finally
         {

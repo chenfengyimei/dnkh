@@ -96,7 +96,7 @@ public partial class WebsitePage : Page
         }
     }
 
-    /// <summary>非 http(s) 协议与站外域名不进内嵌视图，交给系统浏览器。</summary>
+    /// <summary>仅官网 HTTPS 页面可内嵌；站外 HTTPS 在默认浏览器打开，其余协议一律阻止。</summary>
     private void OnNavigationStarting(object? sender, CoreWebView2NavigationStartingEventArgs e)
     {
         if (!Uri.TryCreate(e.Uri, UriKind.Absolute, out var uri))
@@ -105,14 +105,20 @@ public partial class WebsitePage : Page
             return;
         }
 
-        var isHttp = uri.Scheme.Equals("http", StringComparison.OrdinalIgnoreCase)
-                     || uri.Scheme.Equals("https", StringComparison.OrdinalIgnoreCase);
+        var isHttps = uri.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase);
         var isOwnSite = uri.Host.Equals(OwnDomain, StringComparison.OrdinalIgnoreCase)
                         || uri.Host.EndsWith("." + OwnDomain, StringComparison.OrdinalIgnoreCase);
-        if (!isHttp || !isOwnSite)
+        if (!isHttps || !isOwnSite)
         {
             e.Cancel = true;
-            OpenExternal(e.Uri);
+            if (isHttps)
+            {
+                OpenExternal(uri.AbsoluteUri);
+            }
+            else
+            {
+                LogService.Warn($"已阻止内嵌页请求不安全协议：{uri.Scheme}");
+            }
             return;
         }
 
@@ -215,9 +221,16 @@ public partial class WebsitePage : Page
 
     private static void OpenExternal(string url)
     {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)
+            || uri.Scheme != Uri.UriSchemeHttps)
+        {
+            LogService.Warn("已阻止打开非 HTTPS 外链");
+            return;
+        }
+
         try
         {
-            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true });
         }
         catch (Exception ex)
         {

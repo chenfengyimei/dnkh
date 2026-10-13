@@ -544,7 +544,8 @@ public sealed class SystemCheckService
 
     /// <summary>
     /// 执行 WMI 查询并立即物化所有属性值，避免集合释放后访问 COM 对象；
-    /// 单项查询超时直接抛 TimeoutException（后台线程自行结束）。
+    /// 单项查询超时直接抛 TimeoutException（WMI 的底层调用无法强制取消，后台线程自行结束）；
+    /// 超时后仍会观察后台异常，避免形成未观察任务异常。
     /// </summary>
     private static async Task<List<Dictionary<string, object?>>> QueryWmiAsync(
         string query,
@@ -566,6 +567,11 @@ public sealed class SystemCheckService
         var completed = await Task.WhenAny(t, Task.Delay(timeout ?? DefaultWmiTimeout)).ConfigureAwait(false);
         if (completed != t)
         {
+            _ = t.ContinueWith(
+                static completedTask => _ = completedTask.Exception,
+                CancellationToken.None,
+                TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
             throw new TimeoutException("WMI 查询超时");
         }
 

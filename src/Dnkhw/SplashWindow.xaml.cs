@@ -6,6 +6,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using Dnkhw.Core.AppCatalog;
 using Dnkhw.Core.Wallpaper;
+using Dnkhw.Services;
 
 namespace Dnkhw;
 
@@ -15,6 +16,7 @@ namespace Dnkhw;
 /// </summary>
 public partial class SplashWindow : Window
 {
+    private static readonly TimeSpan StageWorkTimeout = TimeSpan.FromSeconds(2);
     private readonly IReadOnlyList<(string Status, Func<Task> Work)> _stages;
 
     public SplashWindow()
@@ -58,7 +60,19 @@ public partial class SplashWindow : Window
             {
                 StatusText.Text = _stages[i].Status;
                 await Task.Delay(260);
-                await Task.WhenAll(Task.Run(_stages[i].Work), Task.Delay(180), AnimateProgressTo((i + 1) * step));
+                var work = Task.Run(_stages[i].Work);
+                await Task.WhenAll(Task.Delay(180), AnimateProgressTo((i + 1) * step));
+
+                // WMI 在少数损坏/服务异常的系统上可能长时间不返回；启动动画必须有上限，
+                // 预热仅是加速项，绝不能阻止用户进入主程序。
+                if (await Task.WhenAny(work, Task.Delay(StageWorkTimeout)) != work)
+                {
+                    ObserveTimedOutStage(work, _stages[i].Status);
+                    LogService.Warn($"启动预热超时，已跳过：{_stages[i].Status}");
+                    continue;
+                }
+
+                await work;
             }
 
             StatusText.Text = "初始化完成";
@@ -158,5 +172,14 @@ public partial class SplashWindow : Window
         };
         BeginAnimation(OpacityProperty, fade);
         await tcs.Task;
+    }
+
+    private static void ObserveTimedOutStage(Task task, string stage)
+    {
+        _ = task.ContinueWith(
+            completedTask => LogService.Warn($"启动预热后台失败：{stage}", completedTask.Exception),
+            CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
     }
 }

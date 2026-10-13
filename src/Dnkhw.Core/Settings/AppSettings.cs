@@ -47,7 +47,7 @@ public static class SettingsStore
             }
 
             var settings = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(path));
-            return settings ?? new AppSettings();
+            return Normalize(settings ?? new AppSettings());
         }
         catch
         {
@@ -67,8 +67,44 @@ public static class SettingsStore
             Directory.CreateDirectory(directory);
         }
 
-        var tempPath = path + ".tmp";
-        File.WriteAllText(tempPath, JsonSerializer.Serialize(settings, JsonOptions));
-        File.Move(tempPath, path, overwrite: true);
+        // 使用唯一临时文件，避免快速连续点击设置时两个写入互相覆盖临时文件。
+        var tempPath = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
+        try
+        {
+            File.WriteAllText(tempPath, JsonSerializer.Serialize(Normalize(settings), JsonOptions));
+            File.Move(tempPath, path, overwrite: true);
+        }
+        finally
+        {
+            try
+            {
+                File.Delete(tempPath);
+            }
+            catch
+            {
+                // 原子替换成功后临时文件已不存在；清理失败不掩盖原始保存异常。
+            }
+        }
+    }
+
+    /// <summary>把磁盘上可被手工编辑的设置收敛到受支持范围，避免异常枚举值破坏界面状态。</summary>
+    private static AppSettings Normalize(AppSettings settings)
+    {
+        if (!Enum.IsDefined(settings.Theme))
+        {
+            settings.Theme = AppTheme.Follow;
+        }
+
+        if (settings.LastPageKey is { } key)
+        {
+            // 页面 key 只用于启动导航；限制长度与控制字符，未知值仍由 UI 安全回退到首页。
+            var normalized = key.Trim();
+            settings.LastPageKey = normalized.Length is 0 or > 64
+                || normalized.Any(char.IsControl)
+                ? null
+                : normalized;
+        }
+
+        return settings;
     }
 }

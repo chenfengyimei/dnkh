@@ -17,6 +17,7 @@ public sealed class OptimizeService
     private const string ClassicContextMenuKey
         = @"Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}";
     private const string ClassicContextMenuInprocKey = ClassicContextMenuKey + @"\InprocServer32";
+    private const string ClassicContextMenuMarkerValue = "dnkhw-managed";
 
     private readonly List<OptimizeAction> _actions = BuildActions();
 
@@ -70,8 +71,32 @@ public sealed class OptimizeService
     public void Apply(string id)
     {
         var action = Find(id);
-        OptimizeBackupStore.SaveIfMissing(id, () => CaptureBackup(action));
-        action.Apply();
+        var backupCreated = OptimizeBackupStore.SaveIfMissing(id, () => CaptureBackup(action));
+        try
+        {
+            action.Apply();
+        }
+        catch (Exception applyException)
+        {
+            // 本次刚保存了原始状态时，动作半途失败也不能留下半套系统设置。
+            // 已有备份说明设置可能曾被用户手工调整，避免用历史快照覆盖用户的新选择。
+            if (backupCreated && OptimizeBackupStore.TryGet(id, out var backup))
+            {
+                try
+                {
+                    RestoreBackup(action, backup);
+                    OptimizeBackupStore.Remove(id);
+                }
+                catch (Exception rollbackException)
+                {
+                    throw new InvalidOperationException(
+                        "应用优化失败，且自动回滚未完成；请保留错误信息后重试恢复",
+                        new AggregateException(applyException, rollbackException));
+                }
+            }
+
+            throw;
+        }
     }
 
     public void Revert(string id)
@@ -248,13 +273,9 @@ public sealed class OptimizeService
                 "文件资源管理器右键直接显示全部选项，无需再点「显示更多选项」；写入后需重启资源管理器生效（任务栏会闪一下，属正常现象），随时可恢复",
                 NeedsAdmin: false,
                 Win11Only: true,
-                IsApplied: () => Registry.CurrentUser.OpenSubKey(ClassicContextMenuInprocKey) is not null,
-                Apply: () =>
-                {
-                    using var key = Registry.CurrentUser.CreateSubKey(ClassicContextMenuInprocKey);
-                    key.SetValue(string.Empty, string.Empty, RegistryValueKind.String);
-                },
-                Revert: () => Registry.CurrentUser.DeleteSubKeyTree(ClassicContextMenuKey, throwOnMissingSubKey: false),
+                IsApplied: IsClassicContextMenuApplied,
+                Apply: ApplyClassicContextMenu,
+                Revert: RevertClassicContextMenu,
                 GroupId: "ui"),
         };
 
@@ -283,6 +304,75 @@ public sealed class OptimizeService
             Win10Only: win10Only,
             GroupId: group,
             BackupTargets: [new RegistryTarget("value", Registry.CurrentUser, path, valueName)]);
+
+    private static bool IsClassicContextMenuApplied()
+    {
+        using var key = Registry.CurrentUser.OpenSubKey(ClassicContextMenuInprocKey);
+        return key is not null;
+    }
+
+    /// <summary>只为本工具新建的 InprocServer32 键写入标记，恢复时绝不误删用户已有的 CLSID 配置。</summary>
+    private static void ApplyClassicContextMenu()
+    {
+        if (IsClassicContextMenuApplied())
+        {
+            return;
+        }
+
+        using var key = Registry.CurrentUser.CreateSubKey(ClassicContextMenuInprocKey)
+            ?? throw new InvalidOperationException("无法创建经典右键菜单注册表项");
+        key.SetValue(string.Empty, string.Empty, RegistryValueKind.String);
+        key.SetValue(ClassicContextMenuMarkerValue, 1, RegistryValueKind.DWord);
+    }
+
+    /// <summary>
+    /// 仅移除本工具建立、或结构完全符合旧版本工具的最小经典菜单键。
+    /// 发现额外值/子键时停止，宁可提示用户手动检查，也不删除潜在的第三方配置。
+    /// </summary>
+    private static void RevertClassicContextMenu()
+    {
+        var deleteParent = false;
+        using (var parent = Registry.CurrentUser.OpenSubKey(ClassicContextMenuKey, writable: true))
+        {
+            if (parent is null)
+            {
+                return;
+            }
+
+            using (var key = parent.OpenSubKey("InprocServer32", writable: true))
+            {
+                if (key is null)
+                {
+                    return;
+                }
+
+                var managed = key.GetValue(ClassicContextMenuMarkerValue) is int marker && marker == 1;
+                var onlyExpectedValues = key.GetValueNames().All(name =>
+                    name.Length == 0 || string.Equals(name, ClassicContextMenuMarkerValue, StringComparison.Ordinal));
+                var hasChildKeys = key.GetSubKeyNames().Length > 0;
+                var isMinimalLegacyKey = !managed
+                    && key.GetValueNames().Length == 1
+                    && key.GetValueNames()[0].Length == 0
+                    && !hasChildKeys
+                    && parent.GetValueNames().Length == 0
+                    && parent.GetSubKeyNames().Length == 1
+                    && string.Equals(parent.GetSubKeyNames()[0], "InprocServer32", StringComparison.OrdinalIgnoreCase);
+
+                if ((!managed && !isMinimalLegacyKey) || !onlyExpectedValues || hasChildKeys)
+                {
+                    throw new InvalidOperationException("经典右键菜单注册表项包含非本工具配置，已停止删除以保护现有设置");
+                }
+            }
+
+            parent.DeleteSubKeyTree("InprocServer32", throwOnMissingSubKey: false);
+            deleteParent = parent.GetValueNames().Length == 0 && parent.GetSubKeyNames().Length == 0;
+        }
+
+        if (deleteParent)
+        {
+            Registry.CurrentUser.DeleteSubKeyTree(ClassicContextMenuKey, throwOnMissingSubKey: false);
+        }
+    }
 
     private static OptimizeBackup CaptureBackup(OptimizeAction action)
     {

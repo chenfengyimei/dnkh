@@ -8,13 +8,10 @@ namespace Dnkhw.Core.Update;
 public sealed record UpdateInfo(
     string Version,
     string? Notes = null,
-    /// <summary>面向人的下载页（官网/仓库页）。</summary>
     string? DownloadUrl = null,
-    /// <summary>exe 直链；为空表示该来源只能引导手动下载（如无哈希的 Gitee）。</summary>
     string? DirectUrl = null,
     string? Sha256 = null,
     long? SizeBytes = null,
-    /// <summary>信息来源（提示与日志用）。</summary>
     UpdateSourceKind Source = UpdateSourceKind.VersionJson);
 
 public enum UpdateCheckStatus
@@ -50,6 +47,25 @@ public static class VersionComparer
         }
 
         return 0;
+    }
+
+    /// <summary>更新源版本必须是 1-4 段非负数字（可带 v 前缀）；避免损坏清单被误判为“已是最新”。</summary>
+    internal static bool IsValidVersion(string? version)
+    {
+        if (string.IsNullOrWhiteSpace(version))
+        {
+            return false;
+        }
+
+        var trimmed = version.Trim();
+        if (trimmed.StartsWith('v') || trimmed.StartsWith('V'))
+        {
+            trimmed = trimmed[1..];
+        }
+
+        var parts = trimmed.Split('.');
+        return parts.Length is >= 1 and <= 4
+            && parts.All(part => part.Length > 0 && uint.TryParse(part, out _));
     }
 
     private static int[] Parse(string? version)
@@ -202,9 +218,9 @@ public sealed class UpdateChecker
                 _ => ParseVersionJson(json),
             };
 
-            if (info is null || string.IsNullOrWhiteSpace(info.Version))
+            if (info is null || !VersionComparer.IsValidVersion(info.Version))
             {
-                return UpdateCheckResult.Failed("版本信息为空");
+                return UpdateCheckResult.Failed("版本信息为空或格式不正确");
             }
 
             return VersionComparer.Compare(info.Version, currentVersion) > 0
