@@ -28,7 +28,8 @@
 
         <ui:DynamicScrollViewer Background="Transparent">
             <StackPanel MaxWidth="880" HorizontalAlignment="Center" Margin="32,28,32,32">
-                <Border Height="318" CornerRadius="26" ClipToBounds="True">
+                <!-- 左侧内容会随更新状态与窗口缩放增加高度，不能使用固定高度裁切。 -->
+                <Border MinHeight="318" CornerRadius="26" ClipToBounds="True">
                     <Border.Background>
                         <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
                             <GradientStop Color="#FF111722" Offset="0"/>
@@ -38,21 +39,29 @@
                     </Border.Background>
 
                     <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="3*"/>
+                            <ColumnDefinition Width="2*"/>
+                        </Grid.ColumnDefinitions>
+
                         <Ellipse Width="330" Height="330"
+                                 Grid.Column="1"
                                  HorizontalAlignment="Right" VerticalAlignment="Center"
                                  Margin="0,0,-44,0" Fill="#35E83258"/>
                         <Ellipse Width="190" Height="190"
+                                 Grid.Column="1"
                                  HorizontalAlignment="Right" VerticalAlignment="Top"
                                  Margin="0,-78,186,0" Fill="#142E9BA4"/>
 
                         <!-- 角色形象及相关图片版权归哔哩哔哩“尘风一枚”所有。 -->
                         <Image Source="/Dnkhw;component/Assets/Images/about-oc.png"
+                               Grid.Column="1"
                                Height="374" Margin="0,0,-16,-48"
                                HorizontalAlignment="Right" VerticalAlignment="Bottom"
                                Stretch="Uniform" SnapsToDevicePixels="True"
                                IsHitTestVisible="False"/>
 
-                        <Rectangle IsHitTestVisible="False">
+                        <Rectangle Grid.ColumnSpan="2" IsHitTestVisible="False">
                             <Rectangle.Fill>
                                 <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
                                     <GradientStop Color="#F2111722" Offset="0"/>
@@ -62,7 +71,8 @@
                             </Rectangle.Fill>
                         </Rectangle>
 
-                        <StackPanel Width="470" Margin="34,30,0,28"
+                        <!-- 保留右侧插图列，左侧文本不再与角色图叠放。 -->
+                        <StackPanel Grid.Column="0" MaxWidth="470" Margin="34,30,18,28"
                                     HorizontalAlignment="Left" VerticalAlignment="Center">
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
                                 <Image Source="/Dnkhw;component/Assets/Icons/app-icon.png"
