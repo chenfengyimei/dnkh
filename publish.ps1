@@ -47,7 +47,12 @@ try {
     # 同卷临时文件原子替换：目标被运行中程序/杀软锁定时旧版本不会先被删除。
     if (Test-Path -LiteralPath $target) {
         [System.IO.File]::Replace($incoming, $target, $backup)
-        Remove-Item -LiteralPath $backup -Force
+        try {
+            Remove-Item -LiteralPath $backup -Force -ErrorAction Stop
+        } catch {
+            # 杀软或资源管理器可能短暂占用旧文件；新包已原子替换成功，保留备份供下次清理。
+            Write-Warning "Published successfully, but the previous-package backup is still locked: $backup"
+        }
     } else {
         Move-Item -LiteralPath $incoming -Destination $target
     }
