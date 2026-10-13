@@ -1,10 +1,18 @@
 <?php
+// 统计页密钥只从服务器本地 config.local.php 读取；该文件已在 .gitignore 中排除。
+// 缺失密钥时 stats.php 会拒绝所有访问，绝不把空值当作可用口令。
+$localConfig = __DIR__ . '/config.local.php';
+$local = is_file($localConfig) ? require $localConfig : [];
+$statsKey = is_array($local) && isset($local['statsKey']) && is_string($local['statsKey'])
+    ? $local['statsKey']
+    : '';
+
 // 下载渠道配置 —— 填上网盘分享链接即可在前端自动显示该渠道按钮。
 // url 留空 = 渠道暂未开放（前端自动隐藏）。
 // 'direct' 为本站直连，请勿删除；url 使用站点根相对路径。
 return [
-    // stats.php 统计页访问密钥（URL 带 ?key= 此值才可查看）
-    'statsKey' => 'dnkhw-7f3a9c2e51b8d406',
+    // stats.php 统计页访问密钥（服务器本地配置；不入库）
+    'statsKey' => $statsKey,
 
     // 是否在官网公开展示「累计下载 N 次」（仅聚合数字，不含任何个人信息）
     'showPublicStats' => true,
@@ -13,7 +21,7 @@ return [
     'keepDays' => 180,
 
     'channels' => [
-        'direct' => ['label' => '本站直连',   'type' => 'file', 'url' => '/download/releases/v1.0.5/Dnkhw.exe'],
+        'direct' => ['label' => '本站直连',   'type' => 'file', 'url' => '/download/releases/v1.0.6/Dnkhw.exe'],
         'lanzou' => ['label' => '蓝奏云',     'type' => 'link', 'url' => ''],
         'baidu'  => ['label' => '百度网盘',   'type' => 'link', 'url' => ''],
         'quark'  => ['label' => '夸克网盘',   'type' => 'link', 'url' => ''],

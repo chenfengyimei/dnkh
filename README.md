@@ -10,8 +10,8 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-blue)
 ![.NET](https://img.shields.io/badge/.NET-10.0%20LTS-purple)
-![Version](https://img.shields.io/badge/version-1.0.5-0078D4)
-![Size](https://img.shields.io/badge/%E5%8D%95%E6%96%87%E4%BB%B6-%E5%85%8D%E5%AE%89%E8%A3%85-67.60MB-orange)
+![Version](https://img.shields.io/badge/version-1.0.6-0078D4)
+![Size](https://img.shields.io/badge/%E5%8D%95%E6%96%87%E4%BB%B6-%E5%85%8D%E5%AE%89%E8%A3%85-67.61MB-orange)
 
 🌐 **官网：[app.cyhaoka.vip](https://app.cyhaoka.vip)** —— 软件下载、使用帮助与最新版本
 
@@ -122,12 +122,12 @@ dotnet build                     # 构建
 dotnet test                      # 运行全部单元测试
 dotnet run --project src/Dnkhw   # 启动应用
 
-.\publish.ps1                    # 产出自包含单文件 publish\Dnkhw.exe（当前发布物为 67.60 MB）
+.\publish.ps1                    # 产出自包含单文件 publish\Dnkhw.exe（当前发布物为 67.61 MB）
 ```
 
 测试覆盖 Core 业务库的纯逻辑：StartupApproved 编解码（含任务管理器真机样本）、
 winget 输出解析、注册表路径构造、下载迁移（临时目录/锁定文件/进度）、
-磁盘扫描聚合、路径/参数边界、清单完整性校验、设置读写、更新检查解析、壁纸接口构造等，128 项全部通过。
+磁盘扫描聚合、路径/参数边界、清单完整性校验、设置读写、更新检查解析、壁纸接口构造等，157 项全部通过。
 
 ## 项目结构
 
@@ -144,7 +144,7 @@ dnkhw/
 │   ├── DiskScan/           #   磁盘分析（只读聚合）
 │   ├── Settings/           #   用户偏好（JSON 原子读写）
 │   └── Update/              #   检查更新（version.json 比对）
-├── src/Dnkhw.Core.Tests/   # xUnit 单元测试（128 项）
+├── src/Dnkhw.Core.Tests/   # xUnit 单元测试（157 项）
 ├── tools/Probe/             # 开发探针：真机调用各 Core 服务的控制台工具
 ├── docs/screenshots/        # 界面截图
 ├── CHANGELOG.md             # 更新日志

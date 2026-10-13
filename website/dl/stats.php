@@ -3,7 +3,8 @@
 // 展示：累计总数 / 各渠道计数 / 近 30 天每日明细。
 $config = require __DIR__ . '/config.php';
 $key = (string)($_GET['key'] ?? '');
-if (!hash_equals((string)$config['statsKey'], $key)) {
+$configuredKey = (string)($config['statsKey'] ?? '');
+if ($configuredKey === '' || !hash_equals($configuredKey, $key)) {
     http_response_code(403);
     header('Content-Type: text/plain; charset=utf-8');
     exit('403 Forbidden');

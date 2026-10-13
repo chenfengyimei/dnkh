@@ -10,7 +10,8 @@ website/
 ├── index.html                    # 单页站点（功能/截图/视频/下载/FAQ）
 ├── feedback.html                 # 反馈页：Bug 反馈 / 申请收录（静态表单）
 ├── dl/                           # 下载计数与多渠道系统（PHP，仅正式服务器生效）
-│   ├── config.php                # ★ 渠道配置：网盘链接填这里 + 统计页密钥
+│   ├── config.php                # ★ 渠道配置：网盘链接与统计功能读取配置
+│   ├── config.local.php          # 服务器统计密钥（不提交，按示例创建）
 │   ├── download.php              # 计数跳板：dl/download.php?id=<渠道> → 302 到真实地址
 │   ├── status.php                # 前端接口：返回启用渠道 + 累计下载（聚合数字）
 │   ├── stats.php                 # 统计页：dl/stats.php?key=<statsKey>
@@ -39,7 +40,7 @@ website/
   与「累计下载 N 次」；**本地预览无 PHP 时自动回退为静态直连链接**，不影响预览
 - **配网盘链接**：编辑 `dl/config.php` 把 `lanzou`/`baidu`/`quark` 的 `url` 填上分享地址即可，
   前端自动出现按钮；新增渠道加一行数组即可（前端自动渲染）
-- **看统计**：`dl/stats.php?key=dnkhw-7f3a9c2e51b8d406`（各渠道累计 + 近 30 天每日明细）
+- **看统计**：服务器将 `dl/config.local.example.php` 复制为 `dl/config.local.php`，填入随机密钥后，使用 `dl/stats.php?key=<statsKey>`（各渠道累计 + 近 30 天每日明细）。实际密钥只保存在服务器，绝不可提交或公开。
 - **部署注意**：① 宝塔建站必须选 **PHP-82**（不是纯静态），否则 .php 不执行、计数不生效；
   ② vhost 需加 `location ^~ /dl/data/ { deny all; }` 防直读计数文件；
   ③ `dl/data/` 目录需 `chown www:www` 可写；④ 直连渠道的 url 是站点根相对路径，勿改
@@ -77,16 +78,16 @@ author-card + 版权行 + fb-note 渠道说明。
 
 每次发布新版本，改 `index.html` 中 4 处数据（全文搜索即可定位）：
 
-1. **版本号** `v1.0.5`（Hero 徽章 + 下载卡 2 处 + feedback.html Bug 表单预填 1 处）
-2. **大小** `67.60 MB` / `70,883,088 字节`
-3. **SHA256** `CC6945C1...A89FDF29`（下载卡与 data-copy 各 1 处，共 2 个字符串）
+1. **版本号** `v1.0.6`（Hero 徽章 + 下载卡 2 处 + feedback.html Bug 表单预填 1 处）
+2. **大小** `67.61 MB` / `70,889,687 字节`
+3. **SHA256** `53AA9BD0...418F6638`（下载卡与 data-copy 各 1 处，共 2 个字符串）
 4. 复制最新产物：`Copy-Item publish\Dnkhw.exe website\download\Dnkhw.exe`
 5. **更新 `dnkhw\version.json`**（由 `dnkhw\version.php` 无缓存输出，应用内「关于 → 检查更新」的数据源）：
    `version` 换为新版本号、`sha256`/`sizeBytes` 与发布物一致、
    `notes` 一句话亮点（会显示在应用的更新提示里）；
    随站点部署到 `https://app.cyhaoka.vip/dnkhw/version.php`
 6. **网盘渠道**：若新版本也在蓝奏云/百度/夸克上传了安装包，更新 `dl/config.php` 各渠道的
-   `url`（直连 url 指向当前版本的不可变路径，如 `/download/releases/v1.0.5/Dnkhw.exe`）
+   `url`（直连 url 指向当前版本的不可变路径，如 `/download/releases/v1.0.6/Dnkhw.exe`）
 
 > SHA256 获取：`Get-FileHash publish\Dnkhw.exe -Algorithm SHA256`
 > 历史教训（publish.ps1）：必须确认产物是新版再复制，防止杀软/旧进程锁文件导致发旧包。
