@@ -4,6 +4,7 @@
                  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
                  xmlns:pages="clr-namespace:Dnkhw.Pages"
                  Title="电脑开荒"
+                 Icon="/Dnkhw;component/Assets/Icons/app-icon.ico"
                  Width="1200" Height="800"
                  MinWidth="980" MinHeight="640"
                  WindowStartupLocation="CenterScreen"

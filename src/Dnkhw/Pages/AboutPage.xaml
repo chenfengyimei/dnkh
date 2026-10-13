@@ -64,11 +64,16 @@
 
                         <StackPanel Width="470" Margin="34,30,0,28"
                                     HorizontalAlignment="Left" VerticalAlignment="Center">
-                            <Border HorizontalAlignment="Left" CornerRadius="10"
-                                    Background="#24FFFFFF" Padding="10,4" Margin="0,0,0,15">
-                                <TextBlock Text="ABOUT · 关于" Foreground="#D9FFFFFF"
-                                           FontSize="11" FontWeight="SemiBold"/>
-                            </Border>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+                                <Image Source="/Dnkhw;component/Assets/Icons/app-icon.png"
+                                       Width="30" Height="30" Margin="0,0,10,0"
+                                       SnapsToDevicePixels="True"/>
+                                <Border VerticalAlignment="Center" CornerRadius="10"
+                                        Background="#24FFFFFF" Padding="10,4">
+                                    <TextBlock Text="ABOUT · 关于" Foreground="#D9FFFFFF"
+                                               FontSize="11" FontWeight="SemiBold"/>
+                                </Border>
+                            </StackPanel>
                             <TextBlock Text="电脑开荒" Foreground="White"
                                        FontSize="34" FontWeight="Bold"/>
                             <TextBlock x:Name="VersionText" Text="版本 0.1.0"

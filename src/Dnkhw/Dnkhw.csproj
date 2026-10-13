@@ -10,6 +10,7 @@
     <AssemblyTitle>电脑开荒</AssemblyTitle>
     <Product>电脑开荒（dnkhw）</Product>
     <Description>纯净无广告的 Windows 开荒助手</Description>
+    <ApplicationIcon>Assets\Icons\app-icon.ico</ApplicationIcon>
     <!-- 发布产物保持单文件：WebView2 等包自带的 XML 文档不随 publish 复制 -->
     <PublishDocumentationFiles>false</PublishDocumentationFiles>
   </PropertyGroup>
@@ -27,10 +28,16 @@
   <ItemGroup>
     <None Remove="Assets\Images\about-oc.png" />
     <None Remove="Assets\Images\about-oc.COPYRIGHT.txt" />
+    <None Remove="Assets\Icons\app-icon.ico" />
+    <None Remove="Assets\Icons\app-icon.png" />
+    <None Remove="Assets\Icons\app-icon.COPYRIGHT.txt" />
     <Resource Include="Assets\Images\about-oc.png">
       <Copyright>角色形象及相关图片版权归哔哩哔哩“尘风一枚”所有。</Copyright>
     </Resource>
     <Resource Include="Assets\Images\about-oc.COPYRIGHT.txt" />
+    <Resource Include="Assets\Icons\app-icon.ico" />
+    <Resource Include="Assets\Icons\app-icon.png" />
+    <Resource Include="Assets\Icons\app-icon.COPYRIGHT.txt" />
   </ItemGroup>
 
 </Project>

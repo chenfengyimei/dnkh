@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         Title="电脑开荒" Width="640" Height="440"
+        Icon="/Dnkhw;component/Assets/Icons/app-icon.ico"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         WindowStartupLocation="CenterScreen" ResizeMode="NoResize"
         ShowInTaskbar="True"
@@ -21,7 +22,9 @@
             <Grid>
                 <!-- 阶段一：初始化加载 -->
                 <StackPanel x:Name="LoadingPanel" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <ui:SymbolIcon Symbol="Rocket24" FontSize="46" Foreground="#4FA3FF" HorizontalAlignment="Center"/>
+                    <Image Source="/Dnkhw;component/Assets/Icons/app-icon.png"
+                           Width="68" Height="68" HorizontalAlignment="Center"
+                           SnapsToDevicePixels="True"/>
                     <TextBlock Text="电脑开荒 · 首次初始化" Foreground="#E8EFFA" FontSize="18" FontWeight="SemiBold"
                                HorizontalAlignment="Center" Margin="0,18,0,0"/>
                     <ProgressBar x:Name="InitProgress" Width="320" Height="6" Minimum="0" Maximum="100"
