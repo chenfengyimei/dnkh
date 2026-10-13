@@ -110,7 +110,7 @@ public sealed class UpdateChecker
                 if (source.Kind == UpdateSourceKind.GitHubRelease)
                 {
                     // GitHub API 强制要求 User-Agent，缺省直接 403
-                    request.Headers.UserAgent.ParseAdd("dnkhw-updater/1.0 (+https://www.cyhaoka.vip)");
+                    request.Headers.UserAgent.ParseAdd("dnkhw-updater/1.0 (+https://app.cyhaoka.vip)");
                     request.Headers.Accept.ParseAdd("application/vnd.github+json");
                 }
 

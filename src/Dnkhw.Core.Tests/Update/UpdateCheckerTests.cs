@@ -29,8 +29,8 @@ public class UpdateCheckerParsingTests
         {
           "version": "1.1.0",
           "notes": "新增在线更新",
-          "downloadUrl": "https://www.cyhaoka.vip/#download",
-          "directUrl": "https://www.cyhaoka.vip/download/Dnkhw.exe",
+          "downloadUrl": "https://app.cyhaoka.vip/#download",
+          "directUrl": "https://app.cyhaoka.vip/download/Dnkhw.exe",
           "sha256": "abc123",
           "sizeBytes": 70000000
         }
@@ -68,7 +68,7 @@ public class UpdateCheckerParsingTests
         Assert.Equal(UpdateCheckStatus.UpdateAvailable, result.Status);
         var info = result.Info!;
         Assert.Equal("1.1.0", info.Version);
-        Assert.Equal("https://www.cyhaoka.vip/download/Dnkhw.exe", info.DirectUrl);
+        Assert.Equal("https://app.cyhaoka.vip/download/Dnkhw.exe", info.DirectUrl);
         Assert.Equal("abc123", info.Sha256);
         Assert.Equal(70000000, info.SizeBytes);
         Assert.Equal(UpdateSourceKind.VersionJson, info.Source);
