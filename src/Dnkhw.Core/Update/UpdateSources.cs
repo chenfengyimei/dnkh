@@ -20,14 +20,11 @@ public sealed record UpdateSource(UpdateSourceKind Kind, string Url);
 /// </summary>
 public static class UpdateSources
 {
-    /// <summary>
-    /// 开源仓库占位符——仓库建立后改这两处即可（格式：owner/repo）。
-    /// git 源不可用时自动回落官网 version.json，功能不受影响。
-    /// </summary>
-    public const string GitHubRepo = "owner/dnkhw";
+    /// <summary>GitHub 开源仓库（owner/repo），资产带 sha256 digest，可在线自更新。</summary>
+    public const string GitHubRepo = "chenfengyimei/dnkh";
 
-    /// <summary>Gitee 仓库（国内访问快），占位符同上。</summary>
-    public const string GiteeRepo = "owner/dnkhw";
+    /// <summary>Gitee 仓库（国内访问快）。</summary>
+    public const string GiteeRepo = "chenfengloveyuri/dnkh";
 
     /// <summary>Release 资产文件名（与发布时的附件名一致）。</summary>
     public const string AssetFileName = "Dnkhw.exe";
