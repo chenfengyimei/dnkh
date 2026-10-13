@@ -1,4 +1,4 @@
-/* 电脑开荒官网交互：导航阴影 / 截图 Tab / 大图查看 / 复制按钮 */
+/* 电脑开荒官网交互：导航阴影 / 截图 Tab / 大图查看 / 复制按钮 / 多渠道下载 */
 (function () {
   'use strict';
 
@@ -83,6 +83,41 @@
     toTop.addEventListener('click', function () {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     });
+  }
+
+  /* ---- 多渠道下载：dl/status.php 渲染渠道按钮与累计计数 ----
+     无 PHP 环境（本地 file:// 预览）时 fetch 失败，自动回退为静态直连链接 */
+  var dlMain = document.getElementById('dlMain');
+  if (dlMain) {
+    fetch('dl/status.php').then(function (r) { return r.json(); }).then(function (s) {
+      if (!s || !s.channels) { return; }
+      var row = document.getElementById('dlChannels');
+      var shown = 0;
+      s.channels.forEach(function (c) {
+        if (c.id === 'direct') {
+          /* 直连走跳板计数（302 到文件本体，nginx 继续提供下载） */
+          dlMain.href = c.url;
+          var hero = document.getElementById('dlDirect');
+          if (hero) { hero.href = c.url; }
+          return;
+        }
+        if (!c.enabled || !row) { return; }
+        var a = document.createElement('a');
+        a.className = 'btn btn-secondary btn-sm';
+        a.href = c.url;
+        a.target = '_blank';
+        a.rel = 'noopener';
+        a.textContent = '☁ ' + c.label;
+        row.appendChild(a);
+        shown++;
+      });
+      if (shown > 0) { document.getElementById('dlAlt').hidden = false; }
+      var cnt = document.getElementById('dlCount');
+      if (cnt && s.showPublicStats && s.total > 0) {
+        cnt.querySelector('strong').textContent = String(s.total);
+        cnt.hidden = false;
+      }
+    }).catch(function () { /* 本地预览无 PHP：保持静态直连 */ });
   }
 
   /* ---- 复制按钮（file:// 下回退 execCommand） ---- */

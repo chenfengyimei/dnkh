@@ -524,6 +524,34 @@ code {
   text-align: center;
 }
 
+/* ---- 多渠道下载 ---- */
+.dl-alt { margin-top: 16px; }
+.dl-alt-label {
+  display: block;
+  margin-bottom: 9px;
+  color: var(--text-3);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.dl-alt-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.dl-alt-row .btn {
+  padding: 8px 16px;
+  font-size: 13.5px;
+}
+.dl-count {
+  margin-top: 14px;
+  color: var(--text-2);
+  font-size: 13px;
+  text-align: center;
+}
+.dl-count strong { color: var(--text); }
+
+[hidden] { display: none !important; }
+
 .steps {
   margin: 0 0 30px;
   padding: 0;
