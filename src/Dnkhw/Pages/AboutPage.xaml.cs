@@ -40,7 +40,7 @@ public partial class AboutPage : Page
     }
 
     /// <summary>
-    /// 手动检查更新：按 GitHub → Gitee → 官网顺序；
+    /// 手动检查更新：按 Gitee → GitHub → 官网顺序；
     /// 有新版显示「在线更新」与「前往官网下载」双通道。
     /// </summary>
     private async void OnCheckUpdateClick(object sender, RoutedEventArgs e)
@@ -119,6 +119,12 @@ public partial class AboutPage : Page
         var progress = new Progress<UpdateDownloadProgress>(p =>
         {
             DownloadProgressBar.Value = p.Percent;
+            if (p.IsVerifying)
+            {
+                UpdateStatusText.Text = $"下载完成，正在校验 v{info.Version} 更新包…";
+                return;
+            }
+
             UpdateStatusText.Text = p.TotalBytes > 0
                 ? $"正在下载 v{info.Version}：{p.Percent:F0}%（{p.SizeText}）"
                 : $"正在下载 v{info.Version}：{p.SizeText}";
@@ -140,9 +146,9 @@ public partial class AboutPage : Page
             }
             else
             {
-                // 拒绝立即重启：先落位新文件，下次启动自动生效
-                SelfUpdater.Apply(readyPath);
-                UpdateStatusText.Text = $"v{info.Version} 已就绪，重启电脑开荒后生效";
+                // 保持当前工作不受打断；主程序退出后独立更新器落位新文件。
+                SelfUpdater.ScheduleApplyAfterExit(readyPath, restartAfterApply: false);
+                UpdateStatusText.Text = $"v{info.Version} 已就绪，退出电脑开荒后将自动完成更新";
             }
         }
         catch (OperationCanceledException)
@@ -171,15 +177,11 @@ public partial class AboutPage : Page
     {
         try
         {
-            SelfUpdater.Apply(readyPath);
-            if (Environment.ProcessPath is { } exePath)
-            {
-                // 先启动新版本再退出：单实例 Mutex 需先释放，否则新进程会撞上「已在运行」
-                App._singleInstanceMutex?.ReleaseMutex();
-                App._singleInstanceMutex?.Dispose();
-                App._singleInstanceMutex = null;
-                Process.Start(new ProcessStartInfo(exePath) { UseShellExecute = true });
-            }
+            SelfUpdater.ScheduleApplyAfterExit(readyPath, restartAfterApply: true);
+            // 更新器会在当前进程退出且 Mutex 释放后启动新版本。
+            App._singleInstanceMutex?.ReleaseMutex();
+            App._singleInstanceMutex?.Dispose();
+            App._singleInstanceMutex = null;
 
             Application.Current.Shutdown();
         }

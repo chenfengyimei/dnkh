@@ -1,3 +1,6 @@
+using System.Diagnostics;
+using System.Text;
+
 namespace Dnkhw.Core.Update;
 
 /// <summary>
@@ -27,6 +30,47 @@ public static class SelfUpdater
         var exePath = Environment.ProcessPath
             ?? throw new InvalidOperationException("无法确定当前程序路径");
         Apply(readyPath, exePath);
+    }
+
+    /// <summary>
+    /// 启动独立更新器：等待当前进程完全退出后再替换 exe，避免 Windows 锁定运行中程序文件。
+    /// </summary>
+    public static void ScheduleApplyAfterExit(string readyPath, bool restartAfterApply)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(readyPath);
+        var exePath = Environment.ProcessPath
+            ?? throw new InvalidOperationException("无法确定当前程序路径");
+        if (!File.Exists(readyPath))
+        {
+            throw new FileNotFoundException("更新文件不存在", readyPath);
+        }
+
+        Directory.CreateDirectory(UpdateDownloader.DownloadDirectory);
+        var scriptPath = Path.Combine(
+            UpdateDownloader.DownloadDirectory,
+            $"apply-update-{Environment.ProcessId}-{Guid.NewGuid():N}.ps1");
+        File.WriteAllText(scriptPath, BuildHelperScript(
+            Environment.ProcessId,
+            exePath,
+            readyPath,
+            restartAfterApply), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+        startInfo.ArgumentList.Add("-NoProfile");
+        startInfo.ArgumentList.Add("-ExecutionPolicy");
+        startInfo.ArgumentList.Add("Bypass");
+        startInfo.ArgumentList.Add("-File");
+        startInfo.ArgumentList.Add(scriptPath);
+
+        if (Process.Start(startInfo) is null)
+        {
+            throw new InvalidOperationException("无法启动更新器");
+        }
     }
 
     internal static void Cleanup(string exePath, string readyPath)
@@ -79,5 +123,50 @@ public static class SelfUpdater
         {
             // 旧文件删除失败不影响升级（下次启动 CleanupOldBinary 再清）
         }
+    }
+
+    internal static string BuildHelperScript(int processId, string exePath, string readyPath, bool restartAfterApply)
+    {
+        static string Encode(string value) => Convert.ToBase64String(Encoding.Unicode.GetBytes(value));
+
+        return $$"""
+        $ErrorActionPreference = 'Stop'
+        $target = [Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('{{Encode(exePath)}}'))
+        $ready = [Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('{{Encode(readyPath)}}'))
+        $restart = {{restartAfterApply.ToString().ToLowerInvariant()}}
+        $processId = {{processId}}
+
+        while (Get-Process -Id $processId -ErrorAction SilentlyContinue) {
+            Start-Sleep -Milliseconds 200
+        }
+
+        if (-not (Test-Path -LiteralPath $ready)) {
+            exit 2
+        }
+
+        $backup = "$target.old"
+        for ($attempt = 0; $attempt -lt 120; $attempt++) {
+            try {
+                Move-Item -LiteralPath $target -Destination $backup -Force -ErrorAction Stop
+                try {
+                    Move-Item -LiteralPath $ready -Destination $target -Force -ErrorAction Stop
+                } catch {
+                    Move-Item -LiteralPath $backup -Destination $target -Force -ErrorAction SilentlyContinue
+                    throw
+                }
+
+                Remove-Item -LiteralPath $backup -Force -ErrorAction SilentlyContinue
+                if ($restart) {
+                    Start-Process -FilePath $target
+                }
+                Remove-Item -LiteralPath $PSCommandPath -Force -ErrorAction SilentlyContinue
+                exit 0
+            } catch {
+                Start-Sleep -Milliseconds 250
+            }
+        }
+
+        exit 1
+        """;
     }
 }

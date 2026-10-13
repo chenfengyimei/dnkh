@@ -126,6 +126,22 @@ public class UpdateDownloaderTests
         Assert.NotEmpty(reports);
         Assert.Equal(100, reports[^1].Percent);
         Assert.Equal(payload.LongLength, reports[^1].BytesReceived);
+        Assert.True(reports[^1].IsVerifying);
+    }
+
+    [Fact]
+    public async Task Download_WrongSize_ThrowsAndCleansTemp()
+    {
+        var payload = "new binary content"u8.ToArray();
+        using var handler = new BytesHandler(payload);
+        var downloader = new UpdateDownloader(handler);
+        var info = MakeInfo(payload) with { SizeBytes = payload.Length + 1 };
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => downloader.DownloadAsync(info, null, TestContext.Current.CancellationToken));
+
+        Assert.Contains("大小", ex.Message);
+        Assert.False(File.Exists(Path.Combine(UpdateDownloader.DownloadDirectory, "Dnkhw.download.tmp")));
     }
 
     /// <summary>同步记录（xUnit 无同步上下文，Progress<T> 会异步投递产生竞态）。</summary>
@@ -240,5 +256,20 @@ public class SelfUpdaterTests
         {
             Directory.Delete(dir, true);
         }
+    }
+
+    [Fact]
+    public void BuildHelperScript_UsesEncodedPathsAndWaitsForCurrentProcess()
+    {
+        var script = SelfUpdater.BuildHelperScript(
+            processId: 1234,
+            exePath: @"C:\Program Files\dnkhw\Dnkhw.exe",
+            readyPath: @"C:\Users\test\AppData\Local\dnkhw\update\Dnkhw.exe",
+            restartAfterApply: true);
+
+        Assert.Contains("Get-Process -Id $processId", script);
+        Assert.Contains("Move-Item -LiteralPath $target", script);
+        Assert.Contains("Start-Process -FilePath $target", script);
+        Assert.DoesNotContain(@"C:\Program Files\dnkhw\Dnkhw.exe", script);
     }
 }

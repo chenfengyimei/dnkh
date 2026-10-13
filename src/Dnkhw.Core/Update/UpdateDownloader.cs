@@ -3,7 +3,11 @@ using System.Security.Cryptography;
 
 namespace Dnkhw.Core.Update;
 
-public sealed record UpdateDownloadProgress(long BytesReceived, long TotalBytes, double Percent)
+public sealed record UpdateDownloadProgress(
+    long BytesReceived,
+    long TotalBytes,
+    double Percent,
+    bool IsVerifying = false)
 {
     public string SizeText => Dnkhw.Core.Formatting.SizeFormatter.Format(BytesReceived)
         + (TotalBytes > 0 ? $" / {Dnkhw.Core.Formatting.SizeFormatter.Format(TotalBytes)}" : string.Empty);
@@ -52,17 +56,22 @@ public sealed class UpdateDownloader
         var tempPath = Path.Combine(DownloadDirectory, "Dnkhw.download.tmp");
         await DownloadToFileAsync(info.DirectUrl, tempPath, progress, ct).ConfigureAwait(false);
 
+        if (info.SizeBytes is { } expectedSize && new FileInfo(tempPath).Length != expectedSize)
+        {
+            TryDelete(tempPath);
+            throw new InvalidOperationException("下载文件大小不正确，已放弃并清理");
+        }
+
+        // 网络传输结束不等于更新已就绪：大文件哈希校验仍可能需要数秒。
+        progress?.Report(new UpdateDownloadProgress(
+            new FileInfo(tempPath).Length,
+            info.SizeBytes ?? 0,
+            100,
+            IsVerifying: true));
         var actual = await HashFileAsync(tempPath, ct).ConfigureAwait(false);
         if (!string.Equals(actual, info.Sha256.Trim().ToUpperInvariant(), StringComparison.Ordinal))
         {
-            try
-            {
-                File.Delete(tempPath);
-            }
-            catch
-            {
-                // 清理失败不影响报错
-            }
+            TryDelete(tempPath);
 
             throw new InvalidOperationException("下载文件校验不通过（可能传输损坏），已放弃并清理");
         }
@@ -119,5 +128,17 @@ public sealed class UpdateDownloader
         await using var stream = File.OpenRead(path);
         var hash = await SHA256.HashDataAsync(stream, ct).ConfigureAwait(false);
         return Convert.ToHexString(hash);
+    }
+
+    private static void TryDelete(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch
+        {
+            // 清理失败不影响向用户报告下载错误
+        }
     }
 }
