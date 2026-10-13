@@ -193,7 +193,7 @@ public class UpdateCheckerMultiSourceTests
     }
 
     [Fact]
-    public async Task Check_FirstSourceWins_WhenItGivesVerdict()
+    public async Task Check_SelectsNewestVersionAcrossSources()
     {
         var checker = new UpdateChecker(
             new RoutingHandler(new Dictionary<string, Func<HttpResponseMessage>>
@@ -209,26 +209,55 @@ public class UpdateCheckerMultiSourceTests
 
         var result = await checker.CheckAsync("1.0.0", TestContext.Current.CancellationToken);
 
-        // 排在前面的 git 源给出明确结论后立即返回，不再看后面的源
         Assert.Equal(UpdateCheckStatus.UpdateAvailable, result.Status);
-        Assert.Equal("1.0.1", result.Info!.Version);
-        Assert.Equal(UpdateSourceKind.GitHubRelease, result.Info.Source);
+        Assert.Equal("9.9.9", result.Info!.Version);
+        Assert.Equal(UpdateSourceKind.VersionJson, result.Info.Source);
     }
 
     [Fact]
-    public async Task Check_UpToDateFromFirstSource_ReturnsImmediately()
+    public async Task Check_ContinuesAfterOlderSourceReportsUpToDate()
     {
         var checker = new UpdateChecker(
             new RoutingHandler(new Dictionary<string, Func<HttpResponseMessage>>
             {
                 ["https://git.test/api"] = () => Json(
                     """{ "tag_name": "v1.0.0", "assets": [ { "name": "Dnkhw.exe", "browser_download_url": "https://git.test/dl", "digest": "sha256:BB" } ] }"""),
+                ["https://official.test/version.json"] = () => Json(
+                    """{ "version": "1.1.0", "directUrl": "https://official.test/dl.exe", "sha256": "AA" }"""),
             }),
-            [new UpdateSource(UpdateSourceKind.GitHubRelease, "https://git.test/api")]);
+            [
+                new UpdateSource(UpdateSourceKind.GitHubRelease, "https://git.test/api"),
+                new UpdateSource(UpdateSourceKind.VersionJson, "https://official.test/version.json"),
+            ]);
 
         var result = await checker.CheckAsync("1.0.0", TestContext.Current.CancellationToken);
 
-        Assert.Equal(UpdateCheckStatus.UpToDate, result.Status);
+        Assert.Equal(UpdateCheckStatus.UpdateAvailable, result.Status);
+        Assert.Equal("1.1.0", result.Info!.Version);
+        Assert.Equal(UpdateSourceKind.VersionJson, result.Info.Source);
+    }
+
+    [Fact]
+    public async Task Check_PrefersVerifiedSource_WhenVersionsMatch()
+    {
+        var checker = new UpdateChecker(
+            new RoutingHandler(new Dictionary<string, Func<HttpResponseMessage>>
+            {
+                ["https://gitee.test/api"] = () => Json(
+                    """{ "tag_name": "v1.1.0", "assets": [ { "name": "Dnkhw.exe", "browser_download_url": "https://gitee.test/dl" } ] }"""),
+                ["https://git.test/api"] = () => Json(
+                    """{ "tag_name": "v1.1.0", "assets": [ { "name": "Dnkhw.exe", "browser_download_url": "https://git.test/dl", "digest": "sha256:BB" } ] }"""),
+            }),
+            [
+                new UpdateSource(UpdateSourceKind.GiteeRelease, "https://gitee.test/api"),
+                new UpdateSource(UpdateSourceKind.GitHubRelease, "https://git.test/api"),
+            ]);
+
+        var result = await checker.CheckAsync("1.0.0", TestContext.Current.CancellationToken);
+
+        Assert.Equal(UpdateCheckStatus.UpdateAvailable, result.Status);
+        Assert.Equal(UpdateSourceKind.GitHubRelease, result.Info!.Source);
+        Assert.Equal("BB", result.Info.Sha256);
     }
 
     [Fact]

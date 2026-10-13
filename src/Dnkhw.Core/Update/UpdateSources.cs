@@ -16,7 +16,7 @@ public enum UpdateSourceKind
 public sealed record UpdateSource(UpdateSourceKind Kind, string Url);
 
 /// <summary>
-/// 更新源配置（多级回落：git 仓库 → 官网）。
+/// 更新源配置（优先检查国内 Gitee 镜像，再检查 GitHub 与官网）。
 /// </summary>
 public static class UpdateSources
 {
@@ -36,11 +36,11 @@ public static class UpdateSources
     public static string? EnvOverrideVersionJson =>
         Environment.GetEnvironmentVariable("DNKHW_UPDATE_JSON_URL") is { Length: > 0 } url ? url : null;
 
-    /// <summary>按回落顺序排列的默认更新源。</summary>
+    /// <summary>按优先顺序排列的默认更新源；检查器会从所有可用源中选取最高版本。</summary>
     public static IReadOnlyList<UpdateSource> Defaults =>
     [
-        new UpdateSource(UpdateSourceKind.GitHubRelease, GitHubLatestApiUrl),
         new UpdateSource(UpdateSourceKind.GiteeRelease, GiteeLatestApiUrl),
+        new UpdateSource(UpdateSourceKind.GitHubRelease, GitHubLatestApiUrl),
         new UpdateSource(UpdateSourceKind.VersionJson, EnvOverrideVersionJson ?? ProductLinks.VersionJson),
     ];
 

@@ -80,8 +80,8 @@ public static class VersionComparer
 }
 
 /// <summary>
-/// 手动检查更新：按「GitHub → Gitee → 官网 version.json」顺序尝试，
-/// 任一源给出明确结论（有新版/已是最新）即返回；全部失败才报错。
+/// 手动检查更新：按「Gitee → GitHub → 官网 version.json」顺序检查，
+/// 从全部可用源中选择最高版本；同版本优先选择带 SHA256 的可自动更新来源。
 /// 仅在用户点击时联网（应用不做任何后台静默检查）。
 /// </summary>
 public sealed class UpdateChecker
@@ -102,6 +102,8 @@ public sealed class UpdateChecker
     public async Task<UpdateCheckResult> CheckAsync(string currentVersion, CancellationToken ct = default)
     {
         var lastError = "没有可用的更新源";
+        UpdateInfo? bestUpdate = null;
+        var hasUsableSource = false;
         foreach (var source in _sources)
         {
             try
@@ -123,12 +125,19 @@ public sealed class UpdateChecker
 
                 var json = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
                 var result = ParseAndCompare(json, currentVersion, source.Kind);
-                if (result.Status != UpdateCheckStatus.FetchFailed)
+                if (result.Status == UpdateCheckStatus.FetchFailed)
                 {
-                    return result;
+                    lastError = $"{SourceName(source.Kind)}：{result.Error}";
+                    continue;
                 }
 
-                lastError = $"{SourceName(source.Kind)}：{result.Error}";
+                hasUsableSource = true;
+                if (result.Status == UpdateCheckStatus.UpdateAvailable
+                    && result.Info is { } candidate
+                    && IsBetterCandidate(candidate, bestUpdate))
+                {
+                    bestUpdate = candidate;
+                }
             }
             catch (OperationCanceledException) when (!ct.IsCancellationRequested)
             {
@@ -144,7 +153,34 @@ public sealed class UpdateChecker
             }
         }
 
+        if (bestUpdate is not null)
+        {
+            return UpdateCheckResult.Available(bestUpdate);
+        }
+
+        if (hasUsableSource)
+        {
+            return UpdateCheckResult.UpToDate();
+        }
+
         return UpdateCheckResult.Failed($"检查失败：{lastError}");
+    }
+
+    private static bool IsBetterCandidate(UpdateInfo candidate, UpdateInfo? current)
+    {
+        if (current is null)
+        {
+            return true;
+        }
+
+        var versionComparison = VersionComparer.Compare(candidate.Version, current.Version);
+        if (versionComparison != 0)
+        {
+            return versionComparison > 0;
+        }
+
+        // Gitee Release API 不返回附件哈希：同一版本应优先采用带 SHA256 的安全自动更新源。
+        return string.IsNullOrWhiteSpace(current.Sha256) && !string.IsNullOrWhiteSpace(candidate.Sha256);
     }
 
     public static string SourceName(UpdateSourceKind kind) => kind switch
