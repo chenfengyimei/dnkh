@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="zh-CN" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      @font-face { font-family: "Microsoft YaHei"; src: local("Microsoft YaHei"); }
+      @font-face { font-family: "Segoe UI Emoji"; src: local("Segoe UI Emoji"); }
+      html, body {
+        margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #0a1020;
+      }
+      #root {
+        width: 100%; height: 100%; position: relative; overflow: hidden;
+        font-family: "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+        color: #e8eef7;
+      }
+      .clip { position: absolute; inset: 0; }
+
+      /* ---- 全局背景（常驻） ---- */
+      #bg {
+        position: absolute; inset: 0; z-index: 0;
+        background:
+          radial-gradient(1.5px 1.5px at 50% 50%, rgba(90,150,230,0.16) 50%, transparent 51%) 0 0 / 44px 44px,
+          linear-gradient(160deg, #0a1122 0%, #0d1830 48%, #0a1424 100%);
+      }
+      #glow1 {
+        position: absolute; z-index: 0; left: -260px; top: -300px; width: 900px; height: 900px;
+        background: radial-gradient(circle, rgba(0,120,212,0.22) 0%, transparent 62%);
+      }
+      #glow2 {
+        position: absolute; z-index: 0; right: -320px; bottom: -360px; width: 1000px; height: 1000px;
+        background: radial-gradient(circle, rgba(122,92,255,0.14) 0%, transparent 62%);
+      }
+      #fadeshade {
+        position: absolute; inset: 0; z-index: 90; background: #0a1020; opacity: 0;
+      }
+      #watermark {
+        position: absolute; z-index: 95; right: 28px; bottom: 18px;
+        font-size: 20px; color: rgb(135,150,175); letter-spacing: 0.06em;
+      }
+
+      /* ---- 通用场景内元素 ---- */
+      .cardshot {
+        position: absolute; border-radius: 14px; overflow: hidden;
+        background: #0e1c36; border: 1px solid rgba(120,170,240,0.28);
+        box-shadow: 0 24px 60px rgba(0,0,0,0.55), 0 0 0 6px rgba(0,120,212,0.06);
+      }
+      .cardshot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+      /* ---- S1 片头 ---- */
+      #s1 { z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; }
+      #s1-kicker {
+        font-size: 30px; font-weight: 700; color: #7cc0ff; letter-spacing: 0.5em; text-indent: 0.5em;
+      }
+      #s1-title { font-size: 118px; font-weight: 900; letter-spacing: 0.08em; text-indent: 0.08em; color: #f2f7ff;
+        text-shadow: 0 0 46px rgba(0,120,212,0.45); }
+      #s1-bar { width: 320px; height: 8px; border-radius: 4px;
+        background: linear-gradient(90deg, transparent, #0078d4 30%, #2b9ce6 70%, transparent); }
+      #s1-sub { font-size: 34px; color: #a9c3e6; letter-spacing: 0.2em; text-indent: 0.2em; }
+      #s1-badge {
+        margin-top: 8px; font-size: 25px; color: #cfe6ff; padding: 10px 34px; border-radius: 999px;
+        background: rgba(0,120,212,0.16); border: 1px solid rgba(0,120,212,0.45);
+      }
+
+      /* ---- S2 痛点 ---- */
+      #s2 { z-index: 10; }
+      #s2-head { position: absolute; left: 0; right: 0; top: 128px; text-align: center; }
+      #s2-head h2 { font-size: 62px; font-weight: 900; color: #f2f7ff; letter-spacing: 0.12em; text-indent: 0.12em; }
+      #s2-head p { margin-top: 14px; font-size: 26px; color: #8fa8cc; letter-spacing: 0.18em; text-indent: 0.18em; }
+      #s2-grid { position: absolute; left: 50%; top: 320px; width: 1280px; margin-left: -640px;
+        display: grid; grid-template-columns: 1fr 1fr; gap: 34px; }
+      .pain {
+        height: 220px; border-radius: 18px; background: linear-gradient(155deg, #131f3a 0%, #0f1930 100%);
+        border: 1px solid rgba(239,68,68,0.30); display: flex; align-items: center; gap: 30px; padding: 0 44px;
+      }
+      .pain .ico { font-size: 84px; line-height: 1; }
+      .pain .t { font-size: 40px; font-weight: 800; color: #ffe3e3; }
+      .pain .d { margin-top: 10px; font-size: 24px; color: #93a5c4; }
+      #s2-concl {
+        position: absolute; left: 0; right: 0; top: 852px; text-align: center;
+        font-size: 47px; font-weight: 900; color: #ffd86b; letter-spacing: 0.1em; text-indent: 0.1em;
+        text-shadow: 0 0 34px rgba(255,200,60,0.25);
+      }
+
+      /* ---- S3 模块A ---- */
+      #s3 { z-index: 10; }
+      .feat-head { position: absolute; left: 118px; top: 150px; width: 620px; }
+      .feat-head h2 { font-size: 46px; font-weight: 900; color: #f2f7ff; letter-spacing: 0.04em; }
+      .feat-head p { margin-top: 14px; font-size: 26px; color: #8fa8cc; }
+      .feat-list { position: absolute; left: 118px; top: 320px; width: 560px; display: flex; flex-direction: column; gap: 30px; }
+      .feat-item {
+        display: flex; align-items: center; gap: 24px; padding: 26px 30px; border-radius: 16px;
+        background: linear-gradient(155deg, #12203c 0%, #0e1830 100%); border: 1px solid rgba(0,120,212,0.35);
+      }
+      .feat-item .no { font-size: 44px; font-weight: 900; color: #2b9ce6; }
+      .feat-item .tt { font-size: 34px; font-weight: 800; color: #e8f1ff; }
+      .feat-item .dd { margin-top: 6px; font-size: 22px; color: #93a5c4; }
+      .shot-a { left: 760px; top: 190px; width: 1030px; height: 700px; }
+
+      /* ---- S4 快切 ---- */
+      #s4 { z-index: 10; }
+      .s4-title { position: absolute; left: 0; right: 0; top: 96px; text-align: center;
+        font-size: 54px; font-weight: 900; color: #f2f7ff; letter-spacing: 0.1em; text-indent: 0.1em; }
+      .shot-b { left: 310px; top: 216px; width: 1300px; height: 740px; }
+
+      /* ---- S5 背书 ---- */
+      #s5 { z-index: 10; }
+      #s5-head { position: absolute; left: 0; right: 0; top: 170px; text-align: center;
+        font-size: 60px; font-weight: 900; color: #f2f7ff; letter-spacing: 0.14em; text-indent: 0.14em; }
+      #s5-row { position: absolute; left: 50%; top: 380px; width: 1500px; margin-left: -750px;
+        display: flex; gap: 40px; }
+      .badge {
+        flex: 1; height: 300px; border-radius: 20px; text-align: center; padding-top: 58px;
+        background: linear-gradient(160deg, #12203c 0%, #0d1730 100%); border: 1px solid rgba(0,120,212,0.38);
+      }
+      .badge .ico { font-size: 76px; line-height: 1; }
+      .badge .t { margin-top: 22px; font-size: 38px; font-weight: 800; color: #eaf3ff; }
+      .badge .d { margin-top: 10px; font-size: 23px; color: #93a5c4; }
+      #s5-foot { position: absolute; left: 0; right: 0; top: 774px; text-align: center;
+        font-size: 26px; color: #7f97ba; letter-spacing: 0.1em; }
+
+      /* ---- S6 CTA ---- */
+      #s6 { z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 34px; }
+      #s6-title { font-size: 76px; font-weight: 900; color: #f2f7ff; letter-spacing: 0.12em; text-indent: 0.12em;
+        text-shadow: 0 0 40px rgba(0,120,212,0.4); }
+      #s6-url {
+        display: flex; align-items: center; gap: 18px; padding: 24px 66px; border-radius: 999px;
+        background: rgba(0,120,212,0.13); border: 2px solid rgba(43,156,230,0.65);
+        box-shadow: 0 0 44px rgba(0,120,212,0.28);
+      }
+      #s6-url .dot { width: 16px; height: 16px; border-radius: 50%; background: #2b9ce6; }
+      #s6-url .u { font-size: 54px; font-weight: 800; color: #9fd2ff; letter-spacing: 0.04em; }
+      #s6-bili {
+        display: flex; align-items: center; gap: 22px; padding: 22px 54px; border-radius: 18px;
+        background: rgba(251,114,153,0.12); border: 1px solid rgba(251,114,153,0.55);
+      }
+      #s6-bili .tv {
+        width: 58px; height: 40px; border-radius: 10px; background: #fb7299; position: relative;
+      }
+      #s6-bili .tv::before {
+        content: ""; position: absolute; left: 9px; top: 8px; width: 40px; height: 24px;
+        border-radius: 6px; background: #fff;
+      }
+      #s6-bili .tv::after {
+        content: ""; position: absolute; left: 22px; top: 12px; width: 14px; height: 16px;
+        background: #fb7299; border-radius: 2px; z-index: 1;
+      }
+      #s6-bili .txt { font-size: 36px; font-weight: 800; color: #ffd7e4; }
+      #s6-triple { font-size: 30px; color: #a9c3e6; letter-spacing: 0.32em; text-indent: 0.32em; }
+      #s6-hint { font-size: 24px; color: #7f97ba; letter-spacing: 0.14em; text-indent: 0.14em; }
+
+      /* ---- 字幕 ---- */
+      .sub {
+        position: absolute; z-index: 80; left: 0; right: 0; bottom: 74px; text-align: center;
+      }
+      .sub span {
+        display: inline-block; padding: 12px 36px; border-radius: 12px;
+        font-size: 36px; font-weight: 700; color: #f4f8ff;
+        background: rgba(8,14,28,0.72); border: 1px solid rgba(130,175,235,0.20);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="38.5" data-width="1920" data-height="1080">
+      <div id="bg"></div>
+      <div id="glow1"></div>
+      <div id="glow2"></div>
+
+      <!-- S1 片头 0 - 3.5 -->
+      <section id="s1" class="clip" data-start="0" data-duration="3.5" data-track-index="0">
+        <div id="s1-kicker">WINDOWS 新机助手</div>
+        <div id="s1-title">电脑开荒</div>
+        <div id="s1-bar"></div>
+        <div id="s1-sub">新机到手 · 重装系统 · 开荒一步到位</div>
+        <div id="s1-badge">v1.0.1 · 免费开源 · 纯净无广告</div>
+      </section>
+
+      <!-- S2 痛点 3.5 - 11.7 -->
+      <section id="s2" class="clip" data-start="3.5" data-duration="8.2" data-track-index="0">
+        <div id="s2-head">
+          <h2>新机的四大烦恼</h2>
+          <p>每一个，都在消耗你的时间</p>
+        </div>
+        <div id="s2-grid">
+          <div class="pain" id="p1"><div class="ico">🪟</div><div><div class="t">弹窗广告</div><div class="d">关不完的推广和通知</div></div></div>
+          <div class="pain" id="p2"><div class="ico">📦</div><div><div class="t">软件全家桶</div><div class="d">装一个，拖来一串</div></div></div>
+          <div class="pain" id="p3"><div class="ico">💾</div><div><div class="t">C 盘塞满</div><div class="d">下载全进系统盘</div></div></div>
+          <div class="pain" id="p4"><div class="ico">🐢</div><div><div class="t">开机越来越慢</div><div class="d">启动项堆积如山</div></div></div>
+        </div>
+        <div id="s2-concl">开荒，是每台新机的必修课</div>
+      </section>
+
+      <!-- S3 模块A 11.7 - 20.0 -->
+      <section id="s3" class="clip" data-start="11.7" data-duration="8.3" data-track-index="0">
+        <div class="feat-head">
+          <h2>电脑开荒 · 一个工具全搞定</h2>
+          <p>真实界面，所见即所得</p>
+        </div>
+        <div class="feat-list">
+          <div class="feat-item" id="f1"><div class="no">01</div><div><div class="tt">一键开荒体检</div><div class="dd">硬件系统全面检查，导出报告</div></div></div>
+          <div class="feat-item" id="f2"><div class="no">02</div><div><div class="tt">32 款纯净软件库</div><div class="dd">严选清单，一键静默安装</div></div></div>
+        </div>
+        <div class="cardshot shot-a" id="shot-a1"><img src="assets/img/check.png" alt="开荒检查" /></div>
+        <div class="cardshot shot-a" id="shot-a2"><img src="assets/img/apps.png" alt="APP 推荐" /></div>
+      </section>
+
+      <!-- S4 快切 20.0 - 27.8 -->
+      <section id="s4" class="clip" data-start="20.0" data-duration="7.8" data-track-index="0">
+        <div class="s4-title" id="t1">默认路径一键换盘</div>
+        <div class="s4-title" id="t2">15 项系统优化</div>
+        <div class="s4-title" id="t3">五步桌面美化</div>
+        <div class="s4-title" id="t4">磁盘占用分析</div>
+        <div class="cardshot shot-b" id="shot-b1"><img src="assets/img/downloads.png" alt="默认路径换盘" /></div>
+        <div class="cardshot shot-b" id="shot-b2"><img src="assets/img/optimize.png" alt="Windows 优化" /></div>
+        <div class="cardshot shot-b" id="shot-b3"><img src="assets/img/wallpaper.png" alt="壁纸开荒" /></div>
+        <div class="cardshot shot-b" id="shot-b4"><img src="assets/img/disk.png" alt="磁盘分析" /></div>
+      </section>
+
+      <!-- S5 背书 27.8 - 33.4 -->
+      <section id="s5" class="clip" data-start="27.8" data-duration="5.6" data-track-index="0">
+        <div id="s5-head">放心用</div>
+        <div id="s5-row">
+          <div class="badge" id="b1"><div class="ico">⭐</div><div class="t">免费开源</div><div class="d">MIT 协议，代码可查</div></div>
+          <div class="badge" id="b2"><div class="ico">🛡️</div><div class="t">纯净无广告</div><div class="d">收录硬性标准</div></div>
+          <div class="badge" id="b3"><div class="ico">🔄</div><div class="t">在线更新</div><div class="d">自动检查，一键升级</div></div>
+        </div>
+        <div id="s5-foot">电脑开荒 · 让每台新机都干干净净</div>
+      </section>
+
+      <!-- S6 CTA 33.4 - 38.5 -->
+      <section id="s6" class="clip" data-start="33.4" data-duration="5.1" data-track-index="0">
+        <div id="s6-title">现在就开始你的开荒</div>
+        <div id="s6-url"><div class="dot"></div><div class="u">www.cyhaoka.vip</div></div>
+        <div id="s6-bili"><div class="tv"></div><div class="txt">哔哩哔哩 @尘风一枚</div></div>
+        <div id="s6-triple">点赞 · 投币 · 收藏 · 转发</div>
+        <div id="s6-hint">Windows 10 / 11 · 免费下载</div>
+      </section>
+
+      <!-- 字幕层 -->
+      <div class="sub" id="subwrap1" data-start="0.25" data-duration="2.5" data-track-index="8"><span id="sub1">新电脑到手，先别急着用！</span></div>
+      <div class="sub" id="subwrap2" data-start="3.65" data-duration="7.95" data-track-index="8"><span id="sub2">弹窗广告 · 全家桶 · C盘塞满 · 开机慢</span></div>
+      <div class="sub" id="subwrap3" data-start="11.85" data-duration="8.05" data-track-index="8"><span id="sub3">一键体检生成报告 · 32 款纯净软件一键安装</span></div>
+      <div class="sub" id="subwrap4" data-start="20.15" data-duration="7.55" data-track-index="8"><span id="sub4">路径换盘 · 系统优化 · 桌面美化 · 磁盘分析</span></div>
+      <div class="sub" id="subwrap5" data-start="27.95" data-duration="5.3" data-track-index="8"><span id="sub5">免费 · 开源 · 纯净无广告 · 支持在线更新</span></div>
+      <div class="sub" id="subwrap6" data-start="33.55" data-duration="4.5" data-track-index="8"><span id="sub6">官网免费下载 · B站关注「尘风一枚」</span></div>
+
+      <!-- 音轨：6 段旁白 + BGM -->
+      <audio id="aud-v1" data-start="0.25" data-duration="2.55" data-volume="1" src="assets/audio/voice01.mp3"></audio>
+      <audio id="aud-v2" data-start="3.65" data-duration="7.94" data-volume="1" src="assets/audio/voice02.mp3"></audio>
+      <audio id="aud-v3" data-start="11.85" data-duration="8.04" data-volume="1" src="assets/audio/voice03.mp3"></audio>
+      <audio id="aud-v4" data-start="20.15" data-duration="7.6" data-volume="1" src="assets/audio/voice04.mp3"></audio>
+      <audio id="aud-v5" data-start="27.95" data-duration="5.35" data-volume="1" src="assets/audio/voice05.mp3"></audio>
+      <audio id="aud-v6" data-start="33.55" data-duration="4.47" data-volume="1" src="assets/audio/voice06.mp3"></audio>
+      <audio id="aud-bgm" data-start="0" data-duration="38.5" data-volume="0.3" data-fade-in="0.8" data-fade-out="2.8" src="assets/audio/bgm.mp3"></audio>
+
+      <div id="fadeshade"></div>
+      <div id="watermark">www.cyhaoka.vip</div>
+    </div>
+    <script>
+      const tl = gsap.timeline({ paused: true });
+
+      /* ===== S1 片头 ===== */
+      tl.fromTo("#s1-kicker", { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.5 }, 0.12);
+      tl.fromTo("#s1-title", { opacity: 0, y: 70, scale: 0.82 }, { opacity: 1, y: 0, scale: 1, duration: 0.85, ease: "back.out(1.5)" }, 0.25);
+      tl.fromTo("#s1-bar", { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power2.out" }, 0.55);
+      tl.fromTo("#s1-sub", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.55 }, 0.75);
+      tl.fromTo("#s1-badge", { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.5, ease: "back.out(2)" }, 1.05);
+      tl.to("#s1", { opacity: 0, duration: 0.3 }, 3.2);
+
+      /* ===== S2 痛点 ===== */
+      tl.fromTo("#s2-head", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5 }, 3.6);
+      tl.fromTo("#p1", { opacity: 0, y: 44, scale: 1.12 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.6)" }, 3.95);
+      tl.fromTo("#p2", { opacity: 0, y: 44, scale: 1.12 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.6)" }, 4.55);
+      tl.fromTo("#p3", { opacity: 0, y: 44, scale: 1.12 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.6)" }, 5.15);
+      tl.fromTo("#p4", { opacity: 0, y: 44, scale: 1.12 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.6)" }, 5.75);
+      tl.fromTo("#s2-concl", { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.65 }, 9.85);
+      tl.to("#s2", { opacity: 0, duration: 0.3 }, 11.4);
+
+      /* ===== S3 模块A ===== */
+      tl.fromTo(".feat-head", { opacity: 0, y: 34 }, { opacity: 1, y: 0, duration: 0.55 }, 11.8);
+      tl.fromTo("#f1", { opacity: 0, x: -46 }, { opacity: 1, x: 0, duration: 0.5, ease: "power2.out" }, 12.0);
+      tl.fromTo("#f2", { opacity: 0, x: -46 }, { opacity: 1, x: 0, duration: 0.5, ease: "power2.out" }, 12.35);
+      tl.fromTo("#shot-a1", { opacity: 0, x: 90, scale: 0.94 }, { opacity: 1, x: 0, scale: 1, duration: 0.6, ease: "power2.out" }, 12.1);
+      tl.to("#shot-a1", { opacity: 0, x: -70, duration: 0.4 }, 15.6);
+      tl.fromTo("#shot-a2", { opacity: 0, x: 90, scale: 0.94 }, { opacity: 1, x: 0, scale: 1, duration: 0.6, ease: "power2.out" }, 15.85);
+      tl.to("#s3", { opacity: 0, duration: 0.3 }, 19.7);
+
+      /* ===== S4 快切 ===== */
+      tl.fromTo("#t1", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.35 }, 20.15);
+      tl.fromTo("#shot-b1", { opacity: 0, y: 60, scale: 0.95 }, { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: "power2.out" }, 20.2);
+      tl.to("#t1", { opacity: 0, duration: 0.25 }, 21.8);
+      tl.to("#shot-b1", { opacity: 0, y: -50, duration: 0.35 }, 21.75);
+      tl.fromTo("#t2", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.35 }, 22.1);
+      tl.fromTo("#shot-b2", { opacity: 0, y: 60, scale: 0.95 }, { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: "power2.out" }, 22.15);
+      tl.to("#t2", { opacity: 0, duration: 0.25 }, 23.7);
+      tl.to("#shot-b2", { opacity: 0, y: -50, duration: 0.35 }, 23.65);
+      tl.fromTo("#t3", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.35 }, 24.0);
+      tl.fromTo("#shot-b3", { opacity: 0, y: 60, scale: 0.95 }, { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: "power2.out" }, 24.05);
+      tl.to("#t3", { opacity: 0, duration: 0.25 }, 25.6);
+      tl.to("#shot-b3", { opacity: 0, y: -50, duration: 0.35 }, 25.55);
+      tl.fromTo("#t4", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.35 }, 25.9);
+      tl.fromTo("#shot-b4", { opacity: 0, y: 60, scale: 0.95 }, { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: "power2.out" }, 25.95);
+      tl.to("#s4", { opacity: 0, duration: 0.3 }, 27.5);
+
+      /* ===== S5 背书 ===== */
+      tl.fromTo("#s5-head", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5 }, 27.95);
+      tl.fromTo("#b1", { opacity: 0, y: 50, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.6)" }, 28.25);
+      tl.fromTo("#b2", { opacity: 0, y: 50, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.6)" }, 28.75);
+      tl.fromTo("#b3", { opacity: 0, y: 50, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.6)" }, 29.25);
+      tl.fromTo("#s5-foot", { opacity: 0 }, { opacity: 1, duration: 0.6 }, 30.4);
+      tl.to("#s5", { opacity: 0, duration: 0.3 }, 33.1);
+
+      /* ===== S6 CTA ===== */
+      tl.fromTo("#s6-title", { opacity: 0, y: 44 }, { opacity: 1, y: 0, duration: 0.55 }, 33.5);
+      tl.fromTo("#s6-url", { opacity: 0, scale: 0.88 }, { opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.7)" }, 33.9);
+      tl.fromTo("#s6-bili", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5 }, 34.5);
+      tl.fromTo("#s6-triple", { opacity: 0 }, { opacity: 1, duration: 0.55 }, 35.2);
+      tl.fromTo("#s6-hint", { opacity: 0 }, { opacity: 1, duration: 0.55 }, 35.7);
+
+      /* ===== 字幕 ===== */
+      tl.fromTo("#sub1", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3 }, 0.3);
+      tl.to("#sub1", { opacity: 0, duration: 0.25 }, 2.5);
+      tl.fromTo("#sub2", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3 }, 3.7);
+      tl.to("#sub2", { opacity: 0, duration: 0.25 }, 11.35);
+      tl.fromTo("#sub3", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3 }, 11.9);
+      tl.to("#sub3", { opacity: 0, duration: 0.25 }, 19.65);
+      tl.fromTo("#sub4", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3 }, 20.2);
+      tl.to("#sub4", { opacity: 0, duration: 0.25 }, 27.45);
+      tl.fromTo("#sub5", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3 }, 28.0);
+      tl.to("#sub5", { opacity: 0, duration: 0.25 }, 33.0);
+      tl.fromTo("#sub6", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3 }, 33.6);
+      tl.to("#sub6", { opacity: 0, duration: 0.25 }, 37.8);
+
+      /* ===== 片尾淡黑 ===== */
+      tl.to("#fadeshade", { opacity: 1, duration: 0.45 }, 38.05);
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>
