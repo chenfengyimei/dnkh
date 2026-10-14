@@ -5,7 +5,7 @@ public enum UpdateSourceKind
     /// <summary>GitHub Releases（latest）——资产带 sha256 digest，可在线自更新。</summary>
     GitHubRelease,
 
-    /// <summary>Gitee Releases（latest）——API 不带哈希，只引导下载页。</summary>
+    /// <summary>Gitee Releases（latest）——发布说明带 EXE SHA256 时可在线自更新。</summary>
     GiteeRelease,
 
     /// <summary>官网 version.json——永远可用，带 sha256 可在线自更新。</summary>
@@ -16,7 +16,7 @@ public enum UpdateSourceKind
 public sealed record UpdateSource(UpdateSourceKind Kind, string Url);
 
 /// <summary>
-/// 更新源配置（优先检查国内 Gitee 镜像，再检查 GitHub 与官网）。
+/// 更新源配置（Gitee、GitHub 与官网会并发检查）。
 /// </summary>
 public static class UpdateSources
 {
@@ -36,7 +36,7 @@ public static class UpdateSources
     public static string? EnvOverrideVersionJson =>
         Environment.GetEnvironmentVariable("DNKHW_UPDATE_JSON_URL") is { Length: > 0 } url ? url : null;
 
-    /// <summary>按优先顺序排列的默认更新源；检查器会从所有可用源中选取最高版本。</summary>
+    /// <summary>默认更新源；检查器会并发探测，选择最高版本且安全、连通更快的来源。</summary>
     public static IReadOnlyList<UpdateSource> Defaults =>
     [
         new UpdateSource(UpdateSourceKind.GiteeRelease, GiteeLatestApiUrl),

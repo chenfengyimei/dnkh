@@ -46,14 +46,13 @@ public static class SelfUpdater
         }
 
         Directory.CreateDirectory(UpdateDownloader.DownloadDirectory);
-        var scriptPath = Path.Combine(
-            UpdateDownloader.DownloadDirectory,
-            $"apply-update-{Environment.ProcessId}-{Guid.NewGuid():N}.ps1");
-        File.WriteAllText(scriptPath, BuildHelperScript(
+        // 用 -EncodedCommand 启动。Windows PowerShell 5.1 会把无 BOM 的 .ps1 按 ANSI 解析，
+        // 含中文诊断文本时可能在真正替换前就语法失败；编码命令不经过脚本文件解码，可靠性更高。
+        var encodedCommand = EncodePowerShellCommand(BuildHelperScript(
             Environment.ProcessId,
             exePath,
             readyPath,
-            restartAfterApply), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            restartAfterApply));
 
         var startInfo = new ProcessStartInfo
         {
@@ -65,8 +64,8 @@ public static class SelfUpdater
         startInfo.ArgumentList.Add("-NonInteractive");
         startInfo.ArgumentList.Add("-ExecutionPolicy");
         startInfo.ArgumentList.Add("Bypass");
-        startInfo.ArgumentList.Add("-File");
-        startInfo.ArgumentList.Add(scriptPath);
+        startInfo.ArgumentList.Add("-EncodedCommand");
+        startInfo.ArgumentList.Add(encodedCommand);
 
         if (Process.Start(startInfo) is null)
         {
@@ -126,22 +125,43 @@ public static class SelfUpdater
         }
     }
 
+    /// <summary>PowerShell 的 -EncodedCommand 固定使用 UTF-16LE（Unicode）。</summary>
+    internal static string EncodePowerShellCommand(string script)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(script);
+        return Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
+    }
+
     internal static string BuildHelperScript(int processId, string exePath, string readyPath, bool restartAfterApply)
     {
         static string Encode(string value) => Convert.ToBase64String(Encoding.Unicode.GetBytes(value));
+        var restartLiteral = restartAfterApply ? "$true" : "$false";
 
         return $$"""
         $ErrorActionPreference = 'Stop'
         $target = [Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('{{Encode(exePath)}}'))
         $ready = [Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('{{Encode(readyPath)}}'))
-        $restart = {{restartAfterApply.ToString().ToLowerInvariant()}}
+        $restart = {{restartLiteral}}
         $processId = {{processId}}
+        $log = "$ready.apply.log"
+
+        function Write-UpdateLog([string]$message) {
+            try {
+                $line = "$(Get-Date -Format o) $message"
+                [IO.File]::AppendAllText($log, $line + [Environment]::NewLine, [Text.Encoding]::UTF8)
+            } catch {
+                # Logging must never stop the replacement attempt.
+            }
+        }
+
+        Write-UpdateLog 'helper started'
 
         while (Get-Process -Id $processId -ErrorAction SilentlyContinue) {
             Start-Sleep -Milliseconds 200
         }
 
         if (-not (Test-Path -LiteralPath $ready)) {
+            Write-UpdateLog 'ready package is missing (exit 2)'
             exit 2
         }
 
@@ -165,13 +185,15 @@ public static class SelfUpdater
                 if ($restart) {
                     Start-Process -FilePath $target
                 }
-                Remove-Item -LiteralPath $PSCommandPath -Force -ErrorAction SilentlyContinue
+                Write-UpdateLog 'replacement completed successfully'
                 exit 0
             } catch {
+                Write-UpdateLog ("attempt $($attempt + 1) failed: " + $_.Exception.Message)
                 Start-Sleep -Milliseconds 250
             }
         }
 
+        Write-UpdateLog 'replacement failed after 120 attempts (exit 1)'
         exit 1
         """;
     }

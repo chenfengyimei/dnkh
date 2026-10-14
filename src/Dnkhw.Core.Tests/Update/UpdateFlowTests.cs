@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net;
 using System.Security.Cryptography;
 using Dnkhw.Core.Update;
@@ -76,17 +77,29 @@ public class UpdateDownloaderTests
     }
 
     [Fact]
-    public async Task Download_GiteeSource_Refuses()
+    public async Task Download_GiteeSource_WithVerifiedMetadata_IsAllowed()
     {
-        using var handler = new BytesHandler("x"u8.ToArray());
+        var payload = "gitee release payload"u8.ToArray();
+        using var handler = new BytesHandler(payload);
         var downloader = new UpdateDownloader(handler);
-        var info = new UpdateInfo("1.0.1", DirectUrl: "https://dl.test/Dnkhw.exe", Sha256: "AA")
+        var info = MakeInfo(payload) with
         {
             Source = UpdateSourceKind.GiteeRelease,
         };
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => downloader.DownloadAsync(info, null, TestContext.Current.CancellationToken));
+        try
+        {
+            var result = await downloader.DownloadAsync(info, null, TestContext.Current.CancellationToken);
+            Assert.Equal(UpdateDownloader.ReadyPath, result);
+            Assert.Equal(payload, await File.ReadAllBytesAsync(result, TestContext.Current.CancellationToken));
+        }
+        finally
+        {
+            if (File.Exists(UpdateDownloader.ReadyPath))
+            {
+                File.Delete(UpdateDownloader.ReadyPath);
+            }
+        }
     }
 
     [Fact]
@@ -294,6 +307,43 @@ public class SelfUpdaterTests
         Assert.Contains("Remove-Item -LiteralPath $backup", script);
         Assert.Contains("Move-Item -LiteralPath $target", script);
         Assert.Contains("Start-Process -FilePath $target", script);
+        Assert.Contains("Write-UpdateLog", script);
+        Assert.Contains("$restart = $true", script);
         Assert.DoesNotContain(@"C:\Program Files\dnkhw\Dnkhw.exe", script);
+    }
+
+    [Fact]
+    public void HelperCommandEncoding_UsesPowerShellUtf16LeFormat()
+    {
+        const string script = "Write-Output '更新器'";
+        var encoded = SelfUpdater.EncodePowerShellCommand(script);
+
+        Assert.Equal(script, System.Text.Encoding.Unicode.GetString(Convert.FromBase64String(encoded)));
+    }
+
+    [Fact]
+    public void EncodedHelperScript_IsParsedByWindowsPowerShell()
+    {
+        var script = SelfUpdater.BuildHelperScript(
+            processId: int.MaxValue,
+            exePath: @"C:\dnkhw-test\Dnkhw.exe",
+            readyPath: @"C:\dnkhw-test\update\Dnkhw.exe",
+            restartAfterApply: false);
+        var powershell = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe");
+        using var process = Process.Start(new ProcessStartInfo
+        {
+            FileName = powershell,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardError = true,
+            RedirectStandardOutput = true,
+            ArgumentList = { "-NoProfile", "-NonInteractive", "-EncodedCommand", SelfUpdater.EncodePowerShellCommand(script) },
+        });
+
+        Assert.NotNull(process);
+        Assert.True(process.WaitForExit(10_000), "Windows PowerShell 未在 10 秒内完成更新脚本语法检查");
+        var output = process.StandardOutput.ReadToEnd() + process.StandardError.ReadToEnd();
+        Assert.True(process.ExitCode == 2,
+            $"更新脚本未执行到 ready 检查，exit={process.ExitCode}: {output}");
     }
 }

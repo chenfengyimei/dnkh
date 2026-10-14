@@ -1,6 +1,8 @@
 using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace Dnkhw.Core.Update;
 
@@ -96,13 +98,16 @@ public static class VersionComparer
 }
 
 /// <summary>
-/// 手动检查更新：按「Gitee → GitHub → 官网 version.json」顺序检查，
-/// 从全部可用源中选择最高版本；同版本优先选择带 SHA256 的可自动更新来源。
+/// 手动检查更新：并发探测 Gitee、GitHub 与官网，从全部可用源中选择最高版本；
+/// 同版本优先选择带 SHA256 的可自动更新来源，再选择响应最快的来源。
 /// 仅在用户点击时联网（应用不做任何后台静默检查）。
 /// </summary>
 public sealed class UpdateChecker
 {
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(5);
+    private static readonly Regex GiteeExeSha256Pattern = new(
+        @"(?im)\bDnkhw\.exe\b[^\r\n]*?\bSHA-?256\s*[:=]\s*(?<hash>[a-f0-9]{64})\b",
+        RegexOptions.CultureInvariant);
 
     private readonly IReadOnlyList<UpdateSource> _sources;
     private readonly HttpClient _client;
@@ -117,61 +122,29 @@ public sealed class UpdateChecker
 
     public async Task<UpdateCheckResult> CheckAsync(string currentVersion, CancellationToken ct = default)
     {
-        var lastError = "没有可用的更新源";
-        UpdateInfo? bestUpdate = null;
+        var outcomes = await Task.WhenAll(_sources.Select(source => CheckSourceAsync(source, currentVersion, ct))).ConfigureAwait(false);
+        SourceCheckOutcome? bestUpdate = null;
         var hasUsableSource = false;
-        foreach (var source in _sources)
+        foreach (var outcome in outcomes)
         {
-            try
+            var result = outcome.Result;
+            if (result.Status == UpdateCheckStatus.FetchFailed)
             {
-                using var request = new HttpRequestMessage(HttpMethod.Get, source.Url);
-                if (source.Kind == UpdateSourceKind.GitHubRelease)
-                {
-                    // GitHub API 强制要求 User-Agent，缺省直接 403
-                    request.Headers.UserAgent.ParseAdd("dnkhw-updater/1.0 (+https://www.cyhaoka.vip)");
-                    request.Headers.Accept.ParseAdd("application/vnd.github+json");
-                }
-
-                using var response = await _client.SendAsync(request, ct).ConfigureAwait(false);
-                if (!response.IsSuccessStatusCode)
-                {
-                    lastError = $"{SourceName(source.Kind)}返回 {(int)response.StatusCode}";
-                    continue;
-                }
-
-                var json = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-                var result = ParseAndCompare(json, currentVersion, source.Kind);
-                if (result.Status == UpdateCheckStatus.FetchFailed)
-                {
-                    lastError = $"{SourceName(source.Kind)}：{result.Error}";
-                    continue;
-                }
-
-                hasUsableSource = true;
-                if (result.Status == UpdateCheckStatus.UpdateAvailable
-                    && result.Info is { } candidate
-                    && IsBetterCandidate(candidate, bestUpdate))
-                {
-                    bestUpdate = candidate;
-                }
+                continue;
             }
-            catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+
+            hasUsableSource = true;
+            if (result.Status == UpdateCheckStatus.UpdateAvailable
+                && result.Info is not null
+                && IsBetterCandidate(outcome, bestUpdate))
             {
-                lastError = $"{SourceName(source.Kind)}超时";
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                lastError = $"{SourceName(source.Kind)}网络异常：{ex.Message}";
+                bestUpdate = outcome;
             }
         }
 
         if (bestUpdate is not null)
         {
-            return UpdateCheckResult.Available(bestUpdate);
+            return bestUpdate.Result;
         }
 
         if (hasUsableSource)
@@ -179,25 +152,90 @@ public sealed class UpdateChecker
             return UpdateCheckResult.UpToDate();
         }
 
-        return UpdateCheckResult.Failed($"检查失败：{lastError}");
+        var errors = outcomes
+            .Where(outcome => outcome.Result.Status == UpdateCheckStatus.FetchFailed)
+            .Select(outcome => outcome.Result.Error)
+            .Where(error => !string.IsNullOrWhiteSpace(error));
+        return UpdateCheckResult.Failed($"检查失败：{string.Join("；", errors.DefaultIfEmpty("没有可用的更新源"))}");
     }
 
-    private static bool IsBetterCandidate(UpdateInfo candidate, UpdateInfo? current)
+    private async Task<SourceCheckOutcome> CheckSourceAsync(UpdateSource source, string currentVersion, CancellationToken ct)
     {
-        if (current is null)
+        var stopwatch = Stopwatch.StartNew();
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, source.Url);
+            if (source.Kind == UpdateSourceKind.GitHubRelease)
+            {
+                // GitHub API 强制要求 User-Agent，缺省直接 403
+                request.Headers.UserAgent.ParseAdd("dnkhw-updater/1.0 (+https://www.cyhaoka.vip)");
+                request.Headers.Accept.ParseAdd("application/vnd.github+json");
+            }
+
+            using var response = await _client.SendAsync(request, ct).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return new SourceCheckOutcome(source,
+                    UpdateCheckResult.Failed($"{SourceName(source.Kind)}返回 {(int)response.StatusCode}"), stopwatch.Elapsed);
+            }
+
+            var json = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+            var result = ParseAndCompare(json, currentVersion, source.Kind);
+            if (result.Status == UpdateCheckStatus.FetchFailed)
+            {
+                result = UpdateCheckResult.Failed($"{SourceName(source.Kind)}：{result.Error}");
+            }
+
+            return new SourceCheckOutcome(source, result, stopwatch.Elapsed);
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            return new SourceCheckOutcome(source, UpdateCheckResult.Failed($"{SourceName(source.Kind)}超时"), stopwatch.Elapsed);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            return new SourceCheckOutcome(source,
+                UpdateCheckResult.Failed($"{SourceName(source.Kind)}网络异常：{ex.Message}"), stopwatch.Elapsed);
+        }
+    }
+
+    private static bool IsBetterCandidate(SourceCheckOutcome candidate, SourceCheckOutcome? current)
+    {
+        if (current?.Result.Info is null)
         {
             return true;
         }
 
-        var versionComparison = VersionComparer.Compare(candidate.Version, current.Version);
+        var candidateInfo = candidate.Result.Info!;
+        var currentInfo = current.Result.Info;
+
+        var versionComparison = VersionComparer.Compare(candidateInfo.Version, currentInfo.Version);
         if (versionComparison != 0)
         {
             return versionComparison > 0;
         }
 
-        // Gitee Release API 不返回附件哈希：同一版本应优先采用带 SHA256 的安全自动更新源。
-        return string.IsNullOrWhiteSpace(current.Sha256) && !string.IsNullOrWhiteSpace(candidate.Sha256);
+        var candidateVerified = CanAutoUpdate(candidateInfo);
+        var currentVerified = CanAutoUpdate(currentInfo);
+        if (candidateVerified != currentVerified)
+        {
+            return candidateVerified;
+        }
+
+        // 在相同版本、相同校验能力时，直接选择更快连通的来源。
+        return candidate.Elapsed < current.Elapsed;
     }
+
+    private static bool CanAutoUpdate(UpdateInfo info) =>
+        !string.IsNullOrWhiteSpace(info.DirectUrl)
+        && !string.IsNullOrWhiteSpace(info.Sha256)
+        && info.SizeBytes is > 0;
+
+    private sealed record SourceCheckOutcome(UpdateSource Source, UpdateCheckResult Result, TimeSpan Elapsed);
 
     public static string SourceName(UpdateSourceKind kind) => kind switch
     {
@@ -288,7 +326,10 @@ public sealed class UpdateChecker
         return info;
     }
 
-    /// <summary>Gitee latest release：API 不提供资产哈希 → 只引导下载页，不参与在线自更新。</summary>
+    /// <summary>
+    /// Gitee latest release：API 不提供附件 digest；发布说明中若带
+    /// “Dnkhw.exe SHA256: &lt;64位哈希&gt;”，即可安全参与在线自更新，否则仅引导下载页。
+    /// </summary>
     private static UpdateInfo? ParseGiteeRelease(string json)
     {
         using var doc = JsonDocument.Parse(json);
@@ -315,8 +356,9 @@ public sealed class UpdateChecker
 
             return info with
             {
-                // Gitee 资产链接有时效，仅作为直链尝试；无哈希故在线更新仍会被拒绝
                 DirectUrl = asset.GetString("browser_download_url"),
+                Sha256 = ExtractGiteeExeSha256(info.Notes),
+                SizeBytes = asset.TryGetInt64("size", out var size) ? size : null,
             };
         }
 
@@ -329,6 +371,17 @@ public sealed class UpdateChecker
         : digest.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase)
             ? digest["sha256:".Length..].Trim().ToUpperInvariant()
             : digest.Trim().ToUpperInvariant();
+
+    internal static string? ExtractGiteeExeSha256(string? notes)
+    {
+        if (string.IsNullOrWhiteSpace(notes))
+        {
+            return null;
+        }
+
+        var match = GiteeExeSha256Pattern.Match(notes);
+        return match.Success ? match.Groups["hash"].Value.ToUpperInvariant() : null;
+    }
 }
 
 internal static class JsonElementExtensions

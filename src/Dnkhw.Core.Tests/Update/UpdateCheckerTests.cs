@@ -60,6 +60,17 @@ public class UpdateCheckerParsingTests
         }
         """;
 
+    private const string VerifiedGiteeJson = """
+        {
+          "tag_name": "v1.1.0",
+          "body": "修复更新\nDnkhw.exe SHA256: FEEDBEEF00112233445566778899AABBCCDDEEFF00112233445566778899AABB",
+          "html_url": "https://gitee.com/owner/dnkhw/releases/v1.1.0",
+          "assets": [
+            { "name": "Dnkhw.exe", "browser_download_url": "https://gitee.com/attachments/Dnkhw.exe", "size": 70000000 }
+          ]
+        }
+        """;
+
     [Fact]
     public void Parse_VersionJson_IncludesDirectUrlAndHash()
     {
@@ -109,6 +120,17 @@ public class UpdateCheckerParsingTests
         Assert.Equal("https://gitee.com/attachments/Dnkhw.exe", info.DirectUrl);
         Assert.Null(info.Sha256);
         Assert.Equal(UpdateSourceKind.GiteeRelease, info.Source);
+    }
+
+    [Fact]
+    public void Parse_GiteeRelease_WithReleaseNoteChecksum_CanUpdateSafely()
+    {
+        var result = UpdateChecker.ParseAndCompare(VerifiedGiteeJson, "1.0.0", UpdateSourceKind.GiteeRelease);
+
+        Assert.Equal(UpdateCheckStatus.UpdateAvailable, result.Status);
+        var info = result.Info!;
+        Assert.Equal("FEEDBEEF00112233445566778899AABBCCDDEEFF00112233445566778899AABB", info.Sha256);
+        Assert.Equal(70000000, info.SizeBytes);
     }
 
     [Fact]
@@ -171,6 +193,22 @@ internal sealed class RoutingHandler(Dictionary<string, Func<HttpResponseMessage
             out var respond)
             ? respond()
             : new HttpResponseMessage(HttpStatusCode.NotFound));
+}
+
+/// <summary>可控延迟响应，用于验证同版本时按实际连通速度选择来源。</summary>
+internal sealed class DelayedRoutingHandler(
+    Dictionary<string, (TimeSpan Delay, Func<HttpResponseMessage> Response)> routes) : HttpMessageHandler
+{
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+    {
+        if (!routes.TryGetValue(request.RequestUri?.ToString() ?? string.Empty, out var route))
+        {
+            return new HttpResponseMessage(HttpStatusCode.NotFound);
+        }
+
+        await Task.Delay(route.Delay, ct);
+        return route.Response();
+    }
 }
 
 public class UpdateCheckerMultiSourceTests
@@ -257,7 +295,7 @@ public class UpdateCheckerMultiSourceTests
                 ["https://gitee.test/api"] = () => Json(
                     """{ "tag_name": "v1.1.0", "assets": [ { "name": "Dnkhw.exe", "browser_download_url": "https://gitee.test/dl" } ] }"""),
                 ["https://git.test/api"] = () => Json(
-                    """{ "tag_name": "v1.1.0", "assets": [ { "name": "Dnkhw.exe", "browser_download_url": "https://git.test/dl", "digest": "sha256:BB" } ] }"""),
+                    """{ "tag_name": "v1.1.0", "assets": [ { "name": "Dnkhw.exe", "browser_download_url": "https://git.test/dl", "size": 20, "digest": "sha256:BB" } ] }"""),
             }),
             [
                 new UpdateSource(UpdateSourceKind.GiteeRelease, "https://gitee.test/api"),
@@ -269,6 +307,29 @@ public class UpdateCheckerMultiSourceTests
         Assert.Equal(UpdateCheckStatus.UpdateAvailable, result.Status);
         Assert.Equal(UpdateSourceKind.GitHubRelease, result.Info!.Source);
         Assert.Equal("BB", result.Info.Sha256);
+    }
+
+    [Fact]
+    public async Task Check_SelectsFastestVerifiedSource_WhenVersionsMatch()
+    {
+        using var handler = new DelayedRoutingHandler(new Dictionary<string, (TimeSpan, Func<HttpResponseMessage>)>
+        {
+            ["https://github.test/api"] = (TimeSpan.FromMilliseconds(80), () => Json(
+                """{ "tag_name": "v1.1.0", "assets": [ { "name": "Dnkhw.exe", "browser_download_url": "https://github.test/dl", "size": 20, "digest": "sha256:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" } ] }""")),
+            ["https://gitee.test/api"] = (TimeSpan.FromMilliseconds(5), () => Json(
+                """{ "tag_name": "v1.1.0", "body": "Dnkhw.exe SHA256: BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB", "assets": [ { "name": "Dnkhw.exe", "browser_download_url": "https://gitee.test/dl", "size": 20 } ] }""")),
+        });
+        var checker = new UpdateChecker(handler,
+        [
+            new UpdateSource(UpdateSourceKind.GitHubRelease, "https://github.test/api"),
+            new UpdateSource(UpdateSourceKind.GiteeRelease, "https://gitee.test/api"),
+        ]);
+
+        var result = await checker.CheckAsync("1.0.0", TestContext.Current.CancellationToken);
+
+        Assert.Equal(UpdateCheckStatus.UpdateAvailable, result.Status);
+        Assert.Equal(UpdateSourceKind.GiteeRelease, result.Info!.Source);
+        Assert.Equal("https://gitee.test/dl", result.Info.DirectUrl);
     }
 
     [Fact]

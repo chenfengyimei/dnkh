@@ -47,7 +47,7 @@ public sealed class UpdateDownloader
         CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(info);
-        if (info.Source is UpdateSourceKind.GiteeRelease || string.IsNullOrWhiteSpace(info.Sha256))
+        if (string.IsNullOrWhiteSpace(info.Sha256))
         {
             throw new InvalidOperationException("该更新源未提供校验哈希，不能在线更新，请前往官网下载");
         }
