@@ -19,11 +19,5 @@ CODELY.md
 *.user
 *.suo
 
-# 官网部署用安装包不入库（发版时手动复制到 website/download/）
-website/download/
-
-# 服务器本地下载统计密钥与运行时聚合数据，绝不提交。
-website/dl/config.local.php
-website/dl/data/
-website/feedback/config.local.php
-website/feedback/data/
+# 官网仅保留在本地与服务器，不纳入应用源码仓库。
+website/
