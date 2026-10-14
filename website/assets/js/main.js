@@ -85,33 +85,101 @@
     });
   }
 
-  /* ---- 多渠道下载：dl/status.php 渲染渠道按钮与累计计数 ----
+  /* ---- 多渠道下载：下载前先选择渠道 ----
      无 PHP 环境（本地 file:// 预览）时 fetch 失败，自动回退为静态直连链接 */
   var dlMain = document.getElementById('dlMain');
   if (dlMain) {
+    var heroDownload = document.getElementById('dlDirect');
+    var downloadDialog = document.getElementById('downloadDialog');
+    var downloadDialogClose = document.getElementById('downloadDialogClose');
+    var downloadChoices = document.getElementById('downloadChoices');
+    var downloadTriggers = [dlMain, heroDownload].filter(Boolean);
+    var previousDownloadFocus = null;
+    var downloadReady = false;
+
+    function closeDownloadDialog() {
+      if (!downloadDialog || downloadDialog.hidden) { return; }
+      downloadDialog.hidden = true;
+      document.body.classList.remove('dialog-open');
+      if (previousDownloadFocus) { previousDownloadFocus.focus(); }
+    }
+
+    function openDownloadDialog(trigger) {
+      if (!downloadReady || !downloadDialog) { return; }
+      previousDownloadFocus = trigger;
+      downloadDialog.hidden = false;
+      document.body.classList.add('dialog-open');
+      window.setTimeout(function () {
+        if (downloadDialogClose) { downloadDialogClose.focus(); }
+      }, 0);
+    }
+
+    function channelDescription(channel) {
+      if (channel.id === 'direct') {
+        return '官方网站高速直连，下载完成后可直接核对 SHA256。';
+      }
+      return '将在新标签页跳转至网盘下载页面。';
+    }
+
+    function addDownloadChoice(channel) {
+      if (!downloadChoices || !channel.enabled || typeof channel.url !== 'string' || !/^dl\/download\.php\?id=[\w-]+$/.test(channel.url)) {
+        return;
+      }
+      var link = document.createElement('a');
+      var text = document.createElement('span');
+      var title = document.createElement('strong');
+      var description = document.createElement('small');
+      var arrow = document.createElement('span');
+
+      link.className = 'download-choice';
+      link.href = channel.url;
+      if (channel.id !== 'direct') {
+        link.target = '_blank';
+        link.rel = 'noopener';
+      }
+      text.className = 'download-choice-text';
+      title.textContent = channel.label;
+      description.textContent = channelDescription(channel);
+      arrow.className = 'download-choice-arrow';
+      arrow.setAttribute('aria-hidden', 'true');
+      arrow.textContent = '→';
+      text.appendChild(title);
+      text.appendChild(description);
+      link.appendChild(text);
+      link.appendChild(arrow);
+      link.addEventListener('click', closeDownloadDialog);
+      downloadChoices.appendChild(link);
+    }
+
+    if (downloadDialog) {
+      downloadDialog.addEventListener('click', function (event) {
+        if (event.target === downloadDialog) { closeDownloadDialog(); }
+      });
+    }
+    if (downloadDialogClose) { downloadDialogClose.addEventListener('click', closeDownloadDialog); }
+    window.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') { closeDownloadDialog(); }
+    });
+
     fetch('dl/status.php').then(function (r) { return r.json(); }).then(function (s) {
       if (!s || !s.channels) { return; }
-      var row = document.getElementById('dlChannels');
-      var shown = 0;
       s.channels.forEach(function (c) {
         if (c.id === 'direct') {
           /* 直连走跳板计数（302 到文件本体，nginx 继续提供下载） */
           dlMain.href = c.url;
-          var hero = document.getElementById('dlDirect');
-          if (hero) { hero.href = c.url; }
-          return;
+          if (heroDownload) { heroDownload.href = c.url; }
         }
-        if (!c.enabled || !row) { return; }
-        var a = document.createElement('a');
-        a.className = 'btn btn-secondary btn-sm';
-        a.href = c.url;
-        a.target = '_blank';
-        a.rel = 'noopener';
-        a.textContent = '☁ ' + c.label;
-        row.appendChild(a);
-        shown++;
+        addDownloadChoice(c);
       });
-      if (shown > 0) { document.getElementById('dlAlt').hidden = false; }
+      if (downloadChoices && downloadChoices.children.length > 0) {
+        downloadReady = true;
+        downloadTriggers.forEach(function (trigger) {
+          trigger.addEventListener('click', function (event) {
+            event.preventDefault();
+            openDownloadDialog(trigger);
+          });
+        });
+      }
       var cnt = document.getElementById('dlCount');
       if (cnt && s.showPublicStats && s.total > 0) {
         cnt.querySelector('strong').textContent = String(s.total);

@@ -280,10 +280,6 @@
               <svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M8 1.5a.75.75 0 0 1 .75.75v7.44l2.72-2.72a.75.75 0 1 1 1.06 1.06L8.53 12.03a.75.75 0 0 1-1.06 0L3.47 8.03A.75.75 0 1 1 4.53 6.97l2.72 2.72V2.25A.75.75 0 0 1 8 1.5ZM2.5 13.25a.75.75 0 0 1 .75-.75h9.5a.75.75 0 0 1 0 1.5h-9.5a.75.75 0 0 1-.75-.75Z"/></svg>
               本站直连下载 · 67.61 MB
             </a>
-            <div class="dl-alt" id="dlAlt" hidden>
-              <span class="dl-alt-label">其他下载渠道</span>
-              <div class="dl-alt-row" id="dlChannels"></div>
-            </div>
             <p class="dl-count" id="dlCount" hidden>累计下载 <strong>0</strong> 次 · 仅统计点击次数，不收集任何个人信息</p>
             <p class="dl-note">请仅从官网 <strong>app.cyhaoka.vip</strong> 获取安装包，下载后建议核对 SHA256。</p>
           </div>
@@ -433,6 +429,21 @@
       </div>
     </div>
   </footer>
+
+  <!-- ======== 下载方式选择 ======== -->
+  <div class="download-dialog" id="downloadDialog" hidden>
+    <section class="download-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="downloadDialogTitle" aria-describedby="downloadDialogDesc" tabindex="-1">
+      <div class="download-dialog-head">
+        <div>
+          <p class="download-dialog-kicker">DOWNLOAD</p>
+          <h2 id="downloadDialogTitle">选择下载方式</h2>
+        </div>
+        <button class="download-dialog-close" id="downloadDialogClose" type="button" aria-label="关闭下载方式选择">✕</button>
+      </div>
+      <p class="download-dialog-desc" id="downloadDialogDesc">请选择适合你的下载方式。文件均为同一官方版本。</p>
+      <div class="download-choices" id="downloadChoices"></div>
+    </section>
+  </div>
 
   <!-- ======== 大图查看 ======== -->
   <div class="lightbox" id="lightbox" hidden>
