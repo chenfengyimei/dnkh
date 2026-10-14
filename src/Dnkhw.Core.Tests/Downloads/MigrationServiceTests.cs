@@ -154,6 +154,17 @@ public class MigrationServiceTests : IDisposable
         Assert.Contains(KnownFoldersMigrationService.Folders, f => f.Key == "desktop" && f.Name == "桌面");
     }
 
+    [Fact]
+    public void FolderRegistryNames_IncludeModernAndLegacyValues()
+    {
+        var music = KnownFoldersMigrationService.FindDef("music");
+        var musicNames = KnownFoldersMigrationService.GetRegistryValueNames(music);
+        Assert.Equal(new[] { "{A0C69A99-21C8-4671-8703-7934162FCF1D}", "My Music" }, musicNames);
+
+        var desktop = KnownFoldersMigrationService.FindDef("desktop");
+        Assert.Equal(new[] { "Desktop" }, KnownFoldersMigrationService.GetRegistryValueNames(desktop));
+    }
+
     /// <summary>同步 IProgress（Progress&lt;T&gt; 经同步上下文异步投递，单测中无法保证时序）。</summary>
     private sealed class SyncProgress<T> : IProgress<T>
     {

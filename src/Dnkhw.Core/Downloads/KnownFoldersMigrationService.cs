@@ -12,6 +12,7 @@ namespace Dnkhw.Core.Downloads;
 public sealed class KnownFoldersMigrationService
 {
     private const string UserShellFoldersKey = @"Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders";
+    private const string ShellFoldersKey = @"Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders";
     private static readonly object StateLock = new();
 
     private static readonly JsonSerializerOptions StateJsonOptions = new()
@@ -400,12 +401,37 @@ public sealed class KnownFoldersMigrationService
                 || protectedPath.StartsWith(sourcePrefix, StringComparison.OrdinalIgnoreCase));
     }
 
-    /// <summary>写入 Explorer 实际使用的值名（现代 GUID 优先；桌面为旧名 Desktop）。</summary>
+    /// <summary>
+    /// 用 Windows 的已知文件夹 API 完成重定向，再同步现代/旧版注册表值。
+    /// 只写 User Shell Folders 会令属性页和资源管理器导航窗格在部分 Windows 版本中
+    /// 使用不同的缓存或兼容值，从而打开旧位置。
+    /// </summary>
     private static void ApplyRegistryPath(KnownFolderDef def, string path)
     {
-        using var key = Registry.CurrentUser.OpenSubKey(UserShellFoldersKey, writable: true)
+        var fullPath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
+        KnownFolders.SetKnownFolderPath(def.Id, fullPath);
+
+        using var userShellFolders = Registry.CurrentUser.OpenSubKey(UserShellFoldersKey, writable: true)
             ?? throw new InvalidOperationException("无法打开注册表 User Shell Folders");
-        key.SetValue(def.PrimaryValueName, path, RegistryValueKind.ExpandString);
+        using var shellFolders = Registry.CurrentUser.OpenSubKey(ShellFoldersKey, writable: true)
+            ?? throw new InvalidOperationException("无法打开注册表 Shell Folders");
+
+        foreach (var valueName in GetRegistryValueNames(def))
+        {
+            // User Shell Folders 保存可展开路径，Shell Folders 保存 Explorer 当前解析路径。
+            userShellFolders.SetValue(valueName, fullPath, RegistryValueKind.ExpandString);
+            shellFolders.SetValue(valueName, fullPath, RegistryValueKind.String);
+        }
+    }
+
+    internal static IReadOnlyList<string> GetRegistryValueNames(KnownFolderDef def)
+    {
+        ArgumentNullException.ThrowIfNull(def);
+        return new[] { def.PrimaryValueName, def.FallbackValueName }
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Cast<string>()
+            .ToArray();
     }
 
     private sealed class MigrationStateMap

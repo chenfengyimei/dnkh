@@ -26,6 +26,7 @@ public static class KnownFolders
     public static readonly Guid VideosId = new("18989B1D-99B5-455B-841C-AB7C74F423FC");
 
     private const uint ShcneUpdatedir = 0x00001000;
+    private const uint ShcneAssocChanged = 0x08000000;
     private const uint ShcnfPathW = 0x0005;
     private const uint WmSettingChange = 0x001A;
     private static readonly IntPtr HwndBroadcast = new(0xffff);
@@ -33,6 +34,9 @@ public static class KnownFolders
 
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
     private static extern int SHGetKnownFolderPath(ref Guid rfid, uint flags, IntPtr token, out IntPtr path);
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    private static extern int SHSetKnownFolderPath(ref Guid rfid, uint flags, IntPtr token, string path);
 
     [DllImport("shell32.dll")]
     private static extern void SHChangeNotify(uint wEventId, uint uFlags, IntPtr dwItem1, IntPtr dwItem2);
@@ -87,6 +91,24 @@ public static class KnownFolders
     /// <summary>获取当前「下载」文件夹路径（兼容旧调用）。</summary>
     public static string GetDownloadsPath() => GetKnownFolderPath(DownloadsId);
 
+    /// <summary>
+    /// 通过 Windows 已知文件夹 API 重定向路径。相比仅修改注册表，这会同时更新 Shell 的
+    /// 已知文件夹配置，避免属性页已变而资源管理器导航项仍解析到旧位置。
+    /// </summary>
+    public static void SetKnownFolderPath(Guid knownFolderId, string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+
+        var fullPath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
+        var folderId = knownFolderId;
+        var hr = SHSetKnownFolderPath(ref folderId, 0, IntPtr.Zero, fullPath);
+        if (hr != 0)
+        {
+            throw new InvalidOperationException(
+                $"Windows 无法重定向已知文件夹（0x{unchecked((uint)hr):X8}）：{fullPath}");
+        }
+    }
+
     /// <summary>通知 Explorer 目录结构已变化（迁移后刷新文件夹库指向）。</summary>
     public static void NotifyFolderChanged(string oldPath, string newPath)
     {
@@ -96,6 +118,8 @@ public static class KnownFolders
         {
             SHChangeNotify(ShcneUpdatedir, ShcnfPathW, oldPtr, IntPtr.Zero);
             SHChangeNotify(ShcneUpdatedir, ShcnfPathW, newPtr, IntPtr.Zero);
+            // 让资源管理器失效已缓存的命名空间/图标解析结果。
+            SHChangeNotify(ShcneAssocChanged, 0, IntPtr.Zero, IntPtr.Zero);
         }
         finally
         {

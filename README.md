@@ -10,7 +10,7 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-blue)
 ![.NET](https://img.shields.io/badge/.NET-10.0%20LTS-purple)
-![Version](https://img.shields.io/badge/version-1.0.7-0078D4)
+![Version](https://img.shields.io/badge/version-1.0.8-0078D4)
 ![Package](https://img.shields.io/badge/%E5%8F%91%E8%A1%8C%E7%89%88-%E5%AE%89%E8%A3%85%E7%89%88%20%7C%20%E5%85%8D%E5%AE%89%E8%A3%85%E7%89%88-orange)
 
 🌐 **电脑开荒网：[www.cyhaoka.vip](https://www.cyhaoka.vip)** —— 工具导航与使用帮助<br>
