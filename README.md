@@ -10,10 +10,11 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-blue)
 ![.NET](https://img.shields.io/badge/.NET-10.0%20LTS-purple)
-![Version](https://img.shields.io/badge/version-1.0.6-0078D4)
-![Size](https://img.shields.io/badge/%E5%8D%95%E6%96%87%E4%BB%B6-%E5%85%8D%E5%AE%89%E8%A3%85-67.61MB-orange)
+![Version](https://img.shields.io/badge/version-1.0.7-0078D4)
+![Package](https://img.shields.io/badge/%E5%8F%91%E8%A1%8C%E7%89%88-%E5%AE%89%E8%A3%85%E7%89%88%20%7C%20%E5%85%8D%E5%AE%89%E8%A3%85%E7%89%88-orange)
 
-🌐 **官网：[app.cyhaoka.vip](https://app.cyhaoka.vip)** —— 软件下载、使用帮助与最新版本
+🌐 **电脑开荒网：[www.cyhaoka.vip](https://www.cyhaoka.vip)** —— 工具导航与使用帮助<br>
+📦 **软件下载与更新：[app.cyhaoka.vip](https://app.cyhaoka.vip)** —— 安装版、免安装版与最新版本
 
 </div>
 
@@ -79,7 +80,7 @@ Run 键 + 启动文件夹全枚举，数字签名发布者解析，支持搜索�
 回收站/Temp/Windows.old/更新缓存/休眠文件等常见可清理位置**只展示、不删除**，一键在资源管理器定位。
 
 ### 🌐 电脑开荒网
-应用内直接访问官网 [app.cyhaoka.vip](https://app.cyhaoka.vip)：WebView2 内嵌渲染（与 Edge 同内核），
+应用内直接访问电脑开荒网 [www.cyhaoka.vip](https://www.cyhaoka.vip)：WebView2 内嵌渲染（与 Edge 同内核），
 无需打开浏览器；提供后退/前进/主页/刷新工具栏与实时状态；
 **站外链接自动交给系统默认浏览器**，内嵌仅显示本站内容；无 WebView2 运行时的精简系统会给出安装指引与浏览器兜底。
 
@@ -91,10 +92,12 @@ GitHub Releases → Gitee Releases → 官网 version.json 多级回落（开源
 
 ## 下载与安装
 
-- **官网下载**：[app.cyhaoka.vip](https://app.cyhaoka.vip)（最新版本与使用帮助）
+- **软件下载**：[app.cyhaoka.vip](https://app.cyhaoka.vip)（安装版、免安装版与在线更新）
+- **电脑开荒网**：[www.cyhaoka.vip](https://www.cyhaoka.vip)（工具导航与使用帮助）
 - **系统要求**：Windows 10（1709+）/ Windows 11，64 位；**无需安装 .NET 运行时**（内嵌官网页依赖系统 WebView2 运行时，Win10/11 一般随系统自带；缺失时应用会给出安装指引或改用浏览器打开）
-- **安装方式**：绿色单文件——下载 `Dnkhw.exe` 放到任意目录（建议非系统盘）双击即用
-- **校验**：发布说明提供 SHA256，可用 `certutil -hashfile Dnkhw.exe SHA256` 核对
+- **安装版（推荐）**：运行 `Dnkhw-vX.Y.Z-Setup.exe`，会创建开始菜单与卸载入口，适合长期使用。
+- **免安装版**：下载 `Dnkhw-vX.Y.Z-Portable.zip` 后先解压，再运行其中的 `Dnkhw.exe`；适合 U 盘或临时使用。
+- **校验**：官网提供 SHA256，可用 `certutil -hashfile Dnkhw.exe SHA256` 核对。
 
 > **首次运行提示**：本工具未购买代码签名证书，Windows 可能弹出 SmartScreen——
 > 点「更多信息」→「仍要运行」即可；或右键文件 → 属性 → 勾选「解除锁定」。
@@ -122,7 +125,8 @@ dotnet build                     # 构建
 dotnet test                      # 运行全部单元测试
 dotnet run --project src/Dnkhw   # 启动应用
 
-.\publish.ps1                    # 产出自包含单文件 publish\Dnkhw.exe（当前发布物为 67.61 MB）
+.\publish.ps1                    # 产出自包含单文件 publish\Dnkhw.exe
+.\package.ps1                    # 产出 release\ 中的安装版、免安装 ZIP 与在线更新 EXE
 ```
 
 测试覆盖 Core 业务库的纯逻辑：StartupApproved 编解码（含任务管理器真机样本）、

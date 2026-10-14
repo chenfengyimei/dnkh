@@ -9,7 +9,7 @@ using Wpf.Ui.Appearance;
 namespace Dnkhw.Pages;
 
 /// <summary>
-/// 电脑开荒网：WebView2 内嵌官网 app.cyhaoka.vip，无需浏览器即可访问；
+/// 电脑开荒网：WebView2 内嵌官网 www.cyhaoka.vip，无需浏览器即可访问；
 /// 站外链接与弹窗交给系统默认浏览器打开，网页数据目录固定在 %LOCALAPPDATA%\dnkhw。
 /// </summary>
 public partial class WebsitePage : Page

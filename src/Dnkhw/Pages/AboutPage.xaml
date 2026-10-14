@@ -168,7 +168,7 @@
                             <StackPanel>
                                 <TextBlock Text="官网" Style="{StaticResource SectionTitleStyle}"/>
                                 <TextBlock Style="{StaticResource BodyTextStyle}"
-                                           Text="电脑开荒网&#x0a;app.cyhaoka.vip"/>
+                                           Text="电脑开荒网&#x0a;www.cyhaoka.vip"/>
                                 <TextBlock Text="软件下载、使用帮助与最新版本"
                                            Opacity="0.6" FontSize="12" TextWrapping="Wrap"
                                            Margin="0,7,0,0"/>

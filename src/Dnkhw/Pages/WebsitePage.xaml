@@ -22,7 +22,7 @@
             </Grid.ColumnDefinitions>
             <StackPanel>
                 <TextBlock Text="电脑开荒网" FontSize="26" FontWeight="Bold"/>
-                <TextBlock Text="软件内直接访问官网 app.cyhaoka.vip —— 软件下载、使用帮助与最新版本，无需打开浏览器" Opacity="0.7" Margin="0,6,0,0" TextWrapping="Wrap"/>
+                <TextBlock Text="软件内直接访问电脑开荒网 www.cyhaoka.vip —— 工具导航与使用帮助，无需打开浏览器" Opacity="0.7" Margin="0,6,0,0" TextWrapping="Wrap"/>
             </StackPanel>
             <ui:Button Grid.Column="1" Content="在浏览器打开 ↗" VerticalAlignment="Center"
                        Margin="20,0,0,0" Padding="16,7" Click="OnOpenExternalClick"/>
@@ -42,7 +42,7 @@
                     <ui:Button x:Name="HomeButton" Appearance="Transparent" Content="主页" FontSize="12" Padding="12,5" Margin="6,0,0,0" Click="OnHomeClick"/>
                     <ui:Button x:Name="ReloadButton" Appearance="Transparent" Content="刷新" FontSize="12" Padding="12,5" Margin="6,0,0,0" Click="OnReloadClick"/>
                 </StackPanel>
-                <TextBlock x:Name="StatusText" Grid.Column="1" Text="正在连接 app.cyhaoka.vip …"
+                <TextBlock x:Name="StatusText" Grid.Column="1" Text="正在连接 www.cyhaoka.vip …"
                            Opacity="0.65" FontSize="12" HorizontalAlignment="Center"
                            TextTrimming="CharacterEllipsis" Margin="16,0,8,0"/>
                 <ui:ProgressRing x:Name="LoadRing" Grid.Column="2" Width="18" Height="18" IsIndeterminate="True"/>

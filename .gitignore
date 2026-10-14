@@ -2,6 +2,7 @@ bin/
 obj/
 output/
 publish/
+release/
 .vs/
 .idea/
 TestResults/
