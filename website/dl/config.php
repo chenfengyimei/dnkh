@@ -22,7 +22,7 @@ return [
 
     'channels' => [
         'direct' => ['label' => '本站直连',   'type' => 'file', 'url' => '/download/releases/v1.0.6/Dnkhw.exe'],
-        'lanzou' => ['label' => '蓝奏云',     'type' => 'link', 'url' => ''],
+        'lanzou' => ['label' => '蓝奏云（提取码：81it）', 'type' => 'link', 'url' => 'https://wwbga.lanzoum.com/iN0Ap4by0lij'],
         'baidu'  => ['label' => '百度网盘',   'type' => 'link', 'url' => ''],
         'quark'  => ['label' => '夸克网盘',   'type' => 'link', 'url' => ''],
     ],
