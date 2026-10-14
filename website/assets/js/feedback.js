@@ -1,4 +1,4 @@
-/* 反馈页：类型切换 / 实时生成反馈文本 / 必填校验 / 复制 / 邮件 */
+/* 反馈页：类型切换 / 实时生成 / 提交反馈中心 / 复制 / 邮件 */
 (function () {
   'use strict';
 
@@ -10,6 +10,7 @@
   var formApp = document.getElementById('formApp');
   var output = document.getElementById('fbOutput');
   var msg = document.getElementById('fbMsg');
+  var csrfToken = '';
 
   if (!tabBug || !tabApp || !output) return;
 
@@ -52,6 +53,35 @@
     return t;
   }
 
+  function checks() {
+    var result = [];
+    ['c1', 'c2', 'c3', 'c4'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el && el.checked) result.push(el.parentNode.textContent.trim());
+    });
+    return result;
+  }
+
+  function payload() {
+    var base = { type: mode, website: v('fbWebsite') };
+    if (mode === 'bug') {
+      base.version = v('fVersion');
+      base.os = v('fOs');
+      base.module = v('fModule');
+      base.description = v('fDesc');
+      base.steps = v('fSteps');
+      base.expectation = v('fExpect');
+    } else {
+      base.name = v('fName');
+      base.site = v('fSite');
+      base.winget = v('fWinget');
+      base.category = v('fCat');
+      base.checks = checks();
+      base.reason = v('fReason');
+    }
+    return base;
+  }
+
   function subject() {
     return mode === 'bug'
       ? '【电脑开荒】Bug 反馈 · ' + v('fModule')
@@ -83,6 +113,12 @@
     }
     if (msg) msg.textContent = '';
     return true;
+  }
+
+  function showMessage(text, kind) {
+    if (!msg) return;
+    msg.textContent = text;
+    msg.classList.toggle('fb-msg--success', kind === 'success');
   }
 
   function setMode(m) {
@@ -151,7 +187,63 @@
       '&body=' + encodeURIComponent(output.value);
   });
 
+  function getToken() {
+    return fetch('feedback/token.php', {
+      credentials: 'same-origin',
+      cache: 'no-store'
+    }).then(function (response) {
+      if (!response.ok) throw new Error('token');
+      return response.json();
+    }).then(function (data) {
+      csrfToken = data && data.ok && typeof data.token === 'string' ? data.token : '';
+      return csrfToken;
+    }).catch(function () {
+      csrfToken = '';
+      return '';
+    });
+  }
+
+  var btnSubmit = document.getElementById('btnSubmit');
+  if (btnSubmit) {
+    btnSubmit.addEventListener('click', function () {
+      if (!validate()) return;
+      if (!csrfToken) {
+        showMessage('反馈中心暂时不可用，请稍后重试或使用邮件发送。');
+        getToken();
+        return;
+      }
+
+      var original = btnSubmit.textContent;
+      btnSubmit.disabled = true;
+      btnSubmit.textContent = '正在提交…';
+      showMessage('');
+      fetch('feedback/submit.php', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken
+        },
+        body: JSON.stringify(payload())
+      }).then(function (response) {
+        return response.json().catch(function () { return {}; }).then(function (data) {
+          if (!response.ok || !data.ok) throw new Error(data.message || '提交失败，请稍后重试。');
+          return data;
+        });
+      }).then(function (data) {
+        showMessage((data.message || '已收到，感谢你的反馈。') + ' 处理编号：' + data.id, 'success');
+        btnSubmit.textContent = '✓ 已提交';
+      }).catch(function (error) {
+        showMessage(error && error.message ? error.message : '提交失败，请稍后重试或使用邮件发送。');
+        btnSubmit.textContent = original;
+      }).finally(function () {
+        btnSubmit.disabled = false;
+      });
+    });
+  }
+
   setMode('bug');
   /* 支持 ?mode=app 深链直达收录表单 */
   if (window.location.search.indexOf('mode=app') > -1) setMode('app');
+  getToken();
 })();

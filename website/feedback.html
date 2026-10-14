@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; media-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; media-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="referrer" content="no-referrer">
   <title>提交反馈 · 申请收录 — 电脑开荒</title>
   <meta name="description" content="电脑开荒反馈中心：提交 Bug 或为 APP 推荐清单申请收录纯净软件。填写表单即可生成格式化反馈，邮件一键发送或复制后通过任意渠道送达作者。">
@@ -51,9 +51,8 @@
         <span class="eyebrow">反馈与收录</span>
         <h1>提交反馈 · 申请收录</h1>
         <p class="lead">
-          遇到问题，或想提名一款纯净软件？选择类型、填写表单——
-          反馈内容会实时生成规范文本，<strong>邮件一键发送</strong>或<strong>复制后通过任意渠道</strong>发给我们。
-          填写的信息仅用于处理这条反馈，不作他用。
+          遇到问题，或想提名一款纯净软件？选择类型、填写表单后可<strong>直接提交到反馈中心</strong>。
+          也可使用邮件或复制文本作为备用方式。填写的信息仅用于处理这条反馈，不作他用。
         </p>
       </div>
     </section>
@@ -168,9 +167,16 @@
         <!-- 生成结果 -->
         <div class="card fb-result">
           <h3>生成的反馈内容</h3>
-          <p class="fb-hint">随填写实时更新，可先复制到别处编辑</p>
+          <p class="fb-hint">随填写实时更新；提交后会生成处理编号，便于管理员跟进</p>
           <textarea id="fbOutput" readonly aria-live="polite" title="生成的反馈文本"></textarea>
+          <div class="fb-honeypot" aria-hidden="true">
+            <label for="fbWebsite">网站</label>
+            <input id="fbWebsite" type="text" tabindex="-1" autocomplete="off">
+          </div>
           <div class="fb-actions">
+            <button class="btn btn-primary" id="btnSubmit" type="button">
+              提交到反馈中心
+            </button>
             <button class="btn btn-primary" id="btnMail" type="button">
               <svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M2.5 3A1.5 1.5 0 0 0 1 4.5v7A1.5 1.5 0 0 0 2.5 13h11a1.5 1.5 0 0 0 1.5-1.5v-7A1.5 1.5 0 0 0 13.5 3h-11Zm.22 1.22A.5.5 0 0 1 3.09 4h9.82a.5.5 0 0 1 .37.22L8 8.46 2.72 4.22ZM2 5.63V11.5a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V5.63L8.32 9.25a.5.5 0 0 1-.64 0L2 5.63Z"/></svg>
               发送邮件
@@ -182,9 +188,8 @@
           </div>
           <p class="fb-msg" id="fbMsg" role="alert"></p>
           <p class="fb-note">
-            「发送邮件」会拉起邮件客户端（收件人 <strong>2079937150@qq.com</strong>，主题与正文已自动填好）；
-            若未配置邮件客户端，可「复制文本」后通过 QQ 邮箱网页版发送，
-            或到哔哩哔哩 <a href="https://space.bilibili.com/508302628" target="_blank" rel="noopener">@尘风一枚</a> 私信 / 评论粘贴。
+            提交内容仅保存用于处理这条反馈；请不要填写密码、身份证号、激活码等敏感信息。
+            若提交失败，可「发送邮件」或「复制文本」后通过任意渠道送达作者。
           </p>
         </div>
 

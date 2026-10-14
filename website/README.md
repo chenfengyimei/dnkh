@@ -1,14 +1,21 @@
 # 电脑开荒官网（website/）
 
-纯静态单页官网，无任何构建步骤与外部依赖——文件夹即站点，可直接部署到
-**app.cyhaoka.vip**（任何静态托管：nginx / IIS / 对象存储 / Cloudflare Pages 均可）。
+官网主体为无构建依赖的静态页面；下载统计与反馈后台使用 PHP 8.2，可直接部署到
+**app.cyhaoka.vip** 的 nginx + PHP 环境。
 
 ## 目录结构
 
 ```
 website/
 ├── index.html                    # 单页站点（功能/截图/视频/下载/FAQ）
-├── feedback.html                 # 反馈页：Bug 反馈 / 申请收录（静态表单）
+├── feedback.html                 # 反馈页：Bug 反馈 / 申请收录（提交至后台，邮件兜底）
+├── feedback/                     # 反馈提交接口与管理员后台（PHP）
+│   ├── token.php                 # 表单会话与 CSRF 令牌
+│   ├── submit.php                # 表单校验、限流与并发安全写入
+│   ├── admin.php                 # 管理员登录、筛选、状态处理与备注
+│   ├── bootstrap.php             # 共用安全与 JSON 存储逻辑（禁止公网访问）
+│   ├── config.local.php          # 管理员密码哈希（服务器本地，不提交）
+│   └── data/feedbacks.json       # 反馈运行数据（服务器生成，禁止公网访问）
 ├── dl/                           # 下载计数与多渠道系统（PHP，仅正式服务器生效）
 │   ├── config.php                # ★ 渠道配置：网盘链接与统计功能读取配置
 │   ├── config.local.php          # 服务器统计密钥（不提交，按示例创建）
@@ -46,15 +53,29 @@ website/
   ③ `dl/data/` 目录需 `chown www:www` 可写；④ 直连渠道的 url 是站点根相对路径，勿改
 - **统计口径**：网盘渠道计的是「点击跳转次数」，实际完成下载以网盘后台为准
 
-## 反馈页（feedback.html）
+## 反馈页与管理员后台
 
-静态表单，无后端：填写 → 实时生成格式化反馈文本 → 两种送达方式：
+访客在 `feedback.html` 可提交 **Bug** 或 **软件收录申请**；浏览器先获取同源 CSRF 令牌，
+服务端再校验类型、长度、官网 URL、蜜罐字段及同一会话的提交间隔，最后用文件锁和原子替换写入
+`feedback/data/feedbacks.json`。不记录 IP、不接受附件；邮件和复制文本仍保留为提交失败时的备用方式。
 
-1. **发送邮件**：mailto 拉起邮件客户端，收件人 `2079937150@qq.com`（git 提交邮箱），
-   主题 / 正文自动填好
-2. **复制文本**：复制按钮兜底，用户自行粘贴到任意渠道
+管理员入口：`https://app.cyhaoka.vip/feedback/admin.php`。登录后可按类型或状态筛选，记录管理员备注，
+将反馈切换为「待处理 / 处理中 / 已解决 / 已关闭」。后台会话使用 Secure、HttpOnly、SameSite=Strict Cookie，
+页面与接口均禁止缓存和嵌入。
 
-必填校验（Bug = 问题描述；收录 = 软件名称 + 官网地址）红框提示，纯前端。
+首次配置（只在服务器执行）：
+
+1. 将 `feedback/config.local.example.php` 复制为 `feedback/config.local.php`。
+2. 使用 PHP 8.2 生成自己选择的密码哈希：
+   `/www/server/php/82/bin/php -r "echo password_hash(trim(fgets(STDIN)), PASSWORD_DEFAULT), PHP_EOL;"`
+   然后将输出填入 `adminPasswordHash`；`adminUser` 可改为自己的账号。
+3. 设置 `config.local.php` 所有者为 `root:www`、权限为 `640`；将 `feedback/data/` 所有者设为 `www:www`。
+4. nginx 至少添加：
+   `location = /feedback/bootstrap.php { return 404; }`
+   `location = /feedback/config.local.php { return 404; }`
+   `location ^~ /feedback/data/ { deny all; }`
+
+实际密码、哈希与反馈数据均在 `.gitignore` 中，绝不可提交或公开。
 
 ## 作者与联系渠道（页脚展示）
 

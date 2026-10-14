@@ -25,3 +25,5 @@ website/download/
 # 服务器本地下载统计密钥与运行时聚合数据，绝不提交。
 website/dl/config.local.php
 website/dl/data/
+website/feedback/config.local.php
+website/feedback/data/

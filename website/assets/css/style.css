@@ -1105,12 +1105,21 @@ code {
   font-weight: 600;
   color: #c42b1c;
 }
+.fb-msg--success { color: #0f7b3c; }
 .fb-note {
   margin-top: 8px;
   font-size: 13px;
   color: var(--text-2);
 }
 .fb-note strong { color: var(--text); }
+.fb-honeypot {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
 
 @media (max-width: 760px) {
   .fb-form.visible { grid-template-columns: 1fr; }
