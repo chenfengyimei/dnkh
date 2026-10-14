@@ -248,15 +248,43 @@ public class SelfUpdaterTests
             File.WriteAllText(exePath, "OLD");
             File.WriteAllText(ready, "NEW");
 
-            // 独占句柄锁住 ready：第二步 Move（ready→exe）抛 IOException，触发回滚
+            // 独占句柄锁住 ready：跨盘安全复制无法开始，当前程序必须保持原样。
             using var lockStream = new FileStream(ready, FileMode.Open, FileAccess.Read, FileShare.None);
 
             Assert.Throws<IOException>(() => SelfUpdater.Apply(ready, exePath));
             Assert.Equal("OLD", File.ReadAllText(exePath));
             Assert.False(File.Exists(exePath + ".old"));
+            Assert.False(File.Exists(exePath + ".update-new"));
         }
         finally
         {
+            Directory.Delete(dir, true);
+        }
+    }
+
+    [Fact]
+    public void EnsureExecutableLocationWritable_AllowsPortableFolderAndRejectsReadOnlyFile()
+    {
+        var dir = TempDir();
+        Directory.CreateDirectory(dir);
+        var exePath = Path.Combine(dir, "Dnkhw.exe");
+        try
+        {
+            File.WriteAllText(exePath, "APP");
+            SelfUpdater.EnsureExecutableLocationWritable(exePath);
+            Assert.Empty(Directory.EnumerateFiles(dir, ".dnkhw-update-probe-*.tmp"));
+
+            File.SetAttributes(exePath, File.GetAttributes(exePath) | FileAttributes.ReadOnly);
+            var ex = Assert.Throws<InvalidOperationException>(
+                () => SelfUpdater.EnsureExecutableLocationWritable(exePath));
+            Assert.Contains("只读", ex.Message);
+        }
+        finally
+        {
+            if (File.Exists(exePath))
+            {
+                File.SetAttributes(exePath, FileAttributes.Normal);
+            }
             Directory.Delete(dir, true);
         }
     }
@@ -301,11 +329,16 @@ public class SelfUpdaterTests
             processId: 1234,
             exePath: @"C:\Program Files\dnkhw\Dnkhw.exe",
             readyPath: @"C:\Users\test\AppData\Local\dnkhw\update\Dnkhw.exe",
+            expectedSha256: new string('A', 64),
+            expectedSize: 123,
+            targetVersion: "1.0.10",
             restartAfterApply: true);
 
         Assert.Contains("Get-Process -Id $processId", script);
         Assert.Contains("Remove-Item -LiteralPath $backup", script);
         Assert.Contains("Move-Item -LiteralPath $target", script);
+        Assert.Contains("Copy-Item -LiteralPath $ready -Destination $staged", script);
+        Assert.Contains("Get-FileSha256 $staged", script);
         Assert.Contains("Start-Process -FilePath $target", script);
         Assert.Contains("Write-UpdateLog", script);
         Assert.Contains("$restart = $true", script);
@@ -328,6 +361,9 @@ public class SelfUpdaterTests
             processId: int.MaxValue,
             exePath: @"C:\dnkhw-test\Dnkhw.exe",
             readyPath: @"C:\dnkhw-test\update\Dnkhw.exe",
+            expectedSha256: new string('A', 64),
+            expectedSize: 1,
+            targetVersion: "1.0.10",
             restartAfterApply: false);
         var powershell = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe");
         using var process = Process.Start(new ProcessStartInfo
@@ -345,5 +381,58 @@ public class SelfUpdaterTests
         var output = process.StandardOutput.ReadToEnd() + process.StandardError.ReadToEnd();
         Assert.True(process.ExitCode == 2,
             $"更新脚本未执行到 ready 检查，exit={process.ExitCode}: {output}");
+    }
+
+    [Fact]
+    public void EncodedHelperScript_AppliesVerifiedPackageWithoutRestart()
+    {
+        var dir = TempDir();
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var exePath = Path.Combine(dir, "Dnkhw.exe");
+            var readyPath = Path.Combine(dir, "ready", "Dnkhw.exe");
+            Directory.CreateDirectory(Path.GetDirectoryName(readyPath)!);
+            File.WriteAllText(exePath, "OLD");
+            var payload = "NEW VERIFIED APPLICATION"u8.ToArray();
+            File.WriteAllBytes(readyPath, payload);
+            var hash = Convert.ToHexString(SHA256.HashData(payload));
+
+            var script = SelfUpdater.BuildHelperScript(
+                processId: int.MaxValue,
+                exePath,
+                readyPath,
+                expectedSha256: hash,
+                expectedSize: payload.LongLength,
+                targetVersion: "1.0.10",
+                restartAfterApply: false);
+            var powershell = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe");
+            using var process = Process.Start(new ProcessStartInfo
+            {
+                FileName = powershell,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardError = true,
+                RedirectStandardOutput = true,
+                ArgumentList = { "-NoProfile", "-NonInteractive", "-EncodedCommand", SelfUpdater.EncodePowerShellCommand(script) },
+            });
+
+            Assert.NotNull(process);
+            Assert.True(process.WaitForExit(15_000), "更新助手未在 15 秒内完成真实替换测试");
+            var output = process.StandardOutput.ReadToEnd() + process.StandardError.ReadToEnd();
+            var helperLog = File.Exists(readyPath + ".apply.log")
+                ? File.ReadAllText(readyPath + ".apply.log")
+                : "(no helper log)";
+            Assert.True(process.ExitCode == 0,
+                $"更新助手替换失败，exit={process.ExitCode}: {output}{Environment.NewLine}{helperLog}");
+            Assert.Equal(payload, File.ReadAllBytes(exePath));
+            Assert.False(File.Exists(readyPath));
+            Assert.False(File.Exists(exePath + ".old"));
+            Assert.False(File.Exists(exePath + ".update-new"));
+        }
+        finally
+        {
+            Directory.Delete(dir, true);
+        }
     }
 }

@@ -16,6 +16,7 @@ public partial class AboutPage : Page
     private readonly UpdateDownloader _updateDownloader = new();
     private UpdateInfo? _availableUpdate;
     private CancellationTokenSource? _updateCts;
+    private bool _updateScheduled;
 
     public AboutPage()
     {
@@ -40,8 +41,8 @@ public partial class AboutPage : Page
     }
 
     /// <summary>
-    /// 手动检查更新：按 Gitee → GitHub → 官网顺序；
-    /// 有新版显示「在线更新」与「前往官网下载」双通道。
+    /// 手动检查更新：并发检查 Gitee、GitHub 与官网；
+    /// 有新版且元数据完整时显示「在线更新」，同时保留官网下载通道。
     /// </summary>
     private async void OnCheckUpdateClick(object sender, RoutedEventArgs e)
     {
@@ -66,9 +67,9 @@ public partial class AboutPage : Page
                     UpdateStatusText.Text =
                         $"发现新版本 v{result.Info!.Version}{(string.IsNullOrEmpty(result.Info.Notes) ? "" : $"：{FirstLine(result.Info.Notes)}")}"
                         + $"（来源：{UpdateChecker.SourceName(result.Info.Source)}）";
-                    UpdateNowButton.Visibility = string.IsNullOrWhiteSpace(result.Info.DirectUrl)
-                        ? Visibility.Collapsed
-                        : Visibility.Visible;
+                    UpdateNowButton.Visibility = CanAutoUpdate(result.Info)
+                        ? Visibility.Visible
+                        : Visibility.Collapsed;
                     break;
                 case UpdateCheckStatus.FetchFailed:
                     UpdateStatusText.Text = $"检查失败：{result.Error}";
@@ -94,10 +95,9 @@ public partial class AboutPage : Page
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(info.DirectUrl) || string.IsNullOrWhiteSpace(info.Sha256))
+        if (!CanAutoUpdate(info))
         {
-            // 无哈希源（如 Gitee）：不自动替换，引导官网
-            UpdateStatusText.Text = "该更新源未提供校验哈希，已为你打开官网下载页";
+            UpdateStatusText.Text = "该更新源缺少完整校验信息，已为你打开官网下载页";
             UpdateStatusText.Visibility = Visibility.Visible;
             OpenExternalLink(ProductLinks.DownloadPage);
             return;
@@ -132,6 +132,9 @@ public partial class AboutPage : Page
 
         try
         {
+            // 安装版默认位于当前用户目录；免安装版可能放在只读目录或受保护位置。
+            // 在下载大文件前先检查，避免下载完成、退出应用后才静默失败。
+            SelfUpdater.EnsureCurrentExecutableCanBeUpdated();
             var readyPath = await _updateDownloader.DownloadAsync(info, progress, _updateCts.Token);
 
             var answer = MessageBox.Show(
@@ -147,7 +150,13 @@ public partial class AboutPage : Page
             else
             {
                 // 保持当前工作不受打断；主程序退出后独立更新器落位新文件。
-                SelfUpdater.ScheduleApplyAfterExit(readyPath, restartAfterApply: false);
+                SelfUpdater.ScheduleApplyAfterExit(
+                    readyPath,
+                    info.Sha256!,
+                    info.SizeBytes!.Value,
+                    info.Version,
+                    restartAfterApply: false);
+                _updateScheduled = true;
                 UpdateStatusText.Text = $"v{info.Version} 已就绪，退出电脑开荒后将自动完成更新";
             }
         }
@@ -165,8 +174,8 @@ public partial class AboutPage : Page
             _updateCts.Dispose();
             _updateCts = null;
             DownloadProgressPanel.Visibility = Visibility.Collapsed;
-            UpdateNowButton.IsEnabled = true;
-            CheckUpdateButton.IsEnabled = true;
+            UpdateNowButton.IsEnabled = !_updateScheduled;
+            CheckUpdateButton.IsEnabled = !_updateScheduled;
         }
     }
 
@@ -177,7 +186,17 @@ public partial class AboutPage : Page
     {
         try
         {
-            SelfUpdater.ScheduleApplyAfterExit(readyPath, restartAfterApply: true);
+            if (_availableUpdate is not { } info || !CanAutoUpdate(info))
+            {
+                throw new InvalidOperationException("更新信息不完整，请重新检查更新");
+            }
+
+            SelfUpdater.ScheduleApplyAfterExit(
+                readyPath,
+                info.Sha256!,
+                info.SizeBytes!.Value,
+                info.Version,
+                restartAfterApply: true);
             // 更新器会在当前进程退出且 Mutex 释放后启动新版本。
             App._singleInstanceMutex?.ReleaseMutex();
             App._singleInstanceMutex?.Dispose();
@@ -204,6 +223,11 @@ public partial class AboutPage : Page
         var version = Assembly.GetExecutingAssembly().GetName().Version;
         return version is null ? "0.0.0" : $"{version.Major}.{version.Minor}.{version.Build}";
     }
+
+    private static bool CanAutoUpdate(UpdateInfo info) =>
+        !string.IsNullOrWhiteSpace(info.DirectUrl)
+        && !string.IsNullOrWhiteSpace(info.Sha256)
+        && info.SizeBytes is > 0;
 
     private static string FirstLine(string text)
     {
