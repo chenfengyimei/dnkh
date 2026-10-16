@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-    <Version>1.0.11</Version>
+    <Version>1.0.12</Version>
     <AssemblyTitle>电脑开荒</AssemblyTitle>
     <Product>电脑开荒（dnkhw）</Product>
     <Description>纯净无广告的 Windows 开荒助手</Description>

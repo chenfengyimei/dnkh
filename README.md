@@ -10,7 +10,7 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-blue)
 ![.NET](https://img.shields.io/badge/.NET-10.0%20LTS-purple)
-![Version](https://img.shields.io/badge/version-1.0.11-0078D4)
+![Version](https://img.shields.io/badge/version-1.0.12-0078D4)
 ![Package](https://img.shields.io/badge/%E5%8F%91%E8%A1%8C%E7%89%88-%E5%AE%89%E8%A3%85%E7%89%88%20%7C%20%E5%85%8D%E5%AE%89%E8%A3%85%E7%89%88-orange)
 
 🌐 **电脑开荒网：[www.cyhaoka.vip](https://www.cyhaoka.vip)** —— 工具导航与使用帮助<br>
@@ -86,7 +86,7 @@ Run 键 + 启动文件夹全枚举，数字签名发布者解析，支持搜索�
 **站外链接自动交给系统默认浏览器**，内嵌仅显示本站内容；无 WebView2 运行时的精简系统会给出安装指引与浏览器兜底。
 
 ### ⚙️ 设置与更新
-主题三态切换（跟随系统/浅色/深色，即时生效）、「记住上次访问的页面」（下次启动直达）、
+主题三态切换（跟随系统/浅色/深色，即时生效；系统主题变化时实时同步）、「记住上次访问的页面」（下次启动直达）、
 打开日志文件夹；关于页「检查更新」**仅在你点击时联网一次**，更新源按
 GitHub Releases → Gitee Releases → 官网 version.json 多级回落（开源仓库建好后即接入）；
 发现新版可**在线更新**：应用内下载 → SHA256 强校验 → 原地替换 → 重启即用。
