@@ -91,4 +91,38 @@ public class AppCatalogTests
 
         Assert.Throws<InvalidOperationException>(() => AppCatalogLoader.Parse(json));
     }
+
+    [Fact]
+    public void BuildInstallArguments_CustomRoot_UsesDedicatedPackageDirectory()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "dnkhw apps");
+
+        var arguments = WingetInstaller.BuildInstallArguments("Vendor.Product", root, interactive: false);
+
+        var locationIndex = arguments.ToList().IndexOf("--location");
+        Assert.True(locationIndex >= 0);
+        Assert.Equal(Path.Combine(root, "Vendor.Product"), arguments[locationIndex + 1]);
+        Assert.Contains("--silent", arguments);
+        Assert.Contains("--disable-interactivity", arguments);
+        Assert.DoesNotContain("--interactive", arguments);
+    }
+
+    [Fact]
+    public void BuildInstallArguments_Interactive_DoesNotDisableInstallerUi()
+    {
+        var arguments = WingetInstaller.BuildInstallArguments(
+            "Vendor.Product",
+            Path.GetTempPath(),
+            interactive: true);
+
+        Assert.Contains("--interactive", arguments);
+        Assert.DoesNotContain("--silent", arguments);
+        Assert.DoesNotContain("--disable-interactivity", arguments);
+    }
+
+    [Fact]
+    public void NormalizeInstallRoot_RejectsRelativePath()
+    {
+        Assert.Throws<ArgumentException>(() => WingetInstaller.NormalizeInstallRoot("apps"));
+    }
 }

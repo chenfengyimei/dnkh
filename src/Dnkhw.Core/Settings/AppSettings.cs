@@ -21,6 +21,9 @@ public sealed class AppSettings
 
     /// <summary>上次访问的页面 key（check/wallpaper/…/settings）。</summary>
     public string? LastPageKey { get; set; }
+
+    /// <summary>APP 推荐使用的安装根目录；每个 winget 包会创建独立子目录。</summary>
+    public string? AppInstallRoot { get; set; }
 }
 
 public static class SettingsStore
@@ -103,6 +106,21 @@ public static class SettingsStore
                 || normalized.Any(char.IsControl)
                 ? null
                 : normalized;
+        }
+
+        if (settings.AppInstallRoot is { } installRoot)
+        {
+            try
+            {
+                var normalized = installRoot.Trim();
+                settings.AppInstallRoot = Path.IsPathFullyQualified(normalized) && normalized.Length <= 180
+                    ? Path.TrimEndingDirectorySeparator(Path.GetFullPath(normalized))
+                    : null;
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                settings.AppInstallRoot = null;
+            }
         }
 
         return settings;

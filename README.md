@@ -10,7 +10,7 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-blue)
 ![.NET](https://img.shields.io/badge/.NET-10.0%20LTS-purple)
-![Version](https://img.shields.io/badge/version-1.0.10-0078D4)
+![Version](https://img.shields.io/badge/version-1.0.11-0078D4)
 ![Package](https://img.shields.io/badge/%E5%8F%91%E8%A1%8C%E7%89%88-%E5%AE%89%E8%A3%85%E7%89%88%20%7C%20%E5%85%8D%E5%AE%89%E8%A3%85%E7%89%88-orange)
 
 🌐 **电脑开荒网：[www.cyhaoka.vip](https://www.cyhaoka.vip)** —— 工具导航与使用帮助<br>
@@ -63,7 +63,8 @@
 
 ### 📦 APP 推荐
 精选 32 款软件、10 大类目（含安全防护、截图录屏等），收录标准只有一条：**官方渠道、无捆绑安装器、无弹窗广告**。
-已安装自动检测，勾选后 winget 静默批量安装，失败可一键重试；不在 winget 库的一键跳官网。
+已安装自动检测；安装前由用户选择根目录，每个软件使用独立子目录，并默认显示安装界面再次确认位置；
+通过 winget 顺序批量安装，失败可一键重试，不在 winget 库的一键跳官网。
 
 ### 🚀 启动项管理
 Run 键 + 启动文件夹全枚举，数字签名发布者解析，支持搜索过滤；
@@ -94,7 +95,7 @@ GitHub Releases → Gitee Releases → 官网 version.json 多级回落（开源
 
 - **软件下载**：[app.cyhaoka.vip](https://app.cyhaoka.vip)（安装版、免安装版与在线更新）
 - **电脑开荒网**：[www.cyhaoka.vip](https://www.cyhaoka.vip)（工具导航与使用帮助）
-- **系统要求**：Windows 10（1709+）/ Windows 11，64 位；**无需安装 .NET 运行时**（内嵌官网页依赖系统 WebView2 运行时，Win10/11 一般随系统自带；缺失时应用会给出安装指引或改用浏览器打开）
+- **兼容目标**：Windows 10 22H2（Build 19045）/ Windows 11，64 位；**无需安装 .NET 运行时**。Windows 10 已结束常规支持，建议安装可用的最新累积更新或 ESU 更新；内嵌官网页依赖 WebView2，缺失时应用会给出安装指引或改用浏览器打开。
 - **安装版（推荐）**：运行 `Dnkhw-vX.Y.Z-Setup.exe`，会创建开始菜单与卸载入口，适合长期使用。
 - **免安装版**：下载 `Dnkhw-vX.Y.Z-Portable.zip` 后先解压，再运行其中的 `Dnkhw.exe`；适合 U 盘或临时使用。
 - **校验**：官网提供 SHA256，可用 `certutil -hashfile Dnkhw.exe SHA256` 核对。
@@ -115,7 +116,7 @@ System.Management (WMI) · P/Invoke（SystemParametersInfo / SHGetKnownFolderPat
 
 ## 从源码构建
 
-前置：Windows + [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
+前置：Windows + [.NET 10 SDK 10.0.4xx](https://dotnet.microsoft.com/download/dotnet/10.0)
 
 ```powershell
 git clone <本仓库地址>
@@ -131,7 +132,7 @@ dotnet run --project src/Dnkhw   # 启动应用
 
 测试覆盖 Core 业务库的纯逻辑：StartupApproved 编解码（含任务管理器真机样本）、
 winget 输出解析、注册表路径构造、下载迁移（临时目录/锁定文件/进度）、
-磁盘扫描聚合、路径/参数边界、清单完整性校验、设置读写、更新检查解析、壁纸接口构造等，157 项全部通过。
+磁盘扫描聚合、路径/参数边界、清单完整性校验、设置读写、更新检查解析、壁纸接口构造等，169 项全部通过。
 
 ## 项目结构
 
@@ -148,7 +149,7 @@ dnkhw/
 │   ├── DiskScan/           #   磁盘分析（只读聚合）
 │   ├── Settings/           #   用户偏好（JSON 原子读写）
 │   └── Update/              #   检查更新（version.json 比对）
-├── src/Dnkhw.Core.Tests/   # xUnit 单元测试（157 项）
+├── src/Dnkhw.Core.Tests/   # xUnit 单元测试（169 项）
 ├── tools/Probe/             # 开发探针：真机调用各 Core 服务的控制台工具
 ├── docs/screenshots/        # 界面截图
 ├── CHANGELOG.md             # 更新日志

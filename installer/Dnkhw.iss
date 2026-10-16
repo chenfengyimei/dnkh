@@ -26,6 +26,9 @@ AppPublisherURL=https://www.cyhaoka.vip
 AppSupportURL=https://www.cyhaoka.vip
 AppUpdatesURL=https://app.cyhaoka.vip/#download
 DefaultDirName={localappdata}\Programs\{#MyAppName}
+; 新装和升级都明确显示安装目录页，用户可选择非系统盘；升级默认保留原目录。
+DisableDirPage=no
+UsePreviousAppDir=yes
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog

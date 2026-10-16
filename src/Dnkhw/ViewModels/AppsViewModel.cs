@@ -1,8 +1,10 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Dnkhw.Core.AppCatalog;
+using Dnkhw.Services;
 
 namespace Dnkhw.ViewModels;
 
@@ -85,6 +87,20 @@ public sealed partial class AppsViewModel : ObservableObject
 
     [ObservableProperty]
     private string? _installSummary;
+
+    [ObservableProperty]
+    private string? _installRoot = AppSettingsService.Current.AppInstallRoot;
+
+    [ObservableProperty]
+    private bool _interactiveInstall = true;
+
+    /// <summary>记录用户明确选择的安装根目录，后续打开页面继续沿用。</summary>
+    public void SetInstallRoot(string installRoot)
+    {
+        InstallRoot = WingetInstaller.NormalizeInstallRoot(installRoot);
+        AppSettingsService.Current.AppInstallRoot = InstallRoot;
+        AppSettingsService.Save();
+    }
 
     [RelayCommand]
     private async Task LoadAsync()
@@ -171,6 +187,19 @@ public sealed partial class AppsViewModel : ObservableObject
             return;
         }
 
+        string installRoot;
+        try
+        {
+            installRoot = WingetInstaller.NormalizeInstallRoot(InstallRoot ?? string.Empty);
+            Directory.CreateDirectory(installRoot);
+        }
+        catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException or NotSupportedException)
+        {
+            NoticeText = $"安装位置不可用：{ex.Message}";
+            NoticeOpen = true;
+            return;
+        }
+
         IsBusy = true;
         NoticeOpen = false;
         var ok = 0;
@@ -183,7 +212,10 @@ public sealed partial class AppsViewModel : ObservableObject
                 row.State = AppRowState.Installing;
                 try
                 {
-                    var result = await _installer.InstallAsync(row.WingetId!);
+                    var result = await _installer.InstallAsync(
+                        row.WingetId!,
+                        installRoot,
+                        InteractiveInstall);
                     if (result.Success)
                     {
                         row.State = AppRowState.Succeeded;

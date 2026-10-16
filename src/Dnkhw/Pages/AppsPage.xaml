@@ -51,6 +51,27 @@
                 </StackPanel>
             </Grid>
 
+            <ui:Card Margin="0,14,0,0" Padding="16">
+                <StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="安装根目录" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                        <ui:TextBox Grid.Column="1" Text="{Binding InstallRoot}" IsReadOnly="True"
+                                    PlaceholderText="安装前请先选择目录，例如 D:\Apps"/>
+                        <ui:Button Grid.Column="2" Content="选择目录" Appearance="Secondary" Margin="10,0,0,0"
+                                   Click="BrowseInstallRoot_Click"/>
+                    </Grid>
+                    <CheckBox Content="显示每个软件的安装界面，可再次确认组件和位置（推荐）"
+                              IsChecked="{Binding InteractiveInstall}" Margin="0,12,0,0"/>
+                    <TextBlock Margin="0,8,0,0" Opacity="0.68" FontSize="12" TextWrapping="Wrap"
+                               Text="每个应用会使用所选目录下的独立子目录。WinGet 仅能为支持自定义位置的软件指定目录；个别安装器可能拒绝或忽略该位置，请在弹出的安装界面再次确认，必要时改用官网安装。下载过程仍可能短暂使用系统临时目录，安装完成后由安装器清理。"/>
+                </StackPanel>
+            </ui:Card>
+
             <ui:InfoBar Margin="0,14,0,0" IsOpen="{Binding NoticeOpen, Mode=TwoWay}"
                         Title="{Binding NoticeText}" Severity="Informational" IsClosable="True"/>
 

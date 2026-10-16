@@ -6,11 +6,14 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-    <Version>1.0.10</Version>
+    <Version>1.0.11</Version>
     <AssemblyTitle>电脑开荒</AssemblyTitle>
     <Product>电脑开荒（dnkhw）</Product>
     <Description>纯净无广告的 Windows 开荒助手</Description>
     <ApplicationIcon>Assets\Icons\app-icon.ico</ApplicationIcon>
+    <!-- .NET 9/10 的 CET 标记会让补丁较旧的 Win10 22H2 在进入托管代码前崩溃（0x80131506）。
+         关闭可选 CET 标记以兼容这些仍在使用的系统；自包含发布仍使用受支持的 .NET 10 LTS。 -->
+    <CETCompat>false</CETCompat>
     <!-- 发布产物保持单文件：WebView2 等包自带的 XML 文档不随 publish 复制 -->
     <PublishDocumentationFiles>false</PublishDocumentationFiles>
   </PropertyGroup>

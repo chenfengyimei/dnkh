@@ -72,9 +72,32 @@ try {
 
     New-Item -ItemType Directory -Path $outputFull -Force | Out-Null
     foreach ($name in $expected) {
+        $stalePrefix = ".$name.new-"
+        Get-ChildItem -LiteralPath $outputFull -File | Where-Object {
+            $_.Name.StartsWith($stalePrefix, [StringComparison]::Ordinal)
+        } | ForEach-Object {
+            Remove-Item -LiteralPath $_.FullName -Force
+        }
+    }
+
+    foreach ($name in $expected) {
         $incoming = Join-Path $outputFull (".$name.new-" + [Guid]::NewGuid().ToString("N"))
-        Copy-Item -LiteralPath (Join-Path $artifactDir $name) -Destination $incoming
-        Move-Item -LiteralPath $incoming -Destination (Join-Path $outputFull $name) -Force
+        $destination = Join-Path $outputFull $name
+        $backup = Join-Path $outputFull (".$name.backup-" + [Guid]::NewGuid().ToString("N"))
+        try {
+            Copy-Item -LiteralPath (Join-Path $artifactDir $name) -Destination $incoming
+            if (Test-Path -LiteralPath $destination) {
+                [System.IO.File]::Replace($incoming, $destination, $backup)
+                Remove-Item -LiteralPath $backup -Force -ErrorAction SilentlyContinue
+            } else {
+                Move-Item -LiteralPath $incoming -Destination $destination
+            }
+        } finally {
+            Remove-Item -LiteralPath $incoming -Force -ErrorAction SilentlyContinue
+            if ((Test-Path -LiteralPath $backup) -and (Test-Path -LiteralPath $destination)) {
+                Remove-Item -LiteralPath $backup -Force -ErrorAction SilentlyContinue
+            }
+        }
     }
 
     Write-Host "Packaged v${version}:"

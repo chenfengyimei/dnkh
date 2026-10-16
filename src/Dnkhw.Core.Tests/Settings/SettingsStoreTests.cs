@@ -15,6 +15,7 @@ public class SettingsStoreTests
         Assert.Equal(AppTheme.Follow, settings.Theme);
         Assert.True(settings.RememberLastPage);
         Assert.Null(settings.LastPageKey);
+        Assert.Null(settings.AppInstallRoot);
     }
 
     [Fact]
@@ -28,6 +29,7 @@ public class SettingsStoreTests
                 Theme = AppTheme.Dark,
                 RememberLastPage = false,
                 LastPageKey = "wallpaper",
+                AppInstallRoot = Path.Combine(Path.GetTempPath(), "dnkhw-apps"),
             };
             SettingsStore.Save(settings, path);
             var loaded = SettingsStore.Load(path);
@@ -35,6 +37,7 @@ public class SettingsStoreTests
             Assert.Equal(AppTheme.Dark, loaded.Theme);
             Assert.False(loaded.RememberLastPage);
             Assert.Equal("wallpaper", loaded.LastPageKey);
+            Assert.Equal(settings.AppInstallRoot, loaded.AppInstallRoot);
         }
         finally
         {
@@ -108,6 +111,24 @@ public class SettingsStoreTests
 
             Assert.Equal(AppTheme.Follow, settings.Theme);
             Assert.Null(settings.LastPageKey);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void Load_RelativeAppInstallRoot_IsDiscarded()
+    {
+        var path = TempJsonPath();
+        try
+        {
+            File.WriteAllText(path, """{ "AppInstallRoot": "relative\\apps" }""");
+
+            var settings = SettingsStore.Load(path);
+
+            Assert.Null(settings.AppInstallRoot);
         }
         finally
         {

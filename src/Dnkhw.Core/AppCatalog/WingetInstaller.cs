@@ -53,7 +53,7 @@ public sealed partial class WingetInstaller
         }
     }
 
-    /// <summary>安装指定 winget 包（--silent 全静默），失败时返回完整输出便于排错。</summary>
+    /// <summary>按软件默认位置静默安装。仅供无需选择目录的现有入口使用。</summary>
     public Task<WingetResult> InstallAsync(string wingetId, CancellationToken ct = default)
     {
         if (!IsValidWingetId(wingetId))
@@ -61,9 +61,80 @@ public sealed partial class WingetInstaller
             throw new ArgumentException("winget 包标识格式无效", nameof(wingetId));
         }
 
-        return RunAsync(
-            ["install", "--id", wingetId, "-e", "--silent", "--accept-package-agreements", "--accept-source-agreements", "--disable-interactivity"],
-            ct);
+        return RunAsync(BuildInstallArguments(wingetId, installRoot: null, interactive: false), ct);
+    }
+
+    /// <summary>
+    /// 安装到用户选择的根目录。每个包使用独立的 wingetId 子目录，避免多个软件互相覆盖。
+    /// WinGet 只会在安装器清单支持位置参数时可靠传递 --location；调用方应提供交互确认或官网兜底。
+    /// </summary>
+    public Task<WingetResult> InstallAsync(
+        string wingetId,
+        string installRoot,
+        bool interactive,
+        CancellationToken ct = default)
+    {
+        if (!IsValidWingetId(wingetId))
+        {
+            throw new ArgumentException("winget 包标识格式无效", nameof(wingetId));
+        }
+
+        var normalizedRoot = NormalizeInstallRoot(installRoot);
+        Directory.CreateDirectory(normalizedRoot);
+        return RunAsync(BuildInstallArguments(wingetId, normalizedRoot, interactive), ct);
+    }
+
+    /// <summary>规范化用户选择的应用安装根目录，只接受本机绝对路径。</summary>
+    public static string NormalizeInstallRoot(string installRoot)
+    {
+        if (string.IsNullOrWhiteSpace(installRoot))
+        {
+            throw new ArgumentException("请先选择应用安装位置", nameof(installRoot));
+        }
+
+        var trimmed = installRoot.Trim();
+        if (!Path.IsPathFullyQualified(trimmed))
+        {
+            throw new ArgumentException("应用安装位置必须是完整路径", nameof(installRoot));
+        }
+
+        var normalized = Path.TrimEndingDirectorySeparator(Path.GetFullPath(trimmed));
+        if (normalized.Length > 180)
+        {
+            throw new ArgumentException("应用安装位置过长，请选择更短的路径", nameof(installRoot));
+        }
+
+        return normalized;
+    }
+
+    internal static IReadOnlyList<string> BuildInstallArguments(
+        string wingetId,
+        string? installRoot,
+        bool interactive)
+    {
+        if (!IsValidWingetId(wingetId))
+        {
+            throw new ArgumentException("winget 包标识格式无效", nameof(wingetId));
+        }
+
+        var arguments = new List<string> { "install", "--id", wingetId, "-e" };
+        arguments.Add(interactive ? "--interactive" : "--silent");
+
+        if (installRoot is not null)
+        {
+            var packageLocation = Path.Combine(NormalizeInstallRoot(installRoot), wingetId);
+            arguments.Add("--location");
+            arguments.Add(packageLocation);
+        }
+
+        arguments.Add("--accept-package-agreements");
+        arguments.Add("--accept-source-agreements");
+        if (!interactive)
+        {
+            arguments.Add("--disable-interactivity");
+        }
+
+        return arguments;
     }
 
     /// <summary>执行任意 winget 命令（探针用于 winget show / 失败路径验证）。</summary>
