@@ -24,6 +24,14 @@ public static class WallpaperService
             throw new FileNotFoundException("壁纸文件不存在", path);
         }
 
+        var extension = Path.GetExtension(path);
+        if (!extension.Equals(".bmp", StringComparison.OrdinalIgnoreCase)
+            && !extension.Equals(".jpg", StringComparison.OrdinalIgnoreCase)
+            && !extension.Equals(".jpeg", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidDataException("Windows 壁纸接口仅支持 BMP/JPG，请先转换图片格式");
+        }
+
         // 填充模式映射：WallpaperStyle 0=平铺/居中, 2=拉伸, 6=适应, 10=填充；TileWallpaper 1=平铺
         var (style, tile) = fit switch
         {

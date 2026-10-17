@@ -23,6 +23,9 @@ public partial class App : Application
         }
 
         RegisterGlobalExceptionHandlers();
+        LogService.StartSession();
+        LogService.Info("应用启动流程开始");
+        LogService.Info($"启动设置：Theme={AppSettingsService.Current.Theme}；RememberLastPage={AppSettingsService.Current.RememberLastPage}；LastPage={AppSettingsService.Current.LastPageKey ?? "(无)"}；AppInstallRoot={AppSettingsService.Current.AppInstallRoot ?? "(未选择)"}");
 
         // 上次在线升级的残留清理（旧 .old 与过期下载包），失败无害
         SelfUpdater.CleanupOldBinary();
@@ -98,7 +101,10 @@ public partial class App : Application
             Clipboard.SetText($"""
                 电脑开荒未处理异常
                 {ex.GetType().Name}: {ex.Message}
+                HResult: 0x{ex.HResult:X8}
                 {ex.StackTrace}
+
+                诊断日志：{LogService.CurrentLogPath}
                 """);
         }
         catch
@@ -108,7 +114,7 @@ public partial class App : Application
 
         var result = MessageBox.Show(
             MainWindow,
-            $"遇到未处理的错误：{ex.Message}\n\n错误详情已复制到剪贴板，完整记录见日志文件夹。\n是否继续运行？（选择「否」将退出程序）",
+            $"遇到未处理的错误：{ex.Message}\n\n错误详情已复制到剪贴板，完整记录已写入：\n{LogService.CurrentLogPath}\n\n是否继续运行？（选择「否」将退出程序）",
             "电脑开荒",
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning);

@@ -89,6 +89,7 @@ public partial class SplashWindow : Window
         {
             // 启动动画任何异常都不能卡住首次启动
             Trace.WriteLine($"Splash error: {ex.Message}");
+            LogService.Error("启动动画执行失败", ex);
             Close();
         }
     }

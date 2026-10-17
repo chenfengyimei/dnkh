@@ -29,7 +29,7 @@ public sealed record WallpaperFetchResult(IReadOnlyList<BingWallpaper> Items, st
 public sealed partial class WallpaperViewModel : ObservableObject
 {
     private readonly BingWallpaperService _bing = new();
-    private readonly WallpaperStore _store = new();
+    private readonly WallpaperStore? _store;
     private readonly WingetInstaller _winget = new();
 
     private const string TranslucentTbWingetId = "CharlesMilette.TranslucentTB";
@@ -116,6 +116,26 @@ public sealed partial class WallpaperViewModel : ObservableObject
     {
         _selectedFit = FitOptions[0];
         _selectedMarket = MarketOptions[0];
+
+        try
+        {
+            _store = new WallpaperStore();
+            LogService.Info($"壁纸页初始化：缓存目录={_store.Directory}");
+            if (_store.InitializationWarning is not null)
+            {
+                LogService.Warn($"壁纸缓存目录回退：{_store.InitializationWarning}");
+                NoticeText = "系统“图片”文件夹不可用，已改用本地应用数据目录保存壁纸";
+                NoticeOpen = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            _store = null;
+            LogService.Error("壁纸页初始化失败：所有缓存目录均不可用", ex);
+            NoticeText = "壁纸缓存目录不可用；页面仍可打开，请在“设置 → 打开诊断日志”中发送日志排查";
+            NoticeOpen = true;
+        }
+
         LoadTweakStates();
     }
 
@@ -174,11 +194,13 @@ public sealed partial class WallpaperViewModel : ObservableObject
         try
         {
             await Task.Run(() => DesktopTweaksService.SetDesktopIconsHidden(target));
+            LogService.Info($"壁纸开荒：桌面图标隐藏状态已设置为 {target}");
             NoticeText = target ? "桌面图标已隐藏（桌面右键「查看」可随时恢复）" : "桌面图标已恢复显示";
             NoticeOpen = true;
         }
         catch (Exception ex)
         {
+            LogService.Error($"壁纸开荒：设置桌面图标隐藏状态失败；目标={target}", ex);
             DesktopIconsHidden = !target;
             NoticeText = $"操作失败：{ex.Message}";
             NoticeOpen = true;
@@ -192,11 +214,13 @@ public sealed partial class WallpaperViewModel : ObservableObject
         try
         {
             await Task.Run(() => DesktopTweaksService.SetTaskbarAutoHide(target));
+            LogService.Info($"壁纸开荒：任务栏自动隐藏状态已设置为 {target}");
             NoticeText = target ? "任务栏已自动隐藏（鼠标移至屏幕底部显示）" : "任务栏已恢复常驻显示";
             NoticeOpen = true;
         }
         catch (Exception ex)
         {
+            LogService.Error($"壁纸开荒：设置任务栏自动隐藏失败；目标={target}", ex);
             TaskbarAutoHide = !target;
             NoticeText = $"操作失败：{ex.Message}";
             NoticeOpen = true;
@@ -219,18 +243,21 @@ public sealed partial class WallpaperViewModel : ObservableObject
             var result = await Task.Run(() => _winget.InstallAsync(TranslucentTbWingetId));
             if (result.Success)
             {
+                LogService.Info("壁纸开荒：TranslucentTB 安装完成");
                 TranslucentInstalled = true;
                 NoticeText = "TranslucentTB 安装完成：托盘图标右键即可打开设置";
                 NoticeOpen = true;
             }
             else
             {
+                LogService.Warn($"壁纸开荒：TranslucentTB 安装失败；ExitCode={result.ExitCode}；输出={FirstMeaningfulLine(result.Output)}");
                 NoticeText = $"安装失败：{FirstMeaningfulLine(result.Output)}（可改用教程手动安装）";
                 NoticeOpen = true;
             }
         }
         catch (Exception ex)
         {
+            LogService.Error("壁纸开荒：TranslucentTB 安装过程异常", ex);
             NoticeText = $"安装失败：{ex.Message}（可改用教程手动安装）";
             NoticeOpen = true;
         }
@@ -275,18 +302,21 @@ public sealed partial class WallpaperViewModel : ObservableObject
             var result = await Task.Run(() => _winget.InstallAsync(SteamWingetId));
             if (result.Success)
             {
+                LogService.Info("壁纸开荒：Steam 安装完成");
                 SteamInstalled = true;
                 NoticeText = "Steam 安装完成：登录账号后到商店页购买壁纸引擎即可";
                 NoticeOpen = true;
             }
             else
             {
+                LogService.Warn($"壁纸开荒：Steam 安装失败；ExitCode={result.ExitCode}；输出={FirstMeaningfulLine(result.Output)}");
                 NoticeText = $"Steam 安装失败：{FirstMeaningfulLine(result.Output)}（可点「打开 Steam 商店页」用浏览器下载安装器）";
                 NoticeOpen = true;
             }
         }
         catch (Exception ex)
         {
+            LogService.Error("壁纸开荒：Steam 安装过程异常", ex);
             NoticeText = $"Steam 安装失败：{ex.Message}（可点「打开 Steam 商店页」用浏览器下载安装器）";
             NoticeOpen = true;
         }
@@ -316,6 +346,7 @@ public sealed partial class WallpaperViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            LogService.Warn($"壁纸开荒：无法打开 {displayName}；目标协议={new Uri(target).Scheme}", ex);
             NoticeText = $"无法打开 {displayName}：{ex.Message}";
             NoticeOpen = true;
         }
@@ -338,10 +369,16 @@ public sealed partial class WallpaperViewModel : ObservableObject
             return;
         }
 
+        if (!EnsureStoreAvailable())
+        {
+            return;
+        }
+
         IsBusy = true;
         NoticeOpen = false;
         try
         {
+            LogService.Info($"壁纸开荒：开始加载 Bing 壁纸；市场={SelectedMarket?.Code ?? "zh-CN"}；偏移=0");
             _pageOffset = 0;
             var fetch = await FetchRemoteAsync(0);
             var remoteViews = await BuildViewsAsync(fetch.Items);
@@ -350,6 +387,7 @@ public sealed partial class WallpaperViewModel : ObservableObject
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
             Items = [.. remoteViews, .. LocalCacheExtras(recentNames)];
+            LogService.Info($"壁纸开荒：壁纸列表加载完成；远程={remoteViews.Count}；合计={Items.Count}；网络错误={fetch.Error ?? "无"}");
             HasLoaded = true;
             CanLoadMore = remoteViews.Count > 0;
             if (fetch.Error is not null)
@@ -360,6 +398,7 @@ public sealed partial class WallpaperViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            LogService.Error($"壁纸开荒：加载壁纸列表失败；市场={SelectedMarket?.Code ?? "zh-CN"}", ex);
             NoticeText = $"加载壁纸失败：{ex.Message}";
             NoticeOpen = true;
         }
@@ -378,10 +417,16 @@ public sealed partial class WallpaperViewModel : ObservableObject
             return;
         }
 
+        if (!EnsureStoreAvailable())
+        {
+            return;
+        }
+
         IsBusy = true;
         try
         {
             var nextOffset = _pageOffset + 8;
+            LogService.Info($"壁纸开荒：加载更多 Bing 壁纸；市场={SelectedMarket?.Code ?? "zh-CN"}；偏移={nextOffset}");
             var fetch = await FetchRemoteAsync(nextOffset);
             if (fetch.Error is not null)
             {
@@ -418,6 +463,7 @@ public sealed partial class WallpaperViewModel : ObservableObject
 
             // 新页插在远程壁纸之后、本地缓存补充之前
             Items = [.. remoteItems, .. fresh, .. localItems];
+            LogService.Info($"壁纸开荒：加载更多完成；新增={fresh.Count}；合计={Items.Count}");
 
             // idx 上限 15：偏移 8 后再翻需要 16，已不可整页回看
             CanLoadMore = _pageOffset + 8 <= 15;
@@ -429,6 +475,7 @@ public sealed partial class WallpaperViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            LogService.Error($"壁纸开荒：加载更多失败；市场={SelectedMarket?.Code ?? "zh-CN"}；当前偏移={_pageOffset}", ex);
             CanLoadMore = false;
             NoticeText = $"加载更多失败：{ex.Message}";
             NoticeOpen = true;
@@ -448,6 +495,7 @@ public sealed partial class WallpaperViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            LogService.Warn($"壁纸开荒：Bing 接口请求失败；市场={SelectedMarket?.Code ?? "zh-CN"}；偏移={offset}", ex);
             return new WallpaperFetchResult([], ex.Message);
         }
     }
@@ -460,7 +508,7 @@ public sealed partial class WallpaperViewModel : ObservableObject
             string? thumbPath = null;
             try
             {
-                thumbPath = await _store.DownloadThumbAsync(w);
+                thumbPath = await _store!.DownloadThumbAsync(w);
             }
             catch (Exception ex)
             {
@@ -468,7 +516,7 @@ public sealed partial class WallpaperViewModel : ObservableObject
                 LogService.Warn($"下载壁纸缩略图失败：{w.Title}", ex);
             }
 
-            var fullPath = _store.GetFullPath(w.FullFileName);
+            var fullPath = _store!.GetFullPath(w.FullFileName);
             items.Add(new WallpaperView(
                 w.Title,
                 FormatDate(w.EndDate),
@@ -486,7 +534,7 @@ public sealed partial class WallpaperViewModel : ObservableObject
     private List<WallpaperView> LocalCacheExtras(HashSet<string> recentNames)
     {
         var extras = new List<WallpaperView>();
-        foreach (var file in _store.GetCachedFiles())
+        foreach (var file in _store!.GetCachedFiles())
         {
             if (!recentNames.Contains(Path.GetFileName(file)))
             {
@@ -512,6 +560,11 @@ public sealed partial class WallpaperViewModel : ObservableObject
             return;
         }
 
+        if (!EnsureStoreAvailable())
+        {
+            return;
+        }
+
         IsBusy = true;
         NoticeOpen = false;
         try
@@ -523,7 +576,8 @@ public sealed partial class WallpaperViewModel : ObservableObject
             }
             else if (view.Source is not null)
             {
-                path = await _store.DownloadAsync(view.Source.FullUrl, view.Source.FullFileName);
+                LogService.Info($"壁纸开荒：开始下载原图；Id={view.Source.Id}；文件={view.Source.FullFileName}");
+                path = await _store!.DownloadAsync(view.Source.FullUrl, view.Source.FullFileName);
                 Items = Items.Select(i => ReferenceEquals(i, view)
                     ? i with { IsDownloaded = true, FullPath = path }
                     : i).ToArray();
@@ -533,12 +587,16 @@ public sealed partial class WallpaperViewModel : ObservableObject
                 return;
             }
 
-            WallpaperService.Set(path, SelectedFit?.Fit ?? WallpaperFit.Fill);
+            var fit = SelectedFit?.Fit ?? WallpaperFit.Fill;
+            var compatiblePath = WallpaperImageCompatibility.Prepare(path);
+            WallpaperService.Set(compatiblePath, fit);
+            LogService.Info($"壁纸开荒：设置壁纸成功；文件={Path.GetFileName(path)}；系统文件={Path.GetFileName(compatiblePath)}；模式={fit}；来源={(view.IsLocal ? "本地缓存" : "Bing")}");
             NoticeText = $"已设置壁纸：{view.Title}";
             NoticeOpen = true;
         }
         catch (Exception ex)
         {
+            LogService.Error($"壁纸开荒：设置壁纸失败；标题={view.Title}；模式={SelectedFit?.Fit ?? WallpaperFit.Fill}", ex);
             NoticeText = $"设置失败：{ex.Message}";
             NoticeOpen = true;
         }
@@ -563,12 +621,16 @@ public sealed partial class WallpaperViewModel : ObservableObject
 
         try
         {
-            WallpaperService.Set(dialog.FileName, SelectedFit?.Fit ?? WallpaperFit.Fill);
+            var fit = SelectedFit?.Fit ?? WallpaperFit.Fill;
+            var compatiblePath = WallpaperImageCompatibility.Prepare(dialog.FileName);
+            WallpaperService.Set(compatiblePath, fit);
+            LogService.Info($"壁纸开荒：本地壁纸设置成功；文件={Path.GetFileName(dialog.FileName)}；扩展名={Path.GetExtension(dialog.FileName)}；模式={fit}");
             NoticeText = $"已设置壁纸：{Path.GetFileName(dialog.FileName)}";
             NoticeOpen = true;
         }
         catch (Exception ex)
         {
+            LogService.Error($"壁纸开荒：设置本地壁纸失败；文件={Path.GetFileName(dialog.FileName)}；扩展名={Path.GetExtension(dialog.FileName)}；模式={SelectedFit?.Fit ?? WallpaperFit.Fill}", ex);
             NoticeText = $"设置失败：{ex.Message}";
             NoticeOpen = true;
         }
@@ -578,4 +640,17 @@ public sealed partial class WallpaperViewModel : ObservableObject
         => DateTime.TryParseExact(endDate, "yyyyMMdd", null, System.Globalization.DateTimeStyles.None, out var d)
             ? $"{d.Month}月{d.Day}日 {d:ddd}"
             : endDate;
+
+    private bool EnsureStoreAvailable()
+    {
+        if (_store is not null)
+        {
+            return true;
+        }
+
+        LogService.Warn("壁纸开荒：操作已阻止，因为壁纸缓存目录初始化失败");
+        NoticeText = "壁纸缓存目录不可用；请打开“设置 → 诊断日志”并发送 dnkhw.log";
+        NoticeOpen = true;
+        return false;
+    }
 }

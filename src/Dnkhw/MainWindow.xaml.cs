@@ -20,8 +20,8 @@ public partial class MainWindow : FluentWindow
     {
         AppNavigation.Initialize(RootNavigation);
         RootNavigation.SetPageProviderService(new PageProviderService());
-        RootNavigation.Navigate(ResolveInitialPage());
         RootNavigation.Navigated += OnRootNavigationNavigated;
+        RootNavigation.Navigate(ResolveInitialPage());
     }
 
     private void OnRootNavigationNavigated(NavigationView sender, NavigatedEventArgs args)
@@ -35,6 +35,7 @@ public partial class MainWindow : FluentWindow
         };
         if (pageType is not null)
         {
+            LogService.Info($"导航页面：{pageType.Name}");
             AppNavigation.RememberPage(pageType);
         }
     }

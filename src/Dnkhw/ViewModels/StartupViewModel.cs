@@ -97,6 +97,7 @@ public sealed partial class StartupViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            LogService.Error("启动项管理：读取启动项失败", ex);
             NoticeText = $"读取启动项失败：{ex.Message}";
             NoticeOpen = true;
         }
@@ -160,12 +161,14 @@ public sealed partial class StartupViewModel : ObservableObject
         }
         catch (UnauthorizedAccessException)
         {
+            LogService.Warn($"启动项管理：权限不足；项目={row.Name}；目标状态={target}");
             row.IsEnabled = !target;
             NoticeText = "该操作需要管理员权限，请点击「以管理员身份重启」后重试";
             NoticeOpen = true;
         }
         catch (Exception ex)
         {
+            LogService.Error($"启动项管理：切换失败；项目={row.Name}；目标状态={target}", ex);
             row.IsEnabled = !target;
             NoticeText = $"操作失败：{ex.Message}";
             NoticeOpen = true;

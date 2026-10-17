@@ -1,4 +1,5 @@
 using System.Net.Http;
+using System.Security;
 
 namespace Dnkhw.Core.Wallpaper;
 
@@ -18,14 +19,90 @@ public sealed class WallpaperStore
 
     public string Directory { get; }
 
+    /// <summary>默认“图片”目录不可用、已回退到应用数据目录时的诊断说明。</summary>
+    public string? InitializationWarning { get; }
+
     public WallpaperStore(string? directory = null, HttpMessageHandler? handler = null)
     {
         _http = handler is null
             ? new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromSeconds(60) }
             : new HttpClient(handler, disposeHandler: false) { Timeout = TimeSpan.FromSeconds(60) };
-        Directory = Path.GetFullPath(directory
-            ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "dnkhw", "Wallpapers"));
-        System.IO.Directory.CreateDirectory(Directory);
+        if (directory is not null)
+        {
+            Directory = Path.GetFullPath(directory);
+            System.IO.Directory.CreateDirectory(Directory);
+            return;
+        }
+
+        (Directory, InitializationWarning) = CreateDefaultDirectory();
+    }
+
+    /// <summary>
+    /// Windows 10 上“图片”可能被 OneDrive、已移除磁盘或企业策略重定向到不可用路径。
+    /// 依次尝试图片目录、本地应用数据目录和临时目录，保证页面仍能打开并给出可诊断结果。
+    /// </summary>
+    private static (string Directory, string? Warning) CreateDefaultDirectory()
+    {
+        var pictures = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+        var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        var temp = Path.GetTempPath();
+        var candidates = BuildDefaultDirectoryCandidates(pictures, localAppData, temp);
+        var failures = new List<Exception>();
+
+        foreach (var candidate in candidates)
+        {
+            try
+            {
+                var fullPath = Path.GetFullPath(candidate);
+                System.IO.Directory.CreateDirectory(fullPath);
+                var warning = failures.Count == 0 && !string.IsNullOrWhiteSpace(pictures)
+                    ? null
+                    : $"系统图片目录不可用，壁纸缓存已回退到 {fullPath}"
+                        + (failures.Count > 0 ? $"；首个错误：{failures[0].Message}" : string.Empty);
+                return (fullPath, warning);
+            }
+            catch (Exception ex) when (ex is
+                ArgumentException or
+                NotSupportedException or
+                PathTooLongException or
+                UnauthorizedAccessException or
+                IOException or
+                SecurityException)
+            {
+                failures.Add(ex);
+            }
+        }
+
+        throw new InvalidOperationException(
+            "无法创建壁纸缓存目录，请检查“图片”文件夹及本地应用数据目录权限",
+            new AggregateException(failures));
+    }
+
+    internal static IReadOnlyList<string> BuildDefaultDirectoryCandidates(
+        string? picturesDirectory,
+        string? localAppDataDirectory,
+        string? tempDirectory)
+    {
+        var candidates = new List<string>();
+
+        static void AddCandidate(List<string> target, string? baseDirectory)
+        {
+            if (string.IsNullOrWhiteSpace(baseDirectory))
+            {
+                return;
+            }
+
+            var candidate = Path.Combine(baseDirectory, "dnkhw", "Wallpapers");
+            if (!target.Contains(candidate, StringComparer.OrdinalIgnoreCase))
+            {
+                target.Add(candidate);
+            }
+        }
+
+        AddCandidate(candidates, picturesDirectory);
+        AddCandidate(candidates, localAppDataDirectory);
+        AddCandidate(candidates, tempDirectory);
+        return candidates;
     }
 
     public string GetFullPath(string fileName)

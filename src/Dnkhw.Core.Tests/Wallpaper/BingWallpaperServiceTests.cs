@@ -67,6 +67,51 @@ public class BingWallpaperServiceTests
     }
 
     [Fact]
+    public void WallpaperStore_DefaultCandidates_EmptyPicturesFallsBackToLocalAppData()
+    {
+        var candidates = WallpaperStore.BuildDefaultDirectoryCandidates(
+            picturesDirectory: string.Empty,
+            localAppDataDirectory: @"C:\Users\tester\AppData\Local",
+            tempDirectory: @"C:\Temp");
+
+        Assert.Equal(
+            [@"C:\Users\tester\AppData\Local\dnkhw\Wallpapers", @"C:\Temp\dnkhw\Wallpapers"],
+            candidates);
+        Assert.All(candidates, path => Assert.True(Path.IsPathFullyQualified(path)));
+    }
+
+    [Fact]
+    public void WallpaperStore_DefaultCandidates_DeduplicatesRedirectedFolders()
+    {
+        var candidates = WallpaperStore.BuildDefaultDirectoryCandidates(
+            picturesDirectory: @"D:\Pictures",
+            localAppDataDirectory: @"D:\Pictures",
+            tempDirectory: @"C:\Temp");
+
+        Assert.Equal(2, candidates.Count);
+        Assert.Equal(@"D:\Pictures\dnkhw\Wallpapers", candidates[0]);
+    }
+
+    [Fact]
+    public void WallpaperService_RejectsPngBeforeCallingWindowsApi()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"dnkhw-wallpaper-{Guid.NewGuid():N}.png");
+        try
+        {
+            File.WriteAllBytes(path, [0x89, 0x50, 0x4E, 0x47]);
+
+            var exception = Assert.Throws<InvalidDataException>(() =>
+                WallpaperService.Set(path, WallpaperFit.Fill));
+
+            Assert.Contains("BMP/JPG", exception.Message);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
     public void BuildThumbUrl_AppendsThumbResolution()
     {
         Assert.Equal("https://www.bing.com/th?id=OHR.Abc_400x240.jpg", BingWallpaperService.BuildThumbUrl("/th?id=OHR.Abc"));

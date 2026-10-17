@@ -168,6 +168,7 @@ public sealed partial class CheckViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            LogService.Error("开荒检查：系统检查失败", ex);
             NoticeText = $"系统检查失败：{ex.Message}";
             NoticeOpen = true;
         }
@@ -200,6 +201,7 @@ public sealed partial class CheckViewModel : ObservableObject
             }
             catch (Exception ex)
             {
+                LogService.Error($"开荒检查：导出报告失败；目标={dialog.FileName}", ex);
                 NoticeText = $"导出报告失败：{ex.Message}";
                 NoticeOpen = true;
             }

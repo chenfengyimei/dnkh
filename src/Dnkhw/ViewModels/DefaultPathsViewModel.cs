@@ -115,6 +115,7 @@ public sealed partial class DefaultPathsViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            LogService.Error("默认路径换盘：读取文件夹和磁盘状态失败", ex);
             NoticeText = $"读取状态失败：{ex.Message}";
             NoticeOpen = true;
         }
@@ -199,6 +200,7 @@ public sealed partial class DefaultPathsViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            LogService.Error($"默认路径换盘：读取文件夹详情失败；文件夹={folder.Name}；路径={folder.CurrentPath}", ex);
             if (loadVersion == Volatile.Read(ref _detailLoadVersion))
             {
                 NoticeText = $"读取「{folder.Name}」状态失败：{ex.Message}";
@@ -295,12 +297,14 @@ public sealed partial class DefaultPathsViewModel : ObservableObject
         }
         catch (OperationCanceledException)
         {
+            LogService.Info($"默认路径换盘：用户取消迁移；文件夹={folder.Name}");
             // 中断不产生不一致：系统指向未变更；已移动的文件留在新位置，重新迁移会继续
             NoticeText = "已取消迁移：系统指向未修改；已移动的文件保留在新位置，重新执行迁移即可继续";
             NoticeOpen = true;
         }
         catch (Exception ex)
         {
+            LogService.Error($"默认路径换盘：迁移失败；文件夹={folder.Name}；目标盘={SelectedDrive?.Root ?? "(未选择)"}", ex);
             NoticeText = $"迁移失败：{ex.Message}";
             NoticeOpen = true;
         }
@@ -348,6 +352,7 @@ public sealed partial class DefaultPathsViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            LogService.Error($"默认路径换盘：还原失败；文件夹={folder.Name}", ex);
             NoticeText = $"还原失败：{ex.Message}";
             NoticeOpen = true;
         }
@@ -371,6 +376,7 @@ public sealed partial class DefaultPathsViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            LogService.Warn($"默认路径换盘：无法打开浏览器设置；浏览器={browser.Name}", ex);
             NoticeText = $"无法打开 {browser.Name} 设置：{ex.Message}";
             NoticeOpen = true;
         }

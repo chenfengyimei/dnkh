@@ -48,6 +48,7 @@ public partial class AppsPage : Page
             }
             catch (Exception ex)
             {
+                LogService.Error($"APP 推荐：用户选择的安装目录不可用；目录={dialog.FolderName}", ex);
                 MessageBox.Show(
                     Window.GetWindow(this),
                     $"无法使用该安装位置：{ex.Message}",

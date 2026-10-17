@@ -19,11 +19,16 @@ public partial class SettingsPage : Page
     {
         try
         {
-            LogService.OpenInExplorer();
+            LogService.OpenCurrentLog();
         }
         catch (Exception ex)
         {
-            LogService.Warn("打开日志文件夹失败", ex);
+            LogService.Warn("打开诊断日志失败", ex);
+            MessageBox.Show(
+                $"无法直接打开诊断日志：{ex.Message}\n\n文件位置：{LogService.CurrentLogPath}",
+                "电脑开荒",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
         }
     }
 }

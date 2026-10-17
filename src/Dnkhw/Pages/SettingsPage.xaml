@@ -62,10 +62,10 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel>
-                        <TextBlock Text="运行日志" Style="{StaticResource CardTitleStyle}"/>
-                        <TextBlock Text="仅保存在本机，按天滚动、保留 14 天；反馈问题时可一并附上，便于定位原因" Style="{StaticResource CardHintStyle}"/>
+                        <TextBlock Text="诊断日志" Style="{StaticResource CardTitleStyle}"/>
+                        <TextBlock Text="详细记录系统环境、功能步骤和完整异常堆栈；集中保存在 dnkhw.log，反馈问题时直接发送这个文件即可" Style="{StaticResource CardHintStyle}"/>
                     </StackPanel>
-                    <ui:Button Grid.Column="1" Content="打开日志文件夹" VerticalAlignment="Center" Margin="20,0,0,0"
+                    <ui:Button Grid.Column="1" Content="打开诊断日志" VerticalAlignment="Center" Margin="20,0,0,0"
                                Padding="14,7" Click="OnOpenLogsClick"/>
                 </Grid>
             </ui:Card>

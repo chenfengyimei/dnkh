@@ -110,6 +110,7 @@ public sealed partial class OptimizeViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            LogService.Error("Windows 优化：读取优化项状态失败", ex);
             NoticeText = $"读取优化项失败：{ex.Message}";
             NoticeOpen = true;
         }
@@ -147,12 +148,14 @@ public sealed partial class OptimizeViewModel : ObservableObject
         }
         catch (UnauthorizedAccessException)
         {
+            LogService.Warn($"Windows 优化：权限不足；项目={row.Item.Id}；目标状态={target}");
             row.IsApplied = !target;
             NoticeText = "该操作需要管理员权限，请点击「以管理员身份重启」后重试";
             NoticeOpen = true;
         }
         catch (Exception ex)
         {
+            LogService.Error($"Windows 优化：切换项目失败；项目={row.Item.Id}；目标状态={target}", ex);
             row.IsApplied = !target;
             NoticeText = $"操作失败：{ex.Message}";
             NoticeOpen = true;
@@ -189,6 +192,7 @@ public sealed partial class OptimizeViewModel : ObservableObject
                 }
                 catch (Exception ex)
                 {
+                    LogService.Error($"Windows 优化：分组应用失败；分组={group.Name}；项目={row.Item.Id}", ex);
                     failed.Add($"{row.Title}：{ex.Message}");
                 }
                 finally
@@ -242,6 +246,7 @@ public sealed partial class OptimizeViewModel : ObservableObject
                 }
                 catch (Exception ex)
                 {
+                    LogService.Error($"Windows 优化：全部应用失败；项目={row.Item.Id}", ex);
                     failed.Add($"{row.Title}：{ex.Message}");
                 }
                 finally
@@ -296,6 +301,7 @@ public sealed partial class OptimizeViewModel : ObservableObject
                 }
                 catch (Exception ex)
                 {
+                    LogService.Error($"Windows 优化：全部恢复失败；项目={row.Item.Id}", ex);
                     failed.Add($"{row.Title}：{ex.Message}");
                 }
                 finally

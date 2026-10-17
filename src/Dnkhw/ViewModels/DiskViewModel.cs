@@ -89,6 +89,7 @@ public sealed partial class DiskViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            LogService.Error("磁盘分析：读取磁盘列表失败", ex);
             NoticeText = $"读取磁盘列表失败：{ex.Message}";
             NoticeOpen = true;
         }
@@ -140,6 +141,7 @@ public sealed partial class DiskViewModel : ObservableObject
 
     private async Task QueueScanAsync(int requestVersion)
     {
+        var requestedRoot = SelectedDrive?.Root ?? "(未选择)";
         await _scanLock.WaitAsync();
         try
         {
@@ -206,6 +208,7 @@ public sealed partial class DiskViewModel : ObservableObject
         }
         catch (OperationCanceledException)
         {
+            LogService.Info($"磁盘分析：扫描已取消；根目录={requestedRoot}");
             if (requestVersion == Volatile.Read(ref _scanRequestVersion))
             {
                 ProgressText = null;
@@ -215,6 +218,7 @@ public sealed partial class DiskViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            LogService.Error($"磁盘分析：扫描失败；根目录={requestedRoot}", ex);
             if (requestVersion == Volatile.Read(ref _scanRequestVersion))
             {
                 ProgressText = null;
@@ -263,6 +267,7 @@ public sealed partial class DiskViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            LogService.Warn($"磁盘分析：无法打开位置；路径={path}", ex);
             NoticeText = $"无法打开位置：{ex.Message}";
             NoticeOpen = true;
         }

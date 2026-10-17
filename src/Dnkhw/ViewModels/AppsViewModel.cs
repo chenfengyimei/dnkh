@@ -138,6 +138,7 @@ public sealed partial class AppsViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            LogService.Error("APP 推荐：加载软件清单或检测安装状态失败", ex);
             NoticeText = $"清单加载失败：{ex.Message}";
             NoticeOpen = true;
         }
@@ -195,6 +196,7 @@ public sealed partial class AppsViewModel : ObservableObject
         }
         catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException or NotSupportedException)
         {
+            LogService.Error($"APP 推荐：安装根目录不可用；目录={InstallRoot ?? "(未选择)"}", ex);
             NoticeText = $"安装位置不可用：{ex.Message}";
             NoticeOpen = true;
             return;
@@ -225,11 +227,13 @@ public sealed partial class AppsViewModel : ObservableObject
                     {
                         row.State = AppRowState.Failed;
                         row.StatusDetail = FirstMeaningfulLine(result.Output);
+                        LogService.Warn($"APP 推荐：安装失败；软件={row.Name}；WingetId={row.WingetId}；ExitCode={result.ExitCode}；输出={row.StatusDetail}");
                         failed.Add($"{row.Name}：{row.StatusDetail}");
                     }
                 }
                 catch (Exception ex)
                 {
+                    LogService.Error($"APP 推荐：安装过程异常；软件={row.Name}；WingetId={row.WingetId}", ex);
                     row.State = AppRowState.Failed;
                     row.StatusDetail = ex.Message;
                     failed.Add($"{row.Name}：{ex.Message}");
@@ -268,6 +272,7 @@ public sealed partial class AppsViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            LogService.Warn($"APP 推荐：无法打开软件官网；软件={row.Name}", ex);
             NoticeText = $"无法打开官网：{ex.Message}";
             NoticeOpen = true;
         }
@@ -283,6 +288,7 @@ public sealed partial class AppsViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            LogService.Warn("APP 推荐：无法打开 Microsoft Store 的 App Installer 页面", ex);
             NoticeText = $"无法打开 Microsoft Store：{ex.Message}";
             NoticeOpen = true;
         }
